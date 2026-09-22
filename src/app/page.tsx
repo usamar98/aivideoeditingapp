@@ -1,85 +1,36 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check, Clapperboard, Layers3, RotateCcw, Sparkles } from "lucide-react";
-
+import { ArrowRight, AudioLines, Captions, Clapperboard, Film, Layers3, Sparkles, WandSparkles } from "lucide-react";
 import { BrandMark } from "@/components/studio/brand-mark";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { SceneArt } from "@/components/marketing/scene-art";
 import { brand } from "@/config/brand";
 
-const capabilities = [
-  { icon: Layers3, title: "A living series guide", copy: "Keep visual style, locations, relationships, and episode history in one reusable source of truth." },
-  { icon: Check, title: "Approve before animation", copy: "Review character-guided storyboard frames before committing animation credits." },
-  { icon: RotateCcw, title: "Change one scene", copy: "Edit dialogue, captions, voice, order, or a single scene without rebuilding the full episode." },
-];
-
 export default function Home() {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      { "@type": "Organization", "@id": `${brand.siteUrl}/#organization`, name: brand.name, url: brand.siteUrl },
-      { "@type": "WebSite", "@id": `${brand.siteUrl}/#website`, name: brand.name, url: brand.siteUrl, publisher: { "@id": `${brand.siteUrl}/#organization` } },
-      { "@type": "WebApplication", name: brand.name, applicationCategory: "MultimediaApplication", operatingSystem: "Web", description: brand.description, url: brand.siteUrl, featureList: capabilities.map((item) => item.title), publisher: { "@id": `${brand.siteUrl}/#organization` } },
-    ],
-  };
-
-  return (
-    <main className="min-h-screen overflow-hidden">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll("<", "\\u003c") }} />
-      <header className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
-        <Link href="/" aria-label={`${brand.name} home`}><BrandMark /></Link>
-        <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex" aria-label="Main navigation">
-          <Link href="/features/ai-cartoon-series" className="hover:text-foreground">Cartoon series</Link>
-          <Link href="/features" className="hover:text-foreground">Features</Link>
-          <Link href="/login" className="hover:text-foreground">Sign in</Link>
-        </nav>
-        <Button asChild size="sm"><Link href="/studio">Open studio <ArrowRight /></Link></Button>
-      </header>
-
-      <section className="mx-auto grid max-w-7xl gap-10 px-5 pb-20 pt-12 sm:px-8 lg:grid-cols-[0.86fr_1.14fr] lg:items-center lg:pb-28 lg:pt-20">
-        <div>
-          <Badge variant="warning"><Sparkles /> Recurring-character cartoons</Badge>
-          <h1 className="mt-6 max-w-2xl text-4xl font-bold leading-[1.04] tracking-[-0.045em] sm:text-6xl">Make the next episode without reinventing the cast.</h1>
-          <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">Create 30–60 second animated stories with saved characters, voices, visual rules, and scene-by-scene control. Review the storyboard first, then animate only what you approve.</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg"><Link href="/studio/series/pip-and-moss/episodes/the-cloud-in-a-jar"><Clapperboard /> Try the episode editor</Link></Button>
-            <Button asChild size="lg" variant="outline"><Link href="/features/ai-cartoon-series">See how continuity works</Link></Button>
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">Development fixture included. Real generation requires connected provider credentials.</p>
-        </div>
-
-        <div className="relative">
-          <div className="absolute -inset-8 -z-10 rounded-full bg-primary/10 blur-3xl" />
-          <Card className="overflow-hidden border-primary/20 bg-card/85 p-2 shadow-[0_30px_100px_-35px_rgb(0_0_0/0.9)]">
-            <div className="relative aspect-video overflow-hidden rounded-lg bg-secondary">
-              <Image src="/demo/weather-workshop.png" alt="Pip and Moss reviewing their pocket weather machine in a 3D cartoon storyboard frame" fill loading="eager" fetchPriority="high" sizes="(max-width: 1024px) 100vw, 58vw" className="object-cover" />
-              <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/85 via-black/10 to-transparent p-4 pt-16">
-                <div><p className="text-sm font-semibold text-white">The Cloud in a Jar</p><p className="mt-1 text-xs text-white/70">Scene 01 · Approved frame</p></div>
-                <Badge variant="success"><Check /> Character references locked</Badge>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-2 p-2 pt-4">
-              {["Script", "Storyboard", "Animate"].map((label, index) => <div key={label} className={`rounded-lg border px-3 py-2 text-center text-xs font-semibold ${index < 2 ? "border-primary/25 bg-primary/8 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>{String(index + 1).padStart(2, "0")} · {label}</div>)}
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      <section className="border-y border-border bg-card/35">
-        <div className="mx-auto grid max-w-7xl gap-px bg-border md:grid-cols-3">
-          {capabilities.map((item) => {
-            const Icon = item.icon;
-            return <article key={item.title} className="bg-background p-7 sm:p-9"><span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary"><Icon className="size-5" /></span><h2 className="mt-5 text-lg font-semibold">{item.title}</h2><p className="mt-2 text-base leading-7 text-muted-foreground">{item.copy}</p></article>;
-          })}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-4xl px-5 py-20 text-center sm:px-8">
-        <p className="font-mono text-xs uppercase tracking-[0.18em] text-primary">Continuity with honest limits</p>
-        <h2 className="mt-4 text-3xl font-bold tracking-[-0.035em] sm:text-4xl">Your references stay reusable. Every frame still gets reviewed.</h2>
-        <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-muted-foreground">Generated characters can drift, especially across poses and camera angles. {brand.name} keeps approved assets and settings attached to the series, then gives you a review gate before animation. It does not promise perfect identity preservation.</p>
-      </section>
-    </main>
-  );
+  return <main>
+    <header className="mx-auto flex h-24 max-w-7xl items-center justify-between gap-4 px-6 lg:px-10">
+      <Link href="/" aria-label={`${brand.name} home`}><BrandMark /></Link>
+      <nav aria-label="Main navigation" className="hidden items-center gap-8 text-sm md:flex"><a href="#tools">Creative tools</a><a href="#how-it-works">How it works</a><Link href="/studio/profile">Plans & account</Link></nav>
+      <div className="flex items-center gap-3"><Link href="/login" className="hidden text-sm sm:block">Log in</Link><Button asChild className="rounded-full"><Link href="/studio">Open studio <ArrowRight /></Link></Button></div>
+    </header>
+    <section className="mx-auto grid max-w-7xl items-center gap-12 px-6 pb-20 pt-10 lg:grid-cols-2 lg:px-10 lg:pb-28 lg:pt-20">
+      <div className="max-w-xl"><p className="eyebrow flex items-center gap-2 text-primary"><span className="size-1.5 rounded-full bg-primary" /> A little idea. A whole lot of possibility.</p><h1 className="mt-7 text-5xl leading-[1.04] tracking-[-.055em] sm:text-6xl xl:text-[5.1rem]">Big stories.<br /><span className="editorial italic text-primary">No big production.</span></h1><p className="mt-7 max-w-md text-base leading-7 text-muted-foreground">Your ideas deserve to be seen. Turn them into faceless videos and animated series with a growing collection of AI creative tools.</p><div className="mt-8 flex flex-wrap gap-3"><Button asChild size="lg" className="rounded-full px-7"><Link href="/studio/faceless">Create a faceless video <ArrowRight /></Link></Button><Button asChild variant="outline" size="lg" className="rounded-full"><a href="#tools">Explore the tools</a></Button></div><p className="mt-5 text-xs text-muted-foreground">No camera. No complicated timeline. You stay in creative control.</p></div>
+      <div className="relative mx-auto h-[450px] w-full max-w-xl sm:h-[500px]" aria-label="Illustrative previews, not generated video samples">
+        <div className="absolute inset-8 rounded-full border border-primary/10" /><div className="absolute inset-0 m-auto h-72 w-72 rounded-full bg-primary/5" />
+        <div className="absolute left-[1%] top-16 h-[330px] w-[43%] -rotate-9 overflow-hidden rounded-2xl border-[5px] border-white shadow-xl"><SceneArt variant="space" /><div className="absolute inset-x-3 top-4 flex justify-between text-[9px] uppercase tracking-widest text-white"><span>Small wonders</span><span>01:00</span></div><p className="absolute bottom-10 left-4 right-4 text-center text-xl font-bold leading-tight text-white">The universe has<br /><span className="bg-primary px-1">a few secrets.</span></p></div>
+        <div className="absolute right-[8%] top-7 h-[365px] w-[45%] rotate-8 overflow-hidden rounded-2xl border-[5px] border-white shadow-2xl"><SceneArt /><div className="absolute left-3 top-4 rounded-full bg-white/20 px-3 py-1 text-[9px] uppercase tracking-widest text-white">A moment outside</div><p className="absolute bottom-12 left-3 right-3 text-center font-serif text-3xl italic leading-tight text-white">Find your<br />kind of quiet.</p><div className="absolute bottom-5 left-5 right-5 flex items-center gap-1">{[30,60,35,90,50,80,40,65,30,80,45,60,30,65,25,40].map((h,i) => <span key={i} className="w-1 flex-1 rounded-full bg-white/75" style={{height: h/6}} />)}</div></div>
+        <div className="absolute bottom-2 left-[13%] flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 shadow-lg"><span className="grid size-9 place-items-center rounded-full bg-accent text-primary"><Sparkles className="size-4" /></span><div><p className="text-sm font-semibold">An idea, brought to life.</p><p className="mt-1 text-[11px] text-muted-foreground">Script · visuals · voice · captions</p></div></div><span className="absolute right-0 top-0 text-5xl text-primary" aria-hidden>✳</span>
+      </div>
+    </section>
+    <div className="border-y border-border"><div className="mx-auto flex max-w-7xl flex-wrap justify-between gap-5 px-6 py-6 text-xs font-medium text-muted-foreground lg:px-10">{[{icon:WandSparkles,label:"Start with an idea"},{icon:Layers3,label:"Make every scene yours"},{icon:AudioLines,label:"Give your story a voice"},{icon:Captions,label:"Ready for the small screen"}].map(({icon:Icon,label}) => <span key={label} className="flex items-center gap-3"><Icon className="size-4 text-primary" />{label}</span>)}</div></div>
+    <section id="tools" className="mx-auto max-w-7xl px-6 py-20 lg:px-10"><div className="flex flex-wrap items-end justify-between gap-5"><div><p className="eyebrow text-primary">One studio. More ways to create.</p><h2 className="editorial mt-4 text-4xl tracking-tight sm:text-5xl">What will you make today?</h2></div><p className="max-w-xs text-sm leading-6 text-muted-foreground">Choose a starting point. Each tool has its own workflow, with room for your next idea.</p></div>
+      <div className="mt-10 grid gap-6 md:grid-cols-2">
+        <Link href="/studio/faceless" className="group overflow-hidden rounded-2xl border border-border bg-card"><div className="relative h-64 overflow-hidden bg-[#e4ebf7]"><div className="absolute left-[20%] top-6 h-72 w-36 -rotate-12 overflow-hidden rounded-xl shadow-lg"><SceneArt variant="space" /></div><div className="absolute right-[20%] top-6 h-72 w-36 rotate-12 overflow-hidden rounded-xl shadow-lg"><SceneArt variant="ocean" /></div><span className="absolute left-5 top-5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary">New creative tool</span></div><div className="p-7"><div className="flex items-center justify-between"><h3 className="text-xl font-semibold">Faceless video generator</h3><ArrowRight className="size-5 transition-transform group-hover:translate-x-1" /></div><p className="mt-3 text-sm leading-6 text-muted-foreground">Ideas into narrated shorts. Write a script, shape your scenes, and bring it together with AI visuals and captions.</p><p className="eyebrow mt-5 text-primary">Explainers · Stories · Educational shorts</p></div></Link>
+        <Link href="/studio/series/pip-and-moss/episodes/the-cloud-in-a-jar" className="group overflow-hidden rounded-2xl border border-border bg-card"><div className="relative h-64"><Image src="/demo/weather-workshop.png" alt="Pip and Moss in their animated weather workshop" fill sizes="(max-width:768px) 100vw, 50vw" className="object-cover" /><span className="absolute left-5 top-5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary">Character-led stories</span></div><div className="p-7"><div className="flex items-center justify-between"><h3 className="text-xl font-semibold">Cartoon series studio</h3><ArrowRight className="size-5 transition-transform group-hover:translate-x-1" /></div><p className="mt-3 text-sm leading-6 text-muted-foreground">A home for your cast and their next adventure. Reuse character references and review your story, scene by scene.</p><p className="eyebrow mt-5 text-primary">Recurring characters · Storyboards · Series</p></div></Link>
+      </div><div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-primary/25 p-6"><div className="flex items-center gap-4"><span className="grid size-10 place-items-center rounded-full bg-accent text-primary"><Film className="size-5" /></span><div><h3 className="font-semibold">The creative toolkit is growing.</h3><p className="mt-1 text-sm text-muted-foreground">Product videos and more workflows are on the roadmap.</p></div></div><span className="eyebrow text-muted-foreground">Coming later · not available yet</span></div>
+    </section>
+    <section id="how-it-works" className="bg-[#e9eef9] px-6 py-20"><div className="mx-auto max-w-6xl"><p className="eyebrow text-primary">Less setup. More storytelling.</p><h2 className="editorial mt-4 text-4xl">From a blank page to a finished story.</h2><div className="mt-10 grid gap-10 md:grid-cols-3">{[["01","Bring an idea","A topic, a rough script, a little curiosity. That’s all you need to get started."],["02","Make it your own","Review the narration, edit visual prompts, choose your format, and approve your scenes."],["03","Let it come together","Render voiceover, visuals, and timed captions into a video you can download."]].map(([n,title,copy]) => <div key={n}><span className="font-mono text-xs text-primary">{n} —</span><h3 className="mt-5 text-lg font-semibold">{title}</h3><p className="mt-3 text-sm leading-7 text-muted-foreground">{copy}</p></div>)}</div></div></section>
+    <section className="mx-auto max-w-6xl px-6 py-20 text-center"><Clapperboard className="mx-auto size-7 text-primary" /><h2 className="editorial mt-5 text-4xl sm:text-5xl">Your next story starts here.</h2><p className="mt-4 text-muted-foreground">A small idea is a perfectly good place to begin.</p><Button asChild size="lg" className="mt-7 rounded-full"><Link href="/studio">Find your creative tool <ArrowRight /></Link></Button></section>
+    <footer className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-5 border-t border-border px-6 py-8 text-xs text-muted-foreground lg:px-10"><BrandMark /><span>Made for stories of all kinds.</span><div className="flex gap-5"><Link href="/features">All features</Link><a href={`mailto:${brand.supportEmail}`}>Contact</a></div></footer>
+  </main>;
 }

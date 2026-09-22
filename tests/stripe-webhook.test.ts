@@ -1,0 +1,18 @@
+import Stripe from "stripe";
+import { beforeEach,afterEach,describe,it,expect,vi } from "vitest";
+
+const mocks=vi.hoisted(()=>({duplicate:false,rpc:vi.fn(),upsert:vi.fn(),processed:vi.fn(),subscriptions:vi.fn(),retrieveInvoice:vi.fn(),retrievePrice:vi.fn()}));
+vi.mock("@/lib/billing/stripe",()=>({getStripe:()=>({webhooks:new Stripe("sk_test_local_only").webhooks,subscriptions:{list:mocks.subscriptions},invoices:{retrieve:mocks.retrieveInvoice,listLineItems:async function*(){yield {amount:1900,quantity:1,pricing:{price_details:{price:"price_test"}},parent:{subscription_item_details:{proration:false}}};}},prices:{retrieve:mocks.retrievePrice}})}));
+vi.mock("@/lib/supabase/admin",()=>({createAdminClient:()=>({rpc:mocks.rpc,from:(table:string)=>{const chain={error:null,select:()=>chain,eq:()=>chain,maybeSingle:async()=>({error:null,data:table==="billing_customers"?{user_id:"user_owned",workspace_id:"workspace_owned"}:mocks.duplicate?{processed_at:"2026-09-22"}:null}),upsert:mocks.upsert,update:(value:unknown)=>{mocks.processed(value);return chain;}};return chain;}})}));
+import { POST } from "@/app/api/webhooks/stripe/route";
+const secret="whsec_local_verification_only";
+function request(type="invoice.paid",signatureValid=true){const body=JSON.stringify({id:"evt_local",object:"event",created:Math.floor(Date.now()/1000),type,data:{object:{id:"in_test",customer:"cus_owned"}}});const signature=Stripe.webhooks.generateTestHeaderString({payload:body,secret:signatureValid?secret:"wrong"});return new Request("https://example.test/api/webhooks/stripe",{method:"POST",headers:{"stripe-signature":signature},body});}
+beforeEach(()=>{vi.clearAllMocks();mocks.duplicate=false;vi.stubEnv("STRIPE_SECRET_KEY","sk_test_local_only");vi.stubEnv("STRIPE_WEBHOOK_SECRET",secret);mocks.rpc.mockResolvedValue({error:null});mocks.upsert.mockResolvedValue({error:null});mocks.subscriptions.mockResolvedValue({data:[]});mocks.retrieveInvoice.mockResolvedValue({id:"in_test",billing_reason:"subscription_cycle",status:"paid",amount_paid:1900});mocks.retrievePrice.mockResolvedValue({metadata:{credits:"100"},product:{metadata:{app:"framefoundry"}}});});
+afterEach(()=>vi.unstubAllEnvs());
+describe("Stripe webhook boundary",()=>{
+  it("rejects forged signatures before reading or crediting data",async()=>{expect((await POST(request("invoice.paid",false))).status).toBe(400);expect(mocks.rpc).not.toHaveBeenCalled();expect(mocks.subscriptions).not.toHaveBeenCalled();});
+  it("acknowledges processed event retries without fulfillment",async()=>{mocks.duplicate=true;expect((await POST(request())).status).toBe(200);expect(mocks.rpc).not.toHaveBeenCalled();});
+  it("uses the owned customer and invoice id for credit fulfillment",async()=>{expect((await POST(request())).status).toBe(200);expect(mocks.rpc).toHaveBeenCalledWith("apply_credit_purchase",{target_workspace_id:"workspace_owned",credit_amount:100,event_key:"stripe:invoice:in_test",external_id:"in_test"});expect(mocks.processed).toHaveBeenCalled();});
+  it("returns a retryable error if credits cannot be persisted",async()=>{mocks.rpc.mockResolvedValue({error:{message:"offline"}});const consoleSpy=vi.spyOn(console,"error").mockImplementation(()=>{});expect((await POST(request())).status).toBe(500);expect(mocks.processed).not.toHaveBeenCalled();consoleSpy.mockRestore();});
+  it("never grants credits on payment failure",async()=>{expect((await POST(request("invoice.payment_failed"))).status).toBe(200);expect(mocks.rpc).not.toHaveBeenCalled();});
+});

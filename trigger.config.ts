@@ -1,4 +1,4 @@
-import { ffmpeg } from "@trigger.dev/build/extensions/core";
+import { aptGet, ffmpeg } from "@trigger.dev/build/extensions/core";
 import { defineConfig } from "@trigger.dev/sdk";
 
 export default defineConfig({
@@ -17,6 +17,6 @@ export default defineConfig({
     },
   },
   build: {
-    extensions: [ffmpeg({ version: "7" })],
+    extensions: [ffmpeg({ version: "7" }), aptGet({ packages: ["fonts-dejavu-core"] })],
   },
 });

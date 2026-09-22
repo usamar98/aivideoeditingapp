@@ -1,5 +1,5 @@
 export type IntegrationStatus = {
-  key: "supabase" | "gemini" | "fal" | "elevenlabs" | "trigger" | "paddle";
+  key: "supabase" | "gemini" | "fal" | "elevenlabs" | "trigger" | "stripe";
   label: string;
   configured: boolean;
   purpose: string;
@@ -42,9 +42,9 @@ export function getIntegrationStatuses(): IntegrationStatus[] {
       purpose: "Durable generation and rendering jobs",
     },
     {
-      key: "paddle",
-      label: "Paddle",
-      configured: Boolean(process.env.PADDLE_API_KEY && process.env.PADDLE_WEBHOOK_SECRET),
+      key: "stripe",
+      label: "Stripe",
+      configured: Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET),
       purpose: "Subscriptions and credit purchases",
     },
   ];

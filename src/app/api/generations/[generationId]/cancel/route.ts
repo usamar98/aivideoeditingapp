@@ -15,7 +15,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ ge
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims?.sub) return Response.json({ error: "Authentication required" }, { status: 401 });
 
-  const { data: generation } = await supabase.from("generations").select("id,status,provider_request_id").eq("id", parsed.data.generationId).maybeSingle();
+  const { data: generation } = await supabase.from("generations").select("id,status,provider_request_id").eq("id", parsed.data.generationId).eq("operation", "episode-export").maybeSingle();
   if (!generation) return Response.json({ error: "Generation not found" }, { status: 404 });
   if (["succeeded", "failed"].includes(generation.status)) return Response.json({ error: `Generation already ${generation.status}` }, { status: 409 });
   if (generation.status === "cancelled") return Response.json({ generationId: generation.id, status: "cancelled", duplicate: true });
@@ -29,7 +29,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ ge
       return Response.json({ error: "The render worker could not confirm cancellation. Credits remain reserved until reconciliation." }, { status: 502 });
     }
   }
-  const { error: settleError } = await supabase.schema("api").rpc("settle_generation_credits", { generation_id: generation.id, used_credits: 0, idempotency_key: `${generation.id}:cancel-settlement` });
+  const { error: settleError } = await admin.schema("api").rpc("settle_generation_credits", { generation_id: generation.id, used_credits: 0, idempotency_key: `${generation.id}:cancel-settlement` });
   if (settleError) return Response.json({ error: settleError.message }, { status: 500 });
   const { error: updateError } = await admin.from("generations").update({ status: "cancelled", completed_at: new Date().toISOString(), error_message: "Cancelled by user" }).eq("id", generation.id).in("status", ["created", "reserved", "submitted", "processing"]);
   if (updateError) return Response.json({ error: "Could not record cancellation" }, { status: 500 });

@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Clapperboard, FolderKanban, Images, Settings, WandSparkles } from "lucide-react";
+import { Clapperboard, FolderKanban, Images, UserRound, WandSparkles, Video } from "lucide-react";
 
 import { BrandMark } from "./brand-mark";
 
 const items = [
   { href: "/studio", label: "Projects", icon: FolderKanban },
+  { href: "/studio/faceless", label: "Faceless videos", icon: Video },
   { href: "/studio/series/pip-and-moss/episodes/the-cloud-in-a-jar", label: "Episode editor", icon: Clapperboard },
   { href: "/studio/series/pip-and-moss/episodes/the-cloud-in-a-jar#characters", label: "Characters", icon: Images },
   { href: "/features/ai-cartoon-series", label: "Feature page", icon: WandSparkles },
@@ -31,8 +32,8 @@ export function AppSidebar({ active = "Episode editor" }: { active?: string }) {
           );
         })}
       </nav>
-      <Link href="/admin/features" aria-label="Settings" title="Settings" className="grid size-10 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground">
-        <Settings className="size-[1.125rem]" />
+      <Link href="/studio/profile" aria-label="My account" title="My account" className="grid size-10 place-items-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground">
+        <UserRound className="size-[1.125rem]" />
       </Link>
     </aside>
   );

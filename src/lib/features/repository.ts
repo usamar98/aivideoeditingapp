@@ -32,7 +32,7 @@ export async function getPublishedFeaturesData() {
   const { data, error } = await client.from("feature_content").select("*").eq("status", "published").eq("development_only", false).order("name");
   if (error || !data) return getPublishedFeatures();
   const parsed = data.map((row) => featureFromRow(row)).filter((item): item is FeatureDefinition => Boolean(item));
-  return parsed.length > 0 ? parsed : getPublishedFeatures();
+  return [...getPublishedFeatures().filter((feature) => !parsed.some((row) => row.slug === feature.slug)), ...parsed];
 }
 
 export async function getFeatureData(slug: string) {

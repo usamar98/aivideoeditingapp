@@ -1,25 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: oklch(0.13 0.017 165);
-  --foreground: oklch(0.965 0.006 160);
-  --card: oklch(0.17 0.02 165);
-  --card-foreground: oklch(0.965 0.006 160);
-  --popover: oklch(0.18 0.021 165);
-  --popover-foreground: oklch(0.965 0.006 160);
-  --primary: oklch(0.78 0.15 163);
-  --primary-foreground: oklch(0.12 0.026 164);
-  --secondary: oklch(0.225 0.024 166);
-  --secondary-foreground: oklch(0.91 0.012 160);
-  --muted: oklch(0.225 0.018 166);
-  --muted-foreground: oklch(0.68 0.018 165);
-  --accent: oklch(0.255 0.03 166);
-  --accent-foreground: oklch(0.97 0.01 160);
+  --background: #faf7ef;
+  --foreground: #182d4e;
+  --card: #fffdf8;
+  --card-foreground: #182d4e;
+  --popover: #fffdf8;
+  --popover-foreground: #182d4e;
+  --primary: #2457d6;
+  --primary-foreground: #ffffff;
+  --secondary: #eef1f7;
+  --secondary-foreground: #263d66;
+  --muted: #f0eee7;
+  --muted-foreground: #627087;
+  --accent: #e4ecff;
+  --accent-foreground: #193e98;
   --destructive: oklch(0.61 0.2 25);
-  --border: oklch(0.29 0.027 166);
-  --input: oklch(0.3 0.027 166);
-  --ring: oklch(0.78 0.15 163);
-  --amber: oklch(0.81 0.15 78);
+  --border: #dddeda;
+  --input: #ced4df;
+  --ring: #2457d6;
+  --amber: #936011;
   --coral: oklch(0.71 0.18 30);
   --radius: 0.7rem;
 }
@@ -56,18 +56,23 @@
 
 * { border-color: var(--border); }
 
-html { background: var(--background); color-scheme: dark; }
+html { background: var(--background); color-scheme: light; }
 
 body {
   min-height: 100vh;
-  background: radial-gradient(circle at 14% -10%, oklch(0.31 0.07 164 / 0.28), transparent 31rem), var(--background);
+  background: var(--background);
   color: var(--foreground);
   font-family: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
   text-rendering: optimizeLegibility;
 }
 
 button, a, input, textarea, [role="button"] { -webkit-tap-highlight-color: transparent; }
-::selection { background: oklch(0.78 0.15 163 / 0.3); }
+::selection { background: #bfd0ff; }
+.editorial { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
+.eyebrow { font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; }
+.text-amber-100, .text-amber-200 { color: #855519; }
+.text-red-300 { color: #b33434; }
+.text-emerald-300 { color: #18714e; }
 
 .studio-grid {
   background-image: linear-gradient(oklch(0.78 0.15 163 / 0.025) 1px, transparent 1px), linear-gradient(90deg, oklch(0.78 0.15 163 / 0.025) 1px, transparent 1px);

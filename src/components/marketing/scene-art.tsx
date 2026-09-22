@@ -1,0 +1,7 @@
+export function SceneArt({ variant = "landscape", className = "" }: { variant?: "landscape" | "space" | "ocean"; className?: string }) {
+  return <div aria-hidden className={`relative h-full w-full overflow-hidden ${className}`} style={{ background: variant === "space" ? "#172c59" : variant === "ocean" ? "#8bbfc6" : "#b9cede" }}>
+    <svg viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
+      {variant === "space" ? <><circle cx="270" cy="170" r="100" fill="#e3dfcd" /><circle cx="244" cy="150" r="20" fill="#c4c5bd" /><circle cx="294" cy="197" r="33" fill="#cccbbf" /><path d="M-20 430 Q230 300 430 520V650H-20Z" fill="#3265a1" /><path d="M-20 505 Q210 355 430 590V650H-20Z" fill="#1a477b" />{[[40,65],[121,164],[334,64],[62,314],[207,46],[352,330],[167,266]].map(([x,y]) => <circle key={x} cx={x} cy={y} r="2" fill="#fff9e5" />)}</> : <><circle cx="280" cy="150" r="65" fill="#faf0cf" /><path d="M-30 380L125 170L270 405L330 250L460 480V630H-30Z" fill={variant === "ocean" ? "#6f9eac" : "#6b91ad"} /><path d="M84 226L125 170L171 244L129 222L112 237Z" fill="#ecf0e9" /><path d="M-40 500L70 325L220 505L336 350L450 510V640H-40Z" fill="#376780" /><path d="M-10 500Q160 420 415 510V620H-10Z" fill={variant === "ocean" ? "#236f85" : "#274d61"} /><path d="M155 510Q330 523 240 545T268 600" stroke="#d1e4e1" strokeWidth="18" fill="none" opacity=".65" /></>}
+    </svg><div className="absolute inset-0 bg-gradient-to-t from-[#102847]/75 via-transparent to-transparent" />
+  </div>;
+}

@@ -76,7 +76,7 @@ export const featureCatalog: FeatureDefinition[] = [
         published: true,
       },
     ],
-    relatedFeatures: ["ecommerce-product-videos"],
+    relatedFeatures: ["faceless-video-generator"],
     status: "published",
     publishedAt: "2026-09-22T00:00:00.000Z",
     modifiedAt: "2026-09-22T00:00:00.000Z",
@@ -115,6 +115,17 @@ export const featureCatalog: FeatureDefinition[] = [
     developmentOnly: true,
   }),
 ];
+
+featureCatalog.push(featureDefinitionSchema.parse({
+  slug: "faceless-video-generator", name: "Faceless video generator",
+  description: "Turn a topic or your own script into a narrated short with editable scenes, AI-generated images, timed captions, and a private MP4 download.",
+  audience: ["Creators", "Educators", "Small teams"], searchIntent: "Create narrated videos without appearing on camera",
+  benefits: ["Start with an idea or preserve your own script", "Review narration and visual prompts before rendering", "Return to saved projects and private exports"],
+  capabilities: ["AI script planning and editable scene ordering", "Cinematic, illustration, and watercolor image prompts", "English, Spanish, and French narration with a configured studio voice", "Vertical and landscape MP4 export with optional burned-in captions"],
+  limitations: ["Uses narrated AI still images, not generative moving footage.", "Live generation requires connected providers, a deployed worker, and credits.", "No social auto-posting, background music, or stock footage library in this release. Review factual claims before publishing."],
+  relatedFeatures: ["ai-cartoon-series"], status: "published", publishedAt: "2026-09-22T00:00:00.000Z", modifiedAt: "2026-09-22T00:00:00.000Z",
+  seo: {title: "Faceless Video Generator — Script to Narrated Video", description: "Create faceless shorts from ideas or scripts. Edit scenes, generate AI visuals and narration, add timed captions, and export a private MP4.", heading: "Your story. Your voice. No camera required.", canonicalPath: "/features/faceless-video-generator", editorialOverride: true}, developmentOnly:false,
+}));
 
 export function getPublishedFeatures() {
   return featureCatalog.filter(

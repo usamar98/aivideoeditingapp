@@ -122,7 +122,7 @@ export async function POST(request: Request) {
       await admin.from("generations").update({ status: "reserved", error_message: `Submission outcome unknown: ${message}` }).eq("id", generation.id);
       return Response.json({ error: "Submission outcome is uncertain. Retry with the same idempotency key to reconcile without another charge.", generationId: generation.id, creditsReserved: true, retriable: true }, { status: 502 });
     }
-    await supabase.schema("api").rpc("settle_generation_credits", { generation_id: generation.id, used_credits: 0, idempotency_key: `${input.data.idempotencyKey}:release` });
+    await admin.schema("api").rpc("settle_generation_credits", { generation_id: generation.id, used_credits: 0, idempotency_key: `${input.data.idempotencyKey}:release` });
     if (outputAssetId) await supabase.from("assets").update({ deleted_at: new Date().toISOString() }).eq("id", outputAssetId);
     await admin.from("generations").update({ status: "failed", error_message: message, completed_at: new Date().toISOString() }).eq("id", generation.id);
     return Response.json({ error: message, creditsReleased: true }, { status: 502 });
