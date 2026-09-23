@@ -6,7 +6,7 @@ import { tasks } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { requireAccount, publicError } from "@/lib/account";
 import { briefSchema, storyboardSchema, scriptToStoryboard, validateNarration } from "@/lib/faceless/schema";
-import { cancelJob } from "@/lib/jobs/cancel";
+import { recordDispatchFailure, type JobStage } from "@/lib/jobs/diagnostics";
 import type { facelessPipeline } from "../../../../trigger/faceless-pipeline";
 
 export async function createFacelessProject(input: unknown) {
@@ -52,16 +52,27 @@ export async function startFacelessJob(id:string, kind:"script"|"render") {
     const {data:generationId,error} = await admin.rpc("start_faceless_job",{project_id:id,owner_id:user.id,job_id:randomUUID(),job_kind:kind});
     if (error || !generationId) throw new Error(error?.message || "Could not reserve credits.");
     const {data:generation,error:readError} = await db.from("generations").select("settings,provider_request_id,status,cancel_requested_at").eq("id",generationId).single();
-    if (readError || !generation) throw new Error("Could not retrieve the saved job. Retry to reconnect.");
+    if (readError || !generation) {
+      const diagnostic = await recordDispatchFailure(admin, String(generationId), "read_saved_job", readError);
+      return {error:`Could not retrieve the saved job. ${diagnostic} Open Jobs to cancel, or retry to reconnect without another charge.`};
+    }
     if (generation.cancel_requested_at) throw new Error("This job is cancelling. Open Jobs to check its status or retry cancellation.");
     if (!generation.provider_request_id && generation.status === "reserved") {
       // An uncertain network response keeps the reservation. Retry uses the same durable key.
+      let stage: JobStage = "submit_task";
       try {
-        const handle = await tasks.trigger<typeof facelessPipeline>("faceless-pipeline",{generationId:String(generationId)},{idempotencyKey:String(generationId),idempotencyKeyTTL:"30d",concurrencyKey:user.id,tags:[`project:${id}`,`generation:${generationId}`]});
-        const {data:dispatched,error:dispatchError} = await admin.from("generations").update({provider_request_id:handle.id,submitted_at:new Date().toISOString()}).eq("id",generationId).in("status",["reserved","submitted","processing"]).select("cancel_requested_at").maybeSingle();
+        const handle = await tasks.trigger<typeof facelessPipeline>("faceless-pipeline",{generationId:String(generationId)},{idempotencyKey:String(generationId),idempotencyKeyTTL:"30d",concurrencyKey:user.id,tags:[`project:${id}`,`generation:${generationId}`]}, {retry:{maxAttempts:1}});
+        stage = "save_run";
+        const {data:dispatched,error:dispatchError} = await admin.from("generations").update({provider_request_id:handle.id,submitted_at:new Date().toISOString(),error_message:null}).eq("id",generationId).in("status",["reserved","submitted","processing"]).is("cancel_requested_at",null).select("cancel_requested_at").maybeSingle();
         if (dispatchError) throw dispatchError;
-        if (dispatched?.cancel_requested_at) await cancelJob(db,admin,user.id,String(generationId));
-      } catch { return {error:"Job saved and credits reserved, but dispatch is not confirmed. Use Reconnect job to safely retry without another charge."}; }
+        if (!dispatched) {
+          revalidatePath(`/studio/faceless/${id}`);
+          return {error:"Job state changed during submission. Open Jobs to see its current status."};
+        }
+      } catch (error) {
+        const diagnostic = await recordDispatchFailure(admin, String(generationId), stage, error);
+        return {error:`${diagnostic} Job saved and credits reserved, but dispatch is not confirmed. Use Reconnect job to retry without another charge, or cancel it in Jobs.`};
+      }
     }
     revalidatePath(`/studio/faceless/${id}`);
     return {ok:true};

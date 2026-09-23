@@ -1,7 +1,12 @@
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { beforeAll,afterAll,describe,it,expect } from "vitest";
+import { beforeAll,afterAll,describe,it,expect,vi } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
+vi.mock("server-only",()=>({}));
+const triggerMocks=vi.hoisted(()=>({list:vi.fn(),retrieve:vi.fn(),cancel:vi.fn()}));
+vi.mock("@trigger.dev/sdk",()=>({runs:triggerMocks}));
+import { cancelJob } from "@/lib/jobs/cancel";
 
 const userA="10000000-0000-4000-8000-000000000001",userB="10000000-0000-4000-8000-000000000002",workspace="20000000-0000-4000-8000-000000000001",project="30000000-0000-4000-8000-000000000001",job="40000000-0000-4000-8000-000000000001";
 let db:PGlite;
@@ -39,6 +44,26 @@ describe("real Postgres migration and authorization",()=>{
 });
 
 describe("atomic job cancellation", () => {
+  // Exercise the actual cancellation handler against Postgres, including its
+  // post-request read. Provider calls must not be needed for unclaimed jobs.
+  function cancellationClient() {
+    return {
+      from: () => {
+        const filters: Record<string,string> = {};
+        async function read() {
+          const result = await db.query("select * from public.generations where id=$1 and requested_by=$2",[filters.id,filters.requested_by]);
+          return {data:result.rows[0] || null,error:null};
+        }
+        const chain = {select:()=>chain,eq:(key:string,value:string)=>{filters[key]=value;return chain;},in:()=>chain,single:read,maybeSingle:read};
+        return chain;
+      },
+      rpc: async (name:string,args:{job_id:string;owner_id?:string}) => {
+        const query=name==="request_generation_cancellation" ? "select public.request_generation_cancellation($1,$2) as result" : "select public.confirm_generation_cancellation($1) as result";
+        const result=await db.query<{result:unknown}>(query,name==="request_generation_cancellation" ? [args.job_id,args.owner_id] : [args.job_id]);
+        return {data:result.rows[0].result,error:null};
+      },
+    } as unknown as SupabaseClient;
+  }
   async function newJob(kind = "script") {
     await asService();
     const projectId = randomUUID(), jobId = randomUUID();
@@ -56,6 +81,29 @@ describe("atomic job cancellation", () => {
     await db.query("select api.reserve_generation_credits($1,$2,20,$3)",[workspace,id,`${id}:reserve`]);
     await asService(); return {id,asset};
   }
+
+  it("cancels an undispatched job through the app and refunds exactly once without Trigger",async()=>{
+    const {jobId,projectId}=await newJob("render");const reserved=await balance();const client=cancellationClient();
+    const saved=(await db.query("select storyboard from public.faceless_projects where id=$1",[projectId])).rows[0];
+    expect((await cancelJob(client,client,userA,jobId)).body.status).toBe("cancelled");
+    expect((await cancelJob(client,client,userA,jobId)).body.status).toBe("cancelled");
+    expect(await balance()).toBe(reserved+20);
+    expect((await db.query("select storyboard from public.faceless_projects where id=$1",[projectId])).rows[0]).toEqual(saved);
+    expect((await db.query("select id from public.credit_ledger where generation_id=$1 and kind='release'",[jobId])).rows).toHaveLength(1);
+    expect((await db.query<{ok:boolean}>("select public.claim_generation_job($1,'run_late',1) as ok",[jobId])).rows[0].ok).toBe(false);
+    await db.query("select public.finish_faceless_job($1,true,null,'late-output.mp4')",[jobId]);
+    expect((await db.query("select status,output_path from public.faceless_projects where id=$1",[projectId])).rows[0]).toMatchObject({status:"ready",output_path:null});
+    expect(triggerMocks.list).not.toHaveBeenCalled();expect(triggerMocks.cancel).not.toHaveBeenCalled();
+  });
+  it("frees a slot immediately for an unclaimed queued job, even with a saved run ID",async()=>{
+    const first=await newJob(),second=await newJob();
+    await db.query("update public.generations set status='submitted',provider_request_id='run_queued' where id=$1",[first.jobId]);
+    await expect(newJob()).rejects.toThrow(/Two jobs/);
+    const client=cancellationClient();expect((await cancelJob(client,client,userA,first.jobId)).body.status).toBe("cancelled");
+    const third=await newJob();
+    expect((await db.query<{ok:boolean}>("select public.claim_generation_job($1,'run_queued',1) as ok",[first.jobId])).rows[0].ok).toBe(false);
+    await cancel(second.jobId);await cancel(third.jobId);
+  });
 
   it("rejects another owner and denies direct browser cancellation RPCs",async()=>{
     const {jobId} = await newJob();

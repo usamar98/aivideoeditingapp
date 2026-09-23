@@ -8,6 +8,7 @@ import { getIntegrationStatuses, isFixtureMode } from "@/lib/integrations";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { cancelJob } from "@/lib/jobs/cancel";
+import { logJobFailure, recordDispatchFailure, type JobStage } from "@/lib/jobs/diagnostics";
 
 const requestSchema = z.object({
   workspaceId: z.string().uuid(),
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
 
   let outputAssetId: string | null = null;
   let submissionStarted = false;
+  let stage: JobStage = "prepare_export";
   try {
     outputAssetId = generation.output_asset_ids?.[0] || randomUUID();
     let outputPath: string | null = null;
@@ -108,6 +110,7 @@ export async function POST(request: Request) {
       return Response.json({error:"Job was stopped before dispatch."},{status:409});
     }
     submissionStarted = true;
+    stage = "submit_task";
     const handle = await tasks.trigger<typeof episodePipeline>(
       "episode-pipeline",
       {
@@ -122,9 +125,12 @@ export async function POST(request: Request) {
         reservedCredits: input.data.estimatedCredits,
       },
       { idempotencyKey: triggerKey, concurrencyKey: input.data.workspaceId, tags: [`generation:${generation.id}`, `workspace:${input.data.workspaceId}`] },
+      { retry: { maxAttempts: 1 } },
     );
+    stage = "save_run";
     const {data:dispatched,error:dispatchError} = await admin.from("generations").update({provider_request_id:handle.id,submitted_at:new Date().toISOString()}).eq("id",generation.id).in("status",["created","reserved","submitted","processing"]).select("cancel_requested_at").maybeSingle();
     if(dispatchError) throw dispatchError;
+    if(!dispatched) return Response.json({error:"Job state changed during submission. Open Jobs to see its current status.",generationId:generation.id},{status:409});
     if(dispatched?.cancel_requested_at) {
       const stopped = await cancelJob(supabase,admin,userId,generation.id);
       return Response.json(stopped.body,{status:stopped.code});
@@ -132,11 +138,11 @@ export async function POST(request: Request) {
     else await admin.from("generations").update({status:"submitted"}).eq("id",generation.id).in("status",["created","reserved"]).is("cancel_requested_at",null);
     return Response.json({ generationId: generation.id, runId: handle.id, status: "submitted" }, { status: 202 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Trigger submission failed";
     if (submissionStarted) {
-      await admin.from("generations").update({ error_message: `Submission outcome unknown: ${message}` }).eq("id", generation.id).in("status",["created","reserved","submitted","processing"]);
-      return Response.json({ error: "Submission outcome is uncertain. Retry with the same idempotency key to reconcile without another charge.", generationId: generation.id, creditsReserved: true, retriable: true }, { status: 502 });
+      const message = await recordDispatchFailure(admin, generation.id, stage, error);
+      return Response.json({ error: `${message} Submission outcome is uncertain. Retry with the same idempotency key to reconcile without another charge, or cancel in Jobs.`, generationId: generation.id, creditsReserved: true, retriable: true }, { status: 502 });
     }
+    const message = logJobFailure(stage, generation.id, error).message;
     const {error:settlementError} = await admin.rpc("finish_episode_job", { job_id: generation.id, succeeded: false, failure_message: message });
     if(settlementError) return Response.json({error:"Export preparation failed and credit settlement is pending. Contact support with this job ID.",generationId:generation.id},{status:503});
     return Response.json({ error: message, generationId:generation.id }, { status: 502 });
