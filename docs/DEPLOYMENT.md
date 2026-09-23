@@ -73,11 +73,12 @@ The new app has replaced Paddle routes and variables. Existing Paddle customers,
 
 ## 4. Trigger.dev worker
 
-Deploy `trigger.config.ts` with the matching Trigger CLI version and your project reference. Both `episode-pipeline` and `faceless-pipeline` must be deployed separately from Vercel. Set these worker secrets:
+`trigger.config.ts` targets `proj_buramjqzkflsxgozeeew` and discovers exports in `src/trigger/`. That directory registers `connectivity-check` and re-exports the existing video workers. Use the matching CLI version (currently `4.6.4`); both `episode-pipeline` and `faceless-pipeline` must be deployed to **Production** separately from Vercel. Set these worker secrets:
 
 - `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`
 - `GEMINI_API_KEY`, `FAL_KEY`, `ELEVENLABS_API_KEY`, `ELEVENLABS_DEFAULT_VOICE_ID`
-- `TRIGGER_PROJECT_REF` for deployment
+
+The project reference is already in `trigger.config.ts`; change it there when targeting another project. For local **Development**, use `npm run dev:trigger` with the Development key in `.env`, then `npm run test:trigger` to verify a harmless task. The local worker must stay running, and real video jobs need the secrets above in `.env` as well. The connectivity check alone does not verify AI rendering, database access, or recovery of old stuck jobs. See the README's development setup. Production requires a separate worker deployment and a matching Production secret key on Vercel; do not use `tr_dev_` for an always-on production website.
 
 The build includes FFmpeg 7 and DejaVu fonts for captions. Let the extension set `FFMPEG_PATH` and `FFPROBE_PATH` in production. No worker Stripe key is needed. The older cartoon export worker uses `MEDIA_FETCH_HOSTS` for additional exact media hosts; Supabase's host is included automatically. The faceless worker only fetches image results from fal.media over HTTPS, rejects redirects, and copies outputs into your private Supabase bucket.
 

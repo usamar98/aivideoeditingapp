@@ -22,6 +22,20 @@ Open `http://localhost:3000`. Run all local verification with:
 npm run check
 ```
 
+### Trigger.dev development worker
+
+This repository is configured for `proj_buramjqzkflsxgozeeew`. Log in once with `npx trigger.dev@4.6.4 login`, then save that project's **Development** `TRIGGER_SECRET_KEY` in the Git-ignored root `.env`. Never paste secrets into source files or commit them. Avoid a conflicting Trigger key in `.env.local`, which takes precedence for Next.js.
+
+In a separate terminal, run:
+
+```bash
+npm run dev:trigger
+```
+
+Keep this process running alongside Next.js. In another terminal, run `npm run test:trigger`. It submits `connectivity-check`, waits for completion, and prints its run ID and result. This check does not call AI providers, change the database, or spend app credits. Look for the completed run in the project's **Development → Runs** dashboard.
+
+Trigger discovers tasks in `src/trigger/`: the connectivity check and re-exports of the existing `episode-pipeline` and `faceless-pipeline` workers. Real video tasks additionally need the worker variables in [the deployment guide](docs/DEPLOYMENT.md) in `.env`, plus local FFmpeg. A connected development worker is not a Production deployment; a `tr_dev_` key only dispatches to Development while this local process is connected.
+
 ## Production setup
 
 1. Create a Supabase project and apply the three files in `supabase/migrations/` in order, skipping those already applied. Existing installations with faceless/Stripe support need `20260923173517_jobs_cancellation.sql`. Add `api` to **Project Settings → API → Exposed schemas**. Set the site URL and `/auth/callback` redirect in Auth settings.
@@ -64,6 +78,8 @@ These adapters are intentionally small and replaceable. Character consistency re
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Local Next.js development server |
+| `npm run dev:trigger` | Connect the local Trigger.dev Development worker |
+| `npm run test:trigger` | Submit and verify the harmless Development connectivity task |
 | `npm run typecheck` | Strict TypeScript validation |
 | `npm run lint` | Next/React ESLint rules |
 | `npm run test` | Focused Vitest suite |

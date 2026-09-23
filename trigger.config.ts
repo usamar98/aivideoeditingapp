@@ -2,8 +2,8 @@ import { aptGet, ffmpeg } from "@trigger.dev/build/extensions/core";
 import { defineConfig } from "@trigger.dev/sdk";
 
 export default defineConfig({
-  project: process.env.TRIGGER_PROJECT_REF || "project_ref_required",
-  dirs: ["./trigger"],
+  project: "proj_buramjqzkflsxgozeeew",
+  dirs: ["./src/trigger"],
   runtime: "node",
   maxDuration: 1800,
   retries: {
