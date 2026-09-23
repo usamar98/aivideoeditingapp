@@ -7,6 +7,7 @@ import type { episodePipeline } from "../../../../trigger/episode-pipeline";
 import { getIntegrationStatuses, isFixtureMode } from "@/lib/integrations";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { cancelJob } from "@/lib/jobs/cancel";
 
 const requestSchema = z.object({
   workspaceId: z.string().uuid(),
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
     idempotency_key: `${input.data.idempotencyKey}:reserve`,
   });
   if (reserveError) {
-    await admin.from("generations").update({ status: "failed", error_message: reserveError.message, completed_at: new Date().toISOString() }).eq("id", generation.id);
+    await admin.from("generations").update({ status: "failed", error_message: reserveError.message, completed_at: new Date().toISOString() }).eq("id", generation.id).eq("status","created").is("cancel_requested_at",null);
     return Response.json({ error: reserveError.message }, { status: 402 });
   }
 
@@ -98,6 +99,14 @@ export async function POST(request: Request) {
     if (!outputAssetId) throw new Error("Could not resolve the export asset.");
 
     const triggerKey = await idempotencyKeys.create(input.data.idempotencyKey, { scope: "global" });
+    const {data:beforeDispatch,error:stateError} = await admin.from("generations").select("status,cancel_requested_at").eq("id",generation.id).single();
+    if(stateError || !beforeDispatch) throw new Error("Could not verify job before dispatch.");
+    if(beforeDispatch.cancel_requested_at || ["succeeded","failed","cancelled"].includes(beforeDispatch.status)) {
+      // Another request may already have dispatched this idempotent job. Do not
+      // release its reservation here without verifying that worker has stopped.
+      if(beforeDispatch.cancel_requested_at) await cancelJob(supabase,admin,userId,generation.id);
+      return Response.json({error:"Job was stopped before dispatch."},{status:409});
+    }
     submissionStarted = true;
     const handle = await tasks.trigger<typeof episodePipeline>(
       "episode-pipeline",
@@ -114,17 +123,22 @@ export async function POST(request: Request) {
       },
       { idempotencyKey: triggerKey, concurrencyKey: input.data.workspaceId, tags: [`generation:${generation.id}`, `workspace:${input.data.workspaceId}`] },
     );
-    await admin.from("generations").update({ status: "submitted", provider_request_id: handle.id, submitted_at: new Date().toISOString() }).eq("id", generation.id);
+    const {data:dispatched,error:dispatchError} = await admin.from("generations").update({provider_request_id:handle.id,submitted_at:new Date().toISOString()}).eq("id",generation.id).in("status",["created","reserved","submitted","processing"]).select("cancel_requested_at").maybeSingle();
+    if(dispatchError) throw dispatchError;
+    if(dispatched?.cancel_requested_at) {
+      const stopped = await cancelJob(supabase,admin,userId,generation.id);
+      return Response.json(stopped.body,{status:stopped.code});
+    }
+    else await admin.from("generations").update({status:"submitted"}).eq("id",generation.id).in("status",["created","reserved"]).is("cancel_requested_at",null);
     return Response.json({ generationId: generation.id, runId: handle.id, status: "submitted" }, { status: 202 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Trigger submission failed";
     if (submissionStarted) {
-      await admin.from("generations").update({ status: "reserved", error_message: `Submission outcome unknown: ${message}` }).eq("id", generation.id);
+      await admin.from("generations").update({ error_message: `Submission outcome unknown: ${message}` }).eq("id", generation.id).in("status",["created","reserved","submitted","processing"]);
       return Response.json({ error: "Submission outcome is uncertain. Retry with the same idempotency key to reconcile without another charge.", generationId: generation.id, creditsReserved: true, retriable: true }, { status: 502 });
     }
-    await admin.schema("api").rpc("settle_generation_credits", { generation_id: generation.id, used_credits: 0, idempotency_key: `${input.data.idempotencyKey}:release` });
-    if (outputAssetId) await supabase.from("assets").update({ deleted_at: new Date().toISOString() }).eq("id", outputAssetId);
-    await admin.from("generations").update({ status: "failed", error_message: message, completed_at: new Date().toISOString() }).eq("id", generation.id);
-    return Response.json({ error: message, creditsReleased: true }, { status: 502 });
+    const {error:settlementError} = await admin.rpc("finish_episode_job", { job_id: generation.id, succeeded: false, failure_message: message });
+    if(settlementError) return Response.json({error:"Export preparation failed and credit settlement is pending. Contact support with this job ID.",generationId:generation.id},{status:503});
+    return Response.json({ error: message, generationId:generation.id }, { status: 502 });
   }
 }

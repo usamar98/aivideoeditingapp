@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requireAccount, publicError } from "@/lib/account";
 import { accountReturnUrl, getBillingCustomer, getStripe } from "@/lib/billing/stripe";
-import { managedSubscriptionStatuses, toBillingPlan } from "@/lib/billing/catalog";
+import { managedSubscriptionStatuses, toOfferedBillingPlan } from "@/lib/billing/catalog";
 
 export async function updateProfile(input: unknown) {
   try {
@@ -39,7 +39,7 @@ export async function createCheckout(priceId: string) {
     const account = await requireAccount();
     const stripe = getStripe();
     const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
-    if (!toBillingPlan(price)) throw new Error("This plan is not available.");
+    if (!toOfferedBillingPlan(price)) throw new Error("This plan is not available. Refresh billing to see the current plans.");
     const customer = await getBillingCustomer(account);
     const lockToken = randomUUID();
     const {data:lease,error:leaseError} = await account.admin.from("billing_customers").update({checkout_lock_token:lockToken,checkout_lock_until:new Date(Date.now()+300000).toISOString()}).eq("user_id",account.user.id).or(`checkout_lock_until.is.null,checkout_lock_until.lt.${new Date().toISOString()}`).select("user_id").maybeSingle();

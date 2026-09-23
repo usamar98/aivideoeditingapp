@@ -14,7 +14,7 @@ import {
   Download,
   Expand,
   Film,
-  History,
+  ListChecks,
   LoaderCircle,
   MoreHorizontal,
   Pause,
@@ -209,8 +209,8 @@ export function StudioEditor({ initialEpisode, viewerEmail }: { initialEpisode: 
       <aside className="hidden w-[4.5rem] shrink-0 flex-col items-center border-r border-border bg-card/70 py-4 backdrop-blur-xl md:flex">
         <Link href="/" className="grid size-9 place-items-center rounded-xl border border-primary/30 bg-primary/12 text-primary" aria-label="Home"><Sparkles className="size-4" /></Link>
         <nav className="mt-10 flex flex-1 flex-col gap-2" aria-label="Editor sections">
-          {[Film, History].map((Icon, index) => (
-            <Link key={index} href={index ? "/studio#history" : "/studio"} className={`grid size-10 place-items-center rounded-lg ${index === 0 ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent"}`}><Icon className="size-[1.125rem]" /></Link>
+          {[Film, ListChecks].map((Icon, index) => (
+            <Link key={index} href={index ? "/studio/jobs" : "/studio"} aria-label={index ? "Jobs" : "Projects"} title={index ? "Jobs" : "Projects"} className={`grid size-10 place-items-center rounded-lg ${index === 0 ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent"}`}><Icon className="size-[1.125rem]" /></Link>
           ))}
         </nav>
         <span title={viewerEmail} className="grid size-9 place-items-center rounded-full border border-border bg-secondary text-xs font-bold">UC</span>
@@ -237,6 +237,7 @@ export function StudioEditor({ initialEpisode, viewerEmail }: { initialEpisode: 
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="warning" className="hidden xl:inline-flex">Fixture mode · no provider calls</Badge>
+            <Button asChild variant="ghost" size="icon"><Link href="/studio/jobs" aria-label="Jobs" title="Jobs"><ListChecks /></Link></Button>
             <Button variant="ghost" size="icon" aria-label="Undo"><Undo2 /></Button>
             <Button variant="ghost" size="icon" aria-label="Redo"><Redo2 /></Button>
             <Button variant="outline" size="sm" className="hidden sm:inline-flex" onClick={() => downloadSubtitles(episode)}><Download /> Subtitles</Button>

@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { logger, metadata, schemaTask } from "@trigger.dev/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { assertJobActive, claimJob, finishCancelledJob } from "./job-control";
 
 const execFileAsync = promisify(execFile);
 
@@ -31,26 +32,11 @@ function createJobDatabaseClient() {
 
 async function finalizeGeneration(payload: z.infer<typeof payloadSchema>, succeeded: boolean, error?: unknown) {
   const database = createJobDatabaseClient();
-  const { data: current } = await database.from("generations").select("status").eq("id", payload.generationId).single();
-  if (current?.status === "cancelled") return;
-  const usedCredits = succeeded ? payload.reservedCredits : 0;
-  const { error: settlementError } = await database.schema("api").rpc("settle_generation_credits", {
-    generation_id: payload.generationId,
-    used_credits: usedCredits,
-    idempotency_key: `${payload.generationId}:final-settlement`,
+  const result = await database.rpc("finish_episode_job", {
+    job_id: payload.generationId, succeeded, output_asset_id: payload.outputAssetId,
+    failure_message: error instanceof Error ? error.message : error ? String(error) : null,
   });
-  if (settlementError) throw new Error(`Credit settlement failed: ${settlementError.message}`);
-
-  const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
-  const { error: updateError } = await database.from("generations").update({
-    status: succeeded ? "succeeded" : "failed",
-    reported_credits: usedCredits,
-    output_asset_ids: succeeded ? [payload.outputAssetId] : [],
-    completed_at: new Date().toISOString(),
-    error_message: errorMessage,
-  }).eq("id", payload.generationId);
-  if (updateError) throw new Error(`Generation finalization failed: ${updateError.message}`);
-  if (!succeeded) await database.from("assets").update({ deleted_at: new Date().toISOString() }).eq("id", payload.outputAssetId);
+  if (result.error) throw new Error(`Generation finalization failed: ${result.error.message}`);
 }
 
 function assertOutputUploadUrl(raw: string) {
@@ -101,12 +87,15 @@ export const episodePipeline = schemaTask({
   schema: payloadSchema,
   queue: { concurrencyLimit: 2 },
   retry: { maxAttempts: 3, factor: 2, minTimeoutInMs: 2_000, maxTimeoutInMs: 30_000, randomize: true },
+  onCancel: async ({ payload, runPromise }) => { await finishCancelledJob(createJobDatabaseClient(), payload.generationId, runPromise); },
   onComplete: async ({ payload, result }) => {
     await finalizeGeneration(payload, result.ok, result.ok ? undefined : result.error);
   },
   run: async (payload, { signal, ctx }) => {
     const database = createJobDatabaseClient();
-    await database.from("generations").update({ status: "processing", attempt_count: ctx.attempt.number }).eq("id", payload.generationId);
+    await claimJob(database, payload.generationId, ctx.run.id, ctx.attempt.number);
+    const checkpoint = () => assertJobActive(database, payload.generationId, signal);
+    await checkpoint();
     const ffmpegPath = process.env.FFMPEG_PATH || "ffmpeg";
     const workdir = await mkdtemp(path.join(tmpdir(), `framefoundry-${payload.generationId}-`));
     metadata
@@ -118,6 +107,7 @@ export const episodePipeline = schemaTask({
       const scenePaths: string[] = [];
       for (const [index, url] of payload.sceneVideoUrls.entries()) {
         const scenePath = path.join(workdir, `scene-${index}.mp4`);
+        await checkpoint();
         await download(url, scenePath, signal);
         scenePaths.push(scenePath);
         metadata.set("progress", 5 + Math.round(((index + 1) / payload.sceneVideoUrls.length) * 30));
@@ -170,9 +160,11 @@ export const episodePipeline = schemaTask({
 
       metadata.set("phase", "rendering").set("progress", 55);
       logger.info("Rendering episode", { generationId: payload.generationId, attempt: ctx.attempt.number });
+      await checkpoint();
       await execFileAsync(ffmpegPath, args, { signal, timeout: 25 * 60 * 1000, maxBuffer: 20 * 1024 * 1024 });
 
       metadata.set("phase", "uploading").set("progress", 90);
+      await checkpoint();
       const upload = await fetch(assertOutputUploadUrl(payload.outputUploadUrl), {
         method: "PUT",
         headers: { "content-type": "video/mp4" },
@@ -183,6 +175,7 @@ export const episodePipeline = schemaTask({
       } as RequestInit & { duplex: "half" });
       if (!upload.ok) throw new Error(`Output upload failed with ${upload.status}.`);
 
+      await checkpoint();
       metadata.set("phase", "complete").set("progress", 100);
       return {
         generationId: payload.generationId,

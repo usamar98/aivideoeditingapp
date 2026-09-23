@@ -1,5 +1,6 @@
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { beforeAll,afterAll,describe,it,expect } from "vitest";
 
 const userA="10000000-0000-4000-8000-000000000001",userB="10000000-0000-4000-8000-000000000002",workspace="20000000-0000-4000-8000-000000000001",project="30000000-0000-4000-8000-000000000001",job="40000000-0000-4000-8000-000000000001";
@@ -21,6 +22,7 @@ beforeAll(async()=>{
   const initial=readFileSync("supabase/migrations/202609220001_initial_video_saas.sql","utf8").replace("create extension if not exists pgcrypto;","");
   await db.exec(initial);
   await db.exec(readFileSync("supabase/migrations/20260922145706_faceless_stripe_profiles.sql","utf8"));
+  await db.exec(readFileSync("supabase/migrations/20260923173517_jobs_cancellation.sql","utf8"));
   await db.exec(`insert into auth.users values ('${userA}'),('${userB}'); insert into public.profiles(id) values ('${userA}'),('${userB}'); insert into public.workspaces(id,name,owner_id) values('${workspace}','Test studio','${userA}'); insert into public.workspace_members(workspace_id,user_id,role) values('${workspace}','${userA}','owner'); insert into public.credit_accounts(workspace_id,cached_balance) values('${workspace}',100); insert into public.faceless_projects(id,user_id,workspace_id,title,brief) values('${project}','${userA}','${workspace}','Test project','{}');`);
 },30000);
 afterAll(async()=>{await db?.close();});
@@ -34,4 +36,98 @@ describe("real Postgres migration and authorization",()=>{
   it("reserves once and returns the same active job on retries",async()=>{await asService();await db.query("select public.start_faceless_job($1,$2,$3,'script')",[project,userA,job]);const retry=await db.query<{start_faceless_job:string}>("select public.start_faceless_job($1,$2,gen_random_uuid(),'script')",[project,userA]);expect(retry.rows[0].start_faceless_job).toBe(job);expect(Number((await db.query<{cached_balance:string}>("select cached_balance from public.credit_accounts")).rows[0].cached_balance)).toBe(98);});
   it("refunds failed jobs exactly once",async()=>{await asService();await db.query("select public.finish_faceless_job($1,false)",[job]);await db.query("select public.finish_faceless_job($1,false)",[job]);expect(Number((await db.query<{cached_balance:string}>("select cached_balance from public.credit_accounts")).rows[0].cached_balance)).toBe(100);expect((await db.query<{status:string}>("select status from public.faceless_projects")).rows[0].status).toBe("failed");});
   it("fulfills a repeated Stripe invoice only once",async()=>{await asService();for(let i=0;i<2;i++)await db.query("select public.apply_credit_purchase($1,100,'stripe:invoice:in_test','in_test')",[workspace]);expect(Number((await db.query<{cached_balance:string}>("select cached_balance from public.credit_accounts")).rows[0].cached_balance)).toBe(200);});
+});
+
+describe("atomic job cancellation", () => {
+  async function newJob(kind = "script") {
+    await asService();
+    const projectId = randomUUID(), jobId = randomUUID();
+    await db.query("insert into public.faceless_projects(id,user_id,workspace_id,title,brief,storyboard) values($1,$2,$3,'Cancel test','{}',$4::jsonb)", [projectId,userA,workspace,kind === "render" ? JSON.stringify({title:"My saved story",scenes:[]}) : null]);
+    await db.query("select public.start_faceless_job($1,$2,$3,$4)",[projectId,userA,jobId,kind]);
+    return {projectId,jobId};
+  }
+  async function balance() { return Number((await db.query<{cached_balance:string}>("select cached_balance from public.credit_accounts where workspace_id=$1",[workspace])).rows[0].cached_balance); }
+  async function cancel(id: string) { await db.query("select public.request_generation_cancellation($1,$2)",[id,userA]); await db.query("select public.confirm_generation_cancellation($1)",[id]); }
+  async function newEpisode() {
+    await asService(); const id = randomUUID(), asset = randomUUID();
+    await db.query("insert into public.assets(id,workspace_id,owner_id,kind,storage_path,mime_type) values($1,$2,$3,'export',$4,'video/mp4')",[asset,workspace,userA,`${workspace}/${userA}/${asset}.mp4`]);
+    await db.query("insert into public.generations(id,workspace_id,requested_by,operation,provider,model,idempotency_key,estimated_credits,output_asset_ids) values($1,$2,$3,'episode-export','trigger.dev','ffmpeg',$4,20,array[$5::uuid])",[id,workspace,userA,id,asset]);
+    await asUser(userA);
+    await db.query("select api.reserve_generation_credits($1,$2,20,$3)",[workspace,id,`${id}:reserve`]);
+    await asService(); return {id,asset};
+  }
+
+  it("rejects another owner and denies direct browser cancellation RPCs",async()=>{
+    const {jobId} = await newJob();
+    await expect(db.query("select public.request_generation_cancellation($1,$2)",[jobId,userB])).rejects.toThrow(/Job not found/);
+    await asUser(userA);
+    await expect(db.query("select public.request_generation_cancellation($1,$2)",[jobId,userA])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public.confirm_generation_cancellation($1)",[jobId])).rejects.toThrow(/permission denied/);
+    await asService(); await cancel(jobId);
+  });
+  it("keeps credits reserved while cancelling, prevents worker start, and releases once",async()=>{
+    const {jobId,projectId} = await newJob(); const reserved = await balance();
+    await db.query("select public.request_generation_cancellation($1,$2)",[jobId,userA]);
+    expect(await balance()).toBe(reserved);
+    expect((await db.query<{claim_generation_job:boolean}>("select public.claim_generation_job($1,'run_late',1)",[jobId])).rows[0].claim_generation_job).toBe(false);
+    await db.query("select public.confirm_generation_cancellation($1)",[jobId]);
+    await db.query("select public.confirm_generation_cancellation($1)",[jobId]);
+    await db.query("select public.finish_faceless_job($1,true,'{\"title\":\"Late output\"}'::jsonb)",[jobId]);
+    expect(await balance()).toBe(reserved+2);
+    expect((await db.query<{status:string}>("select status from public.generations where id=$1",[jobId])).rows[0].status).toBe("cancelled");
+    expect((await db.query<{status:string;storyboard:unknown}>("select status,storyboard from public.faceless_projects where id=$1",[projectId])).rows[0]).toMatchObject({status:"draft",storyboard:null});
+    expect((await db.query("select id from public.credit_ledger where generation_id=$1 and kind='release'",[jobId])).rows).toHaveLength(1);
+    await expect(db.query("update public.generations set status='processing' where id=$1",[jobId])).rejects.toThrow(/terminal job cannot/);
+    await expect(db.query("update public.generations set output_asset_ids=array[gen_random_uuid()] where id=$1",[jobId])).rejects.toThrow(/terminal job cannot/);
+    await expect(db.query("update public.generations set cancel_requested_at=null where id=$1",[jobId])).rejects.toThrow(/cannot be cleared/);
+  });
+  it("cancellation wins when requested before a worker publishes its result",async()=>{
+    const {jobId,projectId} = await newJob("render"); const reserved = await balance();
+    await db.query("select public.claim_generation_job($1,'run_render',1)",[jobId]);
+    await db.query("select public.request_generation_cancellation($1,$2)",[jobId,userA]);
+    await db.query("select public.finish_faceless_job($1,true,null,'unwanted-video.mp4')",[jobId]);
+    expect(await balance()).toBe(reserved+20);
+    expect((await db.query<{status:string;output_path:null}>("select status,output_path from public.faceless_projects where id=$1",[projectId])).rows[0]).toMatchObject({status:"ready",output_path:null});
+  });
+  it("does not refund a successfully completed job when cancel arrives too late",async()=>{
+    const {jobId} = await newJob(); const reserved = await balance();
+    await db.query("select public.finish_faceless_job($1,true,'{\"title\":\"Done\"}'::jsonb)",[jobId]);
+    await cancel(jobId);
+    expect(await balance()).toBe(reserved);
+    expect((await db.query<{status:string}>("select status from public.generations where id=$1",[jobId])).rows[0].status).toBe("succeeded");
+  });
+  it("frees one of the two active slots only after cancellation is confirmed",async()=>{
+    const first = await newJob(), second = await newJob();
+    await expect(newJob()).rejects.toThrow(/Two jobs/);
+    await db.query("select public.request_generation_cancellation($1,$2)",[first.jobId,userA]);
+    await expect(newJob()).rejects.toThrow(/Two jobs/);
+    await db.query("select public.confirm_generation_cancellation($1)",[first.jobId]);
+    const third = await newJob();
+    await cancel(second.jobId); await cancel(third.jobId);
+  });
+  it("cannot deduct credits after an episode was cancelled before reservation",async()=>{
+    await asService(); const id = randomUUID(); const before = await balance();
+    await db.query("insert into public.generations(id,workspace_id,requested_by,operation,provider,model,idempotency_key,estimated_credits) values($1,$2,$3,'episode-export','trigger.dev','ffmpeg',$4,20)",[id,workspace,userA,id]);
+    await cancel(id);
+    await asUser(userA);
+    await expect(db.query("select api.reserve_generation_credits($1,$2,20,$3)",[workspace,id,`${id}:reserve`])).rejects.toThrow(/no longer runnable/);
+    await asService(); expect(await balance()).toBe(before);
+  });
+  it("cancels an episode atomically even when its export finishes at the same time",async()=>{
+    const {id,asset} = await newEpisode(); const reserved = await balance();
+    await db.query("select public.request_generation_cancellation($1,$2)",[id,userA]);
+    await db.query("select public.finish_episode_job($1,true,$2)",[id,asset]);
+    await db.query("select public.finish_episode_job($1,true,$2)",[id,asset]);
+    expect(await balance()).toBe(reserved+20);
+    expect((await db.query<{status:string;output_asset_ids:string[]}>("select status,output_asset_ids from public.generations where id=$1",[id])).rows[0]).toMatchObject({status:"cancelled",output_asset_ids:[]});
+    expect((await db.query<{deleted_at:unknown}>("select deleted_at from public.assets where id=$1",[asset])).rows[0].deleted_at).not.toBeNull();
+  });
+  it("settles a completed episode once without allowing a later cancel refund",async()=>{
+    const {id,asset} = await newEpisode(); const reserved = await balance();
+    await db.query("select public.finish_episode_job($1,true,$2)",[id,asset]);
+    await db.query("select public.finish_episode_job($1,true,$2)",[id,asset]);
+    await cancel(id);
+    expect(await balance()).toBe(reserved);
+    expect((await db.query<{status:string;reported_credits:string;output_asset_ids:string[]}>("select status,reported_credits,output_asset_ids from public.generations where id=$1",[id])).rows[0]).toMatchObject({status:"succeeded",output_asset_ids:[asset]});
+  });
 });

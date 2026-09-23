@@ -1,6 +1,6 @@
 import "server-only";
 import Stripe from "stripe";
-import { toBillingPlan } from "./catalog";
+import { toOfferedBillingPlan } from "./catalog";
 import { brand } from "@/config/brand";
 import { requireAccount } from "@/lib/account";
 
@@ -19,7 +19,7 @@ export async function getBillingPlans() {
   const stripe = getStripe();
   const plans = [];
   for await (const price of stripe.prices.list({ active: true, type: "recurring", expand: ["data.product"], limit: 100 })) {
-    const plan = toBillingPlan(price);
+    const plan = toOfferedBillingPlan(price);
     if (plan) plans.push(plan);
   }
   return plans.sort((a,b) => a.amount - b.amount);

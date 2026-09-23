@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "billing:setup": "node scripts/setup-stripe-pricing.mjs",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "engines": {

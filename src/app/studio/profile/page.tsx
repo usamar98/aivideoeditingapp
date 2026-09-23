@@ -3,18 +3,25 @@ import { WorkspaceShell } from "@/components/studio/workspace-shell";
 import { ProfileSettings, type SubscriptionView } from "@/components/studio/profile-settings";
 import { createClient, getViewer } from "@/lib/supabase/server";
 import { getBillingPlans, getStripe } from "@/lib/billing/stripe";
-import type { BillingPlan } from "@/lib/billing/catalog";
+import type { OfferedBillingPlan } from "@/lib/billing/catalog";
+import { pricingAccountHref, pricingTiers } from "@/lib/billing/pricing";
 
 export const metadata = { title: "Your account", robots: { index: false, follow: false } };
 
-export default async function ProfilePage({searchParams}: {searchParams: Promise<{checkout?:string}>}) {
-  const viewer = await getViewer();
-  if (!viewer) redirect("/login?next=/studio/profile");
+export default async function ProfilePage({searchParams}: {searchParams: Promise<{checkout?:string;tab?:string;plan?:string;interval?:string}>}) {
   const query = await searchParams;
+  const selectedTier = pricingTiers.find((tier) => tier.id === query.plan)?.id;
+  const initialInterval = query.interval === "year" ? "year" : "month";
+  const initialTab = query.tab === "billing" || query.checkout || selectedTier ? "billing" : "profile";
+  const viewer = await getViewer();
+  if (!viewer) {
+    const next = selectedTier ? pricingAccountHref(selectedTier, initialInterval) : initialTab === "billing" ? "/studio/profile?tab=billing" : "/studio/profile";
+    redirect(`/login?next=${encodeURIComponent(next)}`);
+  }
   let username = viewer.fixture ? "demo_creator" : "";
   let credits = 0;
   let subscription: SubscriptionView | null = null;
-  let plans: BillingPlan[] = [];
+  let plans: OfferedBillingPlan[] = [];
   let billingMessage: string | null = query.checkout === "success" ? "Checkout returned successfully. Credits appear after Stripe confirms the paid invoice; use Refresh status if it is still processing." : query.checkout === "cancelled" ? "Checkout was cancelled. No subscription was created by this return." : null;
   const db = await createClient();
   if (db && !viewer.fixture) {
@@ -34,5 +41,5 @@ export default async function ProfilePage({searchParams}: {searchParams: Promise
   }
   if (!viewer.fixture && process.env.STRIPE_SECRET_KEY) { try { plans = await getBillingPlans(); } catch { billingMessage = "Billing plans could not be loaded. Please try again later."; } }
   if (!process.env.STRIPE_SECRET_KEY) billingMessage = "Stripe is not connected yet. Billing actions become available after setup.";
-  return <WorkspaceShell title="Account settings" active="My account"><ProfileSettings email={viewer.email} initialUsername={username} demo={viewer.fixture} credits={credits} subscription={subscription} plans={plans} billingMessage={billingMessage} /></WorkspaceShell>;
+  return <WorkspaceShell title="Account settings" active="My account"><ProfileSettings email={viewer.email} initialUsername={username} demo={viewer.fixture} credits={credits} subscription={subscription} plans={plans} billingMessage={billingMessage} initialTab={initialTab} initialInterval={initialInterval} selectedTier={selectedTier} /></WorkspaceShell>;
 }

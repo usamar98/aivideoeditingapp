@@ -4,13 +4,14 @@ import { ArrowRight, AudioLines, Captions, Clapperboard, Film, Layers3, Sparkles
 import { BrandMark } from "@/components/studio/brand-mark";
 import { Button } from "@/components/ui/button";
 import { SceneArt } from "@/components/marketing/scene-art";
+import { PricingCards } from "@/components/billing/pricing-cards";
 import { brand } from "@/config/brand";
 
 export default function Home() {
   return <main>
     <header className="mx-auto flex h-24 max-w-7xl items-center justify-between gap-4 px-6 lg:px-10">
       <Link href="/" aria-label={`${brand.name} home`}><BrandMark /></Link>
-      <nav aria-label="Main navigation" className="hidden items-center gap-8 text-sm md:flex"><a href="#tools">Creative tools</a><a href="#how-it-works">How it works</a><Link href="/studio/profile">Plans & account</Link></nav>
+      <nav aria-label="Main navigation" className="hidden items-center gap-8 text-sm md:flex"><a href="#tools">Creative tools</a><a href="#how-it-works">How it works</a><a href="#pricing">Pricing</a><Link href="/studio/profile">My account</Link></nav>
       <div className="flex items-center gap-3"><Link href="/login" className="hidden text-sm sm:block">Log in</Link><Button asChild className="rounded-full"><Link href="/studio">Open studio <ArrowRight /></Link></Button></div>
     </header>
     <section className="mx-auto grid max-w-7xl items-center gap-12 px-6 pb-20 pt-10 lg:grid-cols-2 lg:px-10 lg:pb-28 lg:pt-20">
@@ -30,6 +31,10 @@ export default function Home() {
       </div><div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-primary/25 p-6"><div className="flex items-center gap-4"><span className="grid size-10 place-items-center rounded-full bg-accent text-primary"><Film className="size-5" /></span><div><h3 className="font-semibold">The creative toolkit is growing.</h3><p className="mt-1 text-sm text-muted-foreground">Product videos and more workflows are on the roadmap.</p></div></div><span className="eyebrow text-muted-foreground">Coming later · not available yet</span></div>
     </section>
     <section id="how-it-works" className="bg-[#e9eef9] px-6 py-20"><div className="mx-auto max-w-6xl"><p className="eyebrow text-primary">Less setup. More storytelling.</p><h2 className="editorial mt-4 text-4xl">From a blank page to a finished story.</h2><div className="mt-10 grid gap-10 md:grid-cols-3">{[["01","Bring an idea","A topic, a rough script, a little curiosity. That’s all you need to get started."],["02","Make it your own","Review the narration, edit visual prompts, choose your format, and approve your scenes."],["03","Let it come together","Render voiceover, visuals, and timed captions into a video you can download."]].map(([n,title,copy]) => <div key={n}><span className="font-mono text-xs text-primary">{n} —</span><h3 className="mt-5 text-lg font-semibold">{title}</h3><p className="mt-3 text-sm leading-7 text-muted-foreground">{copy}</p></div>)}</div></div></section>
+    <section id="pricing" aria-labelledby="pricing-heading" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-20">
+      <div className="mb-10 text-center"><p className="eyebrow text-primary">A plan for your next chapter</p><h2 id="pricing-heading" className="editorial mt-4 text-4xl tracking-tight sm:text-5xl">Small beginnings. Bigger possibilities.</h2><p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-muted-foreground">Three credit budgets. The same creative freedom. Choose monthly flexibility or a full year of credits at a lower price.</p></div>
+      <PricingCards />
+    </section>
     <section className="mx-auto max-w-6xl px-6 py-20 text-center"><Clapperboard className="mx-auto size-7 text-primary" /><h2 className="editorial mt-5 text-4xl sm:text-5xl">Your next story starts here.</h2><p className="mt-4 text-muted-foreground">A small idea is a perfectly good place to begin.</p><Button asChild size="lg" className="mt-7 rounded-full"><Link href="/studio">Find your creative tool <ArrowRight /></Link></Button></section>
     <footer className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-5 border-t border-border px-6 py-8 text-xs text-muted-foreground lg:px-10"><BrandMark /><span>Made for stories of all kinds.</span><div className="flex gap-5"><Link href="/features">All features</Link><a href={`mailto:${brand.supportEmail}`}>Contact</a></div></footer>
   </main>;

@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Clapperboard, FolderKanban, Images, UserRound, WandSparkles, Video } from "lucide-react";
+import { Clapperboard, FolderKanban, Images, UserRound, WandSparkles, Video, ListChecks } from "lucide-react";
 
 import { BrandMark } from "./brand-mark";
 
 const items = [
   { href: "/studio", label: "Projects", icon: FolderKanban },
   { href: "/studio/faceless", label: "Faceless videos", icon: Video },
+  { href: "/studio/jobs", label: "Jobs", icon: ListChecks },
   { href: "/studio/series/pip-and-moss/episodes/the-cloud-in-a-jar", label: "Episode editor", icon: Clapperboard },
   { href: "/studio/series/pip-and-moss/episodes/the-cloud-in-a-jar#characters", label: "Characters", icon: Images },
   { href: "/features/ai-cartoon-series", label: "Feature page", icon: WandSparkles },
@@ -25,6 +26,7 @@ export function AppSidebar({ active = "Episode editor" }: { active?: string }) {
               href={item.href}
               aria-label={item.label}
               title={item.label}
+              aria-current={selected ? "page" : undefined}
               className={`grid size-10 place-items-center rounded-lg transition-colors ${selected ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
             >
               <Icon className="size-[1.125rem]" />
