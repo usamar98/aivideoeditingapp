@@ -2,6 +2,7 @@ import { createFalClient, type FalClient } from "@fal-ai/client";
 import { z } from "zod";
 import { CHARACTER_IMAGE_MODEL, cartoonModels } from "../src/lib/cartoons/schema";
 import { MEDIA_LIMITS, readBoundedBody } from "./media-io";
+import { withRequestDeadline } from "./request-deadline";
 
 export const requestRecordSchema = z.object({ endpoint: z.string(), requestId: z.string().min(1) });
 type Store = { load: (name: string) => Promise<Buffer | null>; save: (name: string, value: unknown) => Promise<void> };
@@ -45,16 +46,17 @@ export async function runFalStage(options: {
       if (await store.load(`${name}-intent.json`)) throw new Error("Provider submission was uncertain. Contact support; it will not be submitted again automatically.");
       await store.save(`${name}-intent.json`, { endpoint, submittedAt: new Date().toISOString() });
       await checkpoint();
-      const submitted = await client.queue.submit(endpoint, { input, startTimeout: 300, abortSignal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]) });
+      const submitted = await withRequestDeadline(signal, 60_000, (submitSignal) => client.queue.submit(endpoint, { input, startTimeout: 300, abortSignal: submitSignal }));
       requestId = submitted.request_id;
       await store.save(`${name}-request.json`, { endpoint, requestId });
     }
+    const pollingRequestId = requestId;
     for (let poll = 0; poll < 120; poll++) {
       await checkpoint();
-      const status = await client.queue.status(endpoint, { requestId, logs: false, abortSignal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]) });
+      const status = await withRequestDeadline(signal, 30_000, (statusSignal) => client.queue.status(endpoint, { requestId: pollingRequestId, logs: false, abortSignal: statusSignal }));
       if (status.status === "COMPLETED") {
         await checkpoint();
-        const result = await client.queue.result(endpoint, { requestId, abortSignal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]) });
+        const result = await withRequestDeadline(signal, 60_000, (resultSignal) => client.queue.result(endpoint, { requestId: pollingRequestId, abortSignal: resultSignal }));
         await store.save(`${name}-result.json`, result.data);
         return result.data as unknown;
       }

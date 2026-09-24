@@ -3,9 +3,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import { schemaTask, wait, metadata } from "@trigger.dev/sdk";
+import { schemaTask, wait, metadata, logger, AbortTaskRunError } from "@trigger.dev/sdk";
 import { createClient } from "@supabase/supabase-js";
-import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import { cartoonBriefSchema, cartoonStorySchema, validateCartoonStory, CHARACTER_IMAGE_MODEL, type CartoonStory } from "../src/lib/cartoons/schema";
 import { cartoonPlannerPrompt, characterImagePrompt, sceneImagePrompt, cartoonVideoInput } from "../src/lib/cartoons/prompts";
@@ -13,6 +12,8 @@ import { artifactStore, downloadProviderImage, readBoundedBody, MEDIA_LIMITS } f
 import { assertJobActive, claimJob, finishCancelledJob } from "./job-control";
 import { cartoonFalClient, runFalStage } from "./cartoon-fal";
 import { cartoonClipArgs, downloadCartoonVideo } from "./cartoon-media";
+import { CARTOON_PLANNER_MODEL, CartoonPlannerError, runCartoonPlanner, type PlannerInput } from "./cartoon-planner";
+import { withRequestDeadline } from "./request-deadline";
 
 const exec = promisify(execFile);
 function database() {
@@ -96,24 +97,29 @@ export const cartoonPipeline = schemaTask({
         const planned = await artifacts.load("story.json");
         if (planned) story = cartoonStorySchema.parse(JSON.parse(planned.toString()));
         else {
-          if (!process.env.GEMINI_API_KEY) throw new Error("Worker GEMINI_API_KEY is missing");
-          const input: ({ type: "text"; text: string } | { type: "image"; data: string; mime_type: string })[] = [{ type: "text", text: cartoonPlannerPrompt(brief) }];
+          const input: PlannerInput = [{ type: "text", text: cartoonPlannerPrompt(brief) }];
           for (const ref of references) {
             await checkpoint();
             if (!ref.path.startsWith(ownerPrefix)) throw new Error("Reference ownership mismatch");
-            const refSignal = AbortSignal.any([signal, AbortSignal.timeout(60_000)]);
-            const response = await bucket.download(ref.path, {}, { signal: refSignal }).asStream();
-            if (response.error || !response.data) throw new Error("Character image upload did not finish");
-            const bytes = await readBoundedBody(response.data, 8 * 1024 * 1024, refSignal);
+            const bytes = await withRequestDeadline(signal, 60_000, async (refSignal) => {
+              const response = await bucket.download(ref.path, {}, { signal: refSignal }).asStream();
+              if (response.error || !response.data) throw new Error("Character image upload did not finish");
+              return readBoundedBody(response.data, 8 * 1024 * 1024, refSignal);
+            });
             input.push({ type: "image", data: bytes.toString("base64"), mime_type: ref.mime });
           }
-          const previous = await artifacts.load("planner-response.json");
-          const response = previous ? JSON.parse(previous.toString()) as { output_text?: string } : await new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }).interactions.create({
-            model: "gemini-3.8-flash", input, store: false, response_format: { type: "text", mime_type: "application/json", schema: z.toJSONSchema(cartoonStorySchema, { target: "draft-7" }) },
-          }, { signal: AbortSignal.any([signal, AbortSignal.timeout(120_000)]) });
-          await save("planner-response.json", response);
-          if (!response.output_text) throw new Error("Planner returned no story");
-          story = cartoonStorySchema.parse(JSON.parse(response.output_text));
+          logger.info("Cartoon planner started", { generationId, model: CARTOON_PLANNER_MODEL });
+          let outputText: string;
+          try {
+            outputText = await runCartoonPlanner({ input, signal, store: { load: artifacts.load, save }, checkpoint });
+          } catch (error) {
+            if (!(error instanceof CartoonPlannerError)) throw error;
+            logger.error("Cartoon planner failed", { generationId, model: CARTOON_PLANNER_MODEL, code: error.code, httpStatus: error.httpStatus, transportCause: error.transportCause });
+            // Repeating a rejected/uncertain planner POST is not a recovery path.
+            throw new AbortTaskRunError(error.message);
+          }
+          logger.info("Cartoon planner response saved", { generationId, model: CARTOON_PLANNER_MODEL });
+          story = cartoonStorySchema.parse(JSON.parse(outputText));
           validateCartoonStory(story, brief); await save("story.json", story);
         }
         validateCartoonStory(story, brief);
