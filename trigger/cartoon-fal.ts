@@ -4,7 +4,16 @@ import { CHARACTER_IMAGE_MODEL, cartoonModels } from "../src/lib/cartoons/schema
 import { MEDIA_LIMITS, readBoundedBody } from "./media-io";
 import { withRequestDeadline } from "./request-deadline";
 
-export const requestRecordSchema = z.object({ endpoint: z.string(), requestId: z.string().min(1) });
+// Verified against fal's OpenRouter catalog on 2026-09-24. Server-owned, never user supplied.
+export const CARTOON_PLANNER_MODEL = "google/gemini-3.8-flash";
+export const CARTOON_PLANNER_ENDPOINT = "openrouter/router/openai/v1/chat/completions";
+export const requestRecordSchema = z.object({ endpoint: z.string(), requestId: z.string().min(1), model: z.string().optional() });
+export class CartoonProviderError extends Error {
+  constructor(readonly stage: string, readonly endpoint: string, readonly requestId?: string, readonly httpStatus?: number) {
+    super(`Cartoon provider stage ${stage} failed (${endpoint}; request ${requestId || "unconfirmed"}${httpStatus ? `; HTTP ${httpStatus}` : ""}). Check model access, provider balance and request status. No automatic duplicate submission.`);
+    this.name = "CartoonProviderError";
+  }
+}
 type Store = { load: (name: string) => Promise<Buffer | null>; save: (name: string, value: unknown) => Promise<void> };
 export function cartoonFalClient() {
   if (!process.env.FAL_KEY) throw new Error("Worker FAL_KEY is missing");
@@ -14,9 +23,10 @@ export function cartoonFalClient() {
   const client = createFalClient({ credentials: key, retry: { maxRetries: 0 } });
   // SDK 1.10.1 queue.submit overrides config.retry with three retries. Use a
   // single native POST for this non-idempotent operation; retain SDK read/cancel.
-  const allowed = new Set([`${CHARACTER_IMAGE_MODEL}/text-to-image`, `${CHARACTER_IMAGE_MODEL}/edit`, ...Object.values(cartoonModels).map((model) => model.endpoint)]);
+  const allowed = new Set([CARTOON_PLANNER_ENDPOINT, `${CHARACTER_IMAGE_MODEL}/text-to-image`, `${CHARACTER_IMAGE_MODEL}/edit`, ...Object.values(cartoonModels).map((model) => model.endpoint)]);
   client.queue.submit = async (endpoint, options) => {
     if (!allowed.has(endpoint)) throw new Error("Cartoon model is not allowlisted");
+    if (endpoint === CARTOON_PLANNER_ENDPOINT && (options.input as { model?: unknown } | undefined)?.model !== CARTOON_PLANNER_MODEL) throw new Error("Cartoon planner model is not allowlisted");
     const signal = options.abortSignal || AbortSignal.timeout(60_000);
     const response = await fetch(`https://queue.fal.run/${endpoint}`, { method: "POST", redirect: "error", signal,
       headers: { Authorization: `Key ${key}`, "Content-Type": "application/json", "X-Fal-Request-Timeout": "300" }, body: JSON.stringify(options.input) });
@@ -29,9 +39,10 @@ export function cartoonFalClient() {
 }
 export async function runFalStage(options: {
   client: FalClient; store: Store; name: string; endpoint: string; input: Record<string, unknown>;
+  model?: string;
   signal: AbortSignal; checkpoint: () => Promise<void>; pause: () => Promise<unknown>;
 }) {
-  const { client, store, name, endpoint, input, signal, checkpoint, pause } = options;
+  const { client, store, name, endpoint, input, model, signal, checkpoint, pause } = options;
   await checkpoint();
   const cached = await store.load(`${name}-result.json`);
   if (cached) return JSON.parse(cached.toString()) as unknown;
@@ -41,14 +52,15 @@ export async function runFalStage(options: {
     if (saved) {
       const record = requestRecordSchema.parse(JSON.parse(saved.toString()));
       if (record.endpoint !== endpoint) throw new Error("Saved provider model does not match");
+      if (model && record.model !== model) throw new Error("Saved planner model does not match");
       requestId = record.requestId;
     } else {
       if (await store.load(`${name}-intent.json`)) throw new Error("Provider submission was uncertain. Contact support; it will not be submitted again automatically.");
-      await store.save(`${name}-intent.json`, { endpoint, submittedAt: new Date().toISOString() });
+      await store.save(`${name}-intent.json`, { endpoint, ...(model ? { model } : {}), submittedAt: new Date().toISOString() });
       await checkpoint();
       const submitted = await withRequestDeadline(signal, 60_000, (submitSignal) => client.queue.submit(endpoint, { input, startTimeout: 300, abortSignal: submitSignal }));
       requestId = submitted.request_id;
-      await store.save(`${name}-request.json`, { endpoint, requestId });
+      await store.save(`${name}-request.json`, { endpoint, requestId, ...(model ? { model } : {}) });
     }
     const pollingRequestId = requestId;
     for (let poll = 0; poll < 120; poll++) {
@@ -68,6 +80,6 @@ export async function runFalStage(options: {
     // Never leak provider response bodies, signed URLs or credentials to logs.
     if (signal.aborted) throw error;
     const http = z.object({ status: z.number().int().min(400).max(599) }).safeParse(error);
-    throw new Error(`Cartoon provider stage ${name} failed (${endpoint}; request ${requestId || "unconfirmed"}${http.success ? `; HTTP ${http.data.status}` : ""}). Check model access, provider balance and request status. No automatic duplicate submission.`);
+    throw new CartoonProviderError(name, endpoint, requestId, http.success ? http.data.status : undefined);
   }
 }

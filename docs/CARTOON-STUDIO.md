@@ -7,7 +7,7 @@ The older Pip and Moss editor remains a separate sample; it is no longer the mai
 ## Release steps
 
 1. Apply `supabase/migrations/20260924135448_cartoon_studio.sql` after the three existing migrations. It adds private projects and service-only job transactions, and extends cancellation without changing balances or old jobs.
-2. Deploy Trigger (`npx trigger.dev@4.6.4 deploy`) and verify `cartoon-pipeline` exists in Production. It uses Node 22, a 4 GB machine, capped FFmpeg threads and streamed media. Keep `FAL_KEY`, `GEMINI_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SECRET_KEY` in Trigger Production.
+2. Deploy Trigger (`npx trigger.dev@4.6.4 deploy`) and verify `cartoon-pipeline` exists in Production. It uses Node 22, a 4 GB machine, capped FFmpeg threads and streamed media. Cartoons need `FAL_KEY`, `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SECRET_KEY` in Trigger Production. Keep `GEMINI_API_KEY` for the separate faceless/legacy script features; cartoons no longer use it.
 3. Deploy the Next.js changes. Vercel needs the existing Supabase keys and Production `TRIGGER_SECRET_KEY`. No new OpenAI or ElevenLabs key is needed for cartoons.
 4. Optional: set `CARTOON_SEEDANCE_ENABLED=true` on Vercel only after verifying your fal account's Seedance 2.5 access, then redeploy. Otherwise the selector explains why that model is disabled. There is no silent model fallback or unexpected extra charge.
 5. Sign in, upload a PNG/JPG/WebP (up to 8 MB; up to three named characters), save a prompt, approve cast generation, review/edit scenes, then approve animation. Test cancellation and downloads with your own account before launch.
@@ -19,7 +19,7 @@ These are quality-oriented selections from fal's current catalog, not a claim th
 - Character design and reference editing: `openai/gpt-image-2.5/sunburst/text-to-image` and `/edit`, high quality, one image per request. [API](https://fal.ai/models/openai/gpt-image-2.5/sunburst/edit/api).
 - Default animation: `fal-ai/kling-video/o3/pro/reference-to-video`, character elements, first-frame conditioning, native audio. [API](https://fal.ai/models/fal-ai/kling-video/o3/pro/reference-to-video/api). Listed cost with audio: $0.14/second at research time.
 - Optional premium animation: `bytedance/seedance-2.5/reference-to-video`, 720p, H.264, native audio, explicit image references and `end_user_id`. [API](https://fal.ai/models/bytedance/seedance-2.5/reference-to-video/api). Token-based pricing is higher and depends on output dimensions/duration.
-- Existing Gemini planner reads the prompt and uploaded images, produces schema-validated cast/scene/dialogue JSON. Media generation runs through fal.
+- Story planner: `google/gemini-3.8-flash` through fal's `openrouter/router/openai/v1/chat/completions`. Gemini 3.8 Flash is the newest general-purpose text/vision Gemini model listed in the checked catalog (released September 2, 2026). It reads the prompt and uploaded images and returns schema-validated cast/scene/dialogue JSON. Planning and media generation use fal billing. [fal API](https://fal.ai/models/openrouter/router/openai/v1/chat/completions/api) · [Model catalog](https://openrouter.ai/google/gemini-3.8-flash).
 
 One character portrait per cast member is saved privately and reused for scene-frame edits and video references. Films use 3 scenes for 15/30s and 6 scenes for 60s. Scene dialogue is capped at two words per second. Frames are generated at animation time; the review step shows character portraits and a text storyboard, not pre-rendered scene previews. Animation audio is preserved when clips are normalized and concatenated.
 
@@ -52,7 +52,9 @@ English speech only in this UI. Exact dialogue, lip sync and cross-scene voice/a
 - This test took about 13 minutes including provider queue/generation time. It verifies the fal image/video chain, storage and FFmpeg, not instant generation or exact spoken dialogue. Actual billed dollars have not been independently reconciled against fal's billing ledger.
 - At the time of this initial smoke test, the SQL migration and website changes were not yet applied/published. The website code was subsequently pushed in `a04ca7c`. The authenticated end-to-end multi-scene flow still needs an account acceptance test. Seedance 2.5 was not part of this paid test and remains opt-in.
 
-### Gemini planner transport fix
+### Previous Gemini direct-API transport fix (superseded by fal below)
+
+This is the historical verification record for the Google-direct implementation. The current cartoon planner uses the fal migration described in the next section.
 
 Production run `run_06gd82vrbotsg4rnv4avpbac01` failed twice inside `@google/genai`'s Interactions HTTP client with `TypeError: unusable`. The trace does not establish that AbortSignal garbage collection caused it. The SDK clones a Request for transport/retries; the fix removes that path for cartoons without changing the model or prompting contract.
 
@@ -64,3 +66,17 @@ Production run `run_06gd82vrbotsg4rnv4avpbac01` failed twice inside `@google/gen
 - Worker-only patch: no new environment variables, SQL migration, pricing changes or Vercel redeploy are required for this transport change.
 - Verification: `npm run check` passed type checking, lint, **224 tests across 25 files**, and the Next.js production build. These checks use mocked planner/provider requests; no additional paid generation was run.
 - Deployed directly from the local working tree to Trigger Production as **20260924.6** ([deployment `3jvxjhpv`](https://cloud.trigger.dev/projects/v3/proj_buramjqzkflsxgozeeew/deployments/3jvxjhpv)); confirmed as the current worker with `cartoon-pipeline` and all seven tasks registered. Node 22 build completed successfully. This worker deployment preceded the corresponding GitHub commit.
+
+### Gemini planner migration to fal
+
+Two subsequent jobs on worker `20260924.7` reached the Google API but received HTTP 503. At the owner's request, new cartoon plans now use Gemini through fal instead of the direct Google Interactions API. This is a provider-route change, not a guarantee against upstream model outages.
+
+- The only planner credential is the existing server-side `FAL_KEY`. No separate Google, OpenRouter or OpenAI key is used for cartoons. Other features still using Google directly are unchanged; do not remove their `GEMINI_API_KEY`.
+- The allowlisted fal endpoint forwards OpenAI-compatible multimodal messages to `google/gemini-3.8-flash`. Owner-checked private reference images are passed as data URIs, in reference-slot order, without making the Supabase bucket public. Both fal and its OpenRouter-backed service process the request.
+- Requests use JSON-schema structured output, schema-capable provider routing, no streaming, no tools/search, and a 16,384-token output cap. There is no fallback to a different model or to the direct Google API. The application also validates the returned story and cross-field scene/cast rules. Truncated, refused, empty or invalid responses are not published.
+- `planner-fal-intent.json` is saved before submission, `planner-fal-request.json` stores the endpoint/model/request ID, and `planner-fal-result.json` retains the raw response and usage before validation. Retries reuse saved IDs/results. An uncertain submission with no saved ID stops rather than buying a duplicate. Provider-side retries/failover are outside the application's exactly-once guarantees.
+- Existing `planner-response.json` Google checkpoints can still be reused. An old `planner-intent.json` without a response blocks a same-job provider switch. Start a new job in the app after the old job is settled; never replay refunded or cancelled jobs from Trigger.
+- fal HTTP statuses and request IDs are logged without raw provider errors, keys, prompts or reference images. Queue polling uses cancellation checkpoints and scoped deadlines; cancellation sends a best-effort fal stop request. Provider work already underway may still incur charges.
+- No SQL migration, new environment variable, UI/pricing change, or dependency installation is required. Deploy the changed Trigger worker for the production website to use this route. The migration is verified with offline mocks; a real fal Gemini generation requires separate spending approval.
+- Local verification: `npm run check` passed type checking, lint, **241 tests across 26 files**, and the Next.js production build. The mocked HTTP contract test verifies that planner traffic uses only `queue.fal.run` and `FAL_KEY`. The owner approved production deployment and the GitHub push; no paid generation was run.
+- Production release: deployed the local working tree as **20260924.8** ([deployment `w3aw01wa`](https://cloud.trigger.dev/projects/v3/proj_buramjqzkflsxgozeeew/deployments/w3aw01wa)) and confirmed it as the current worker with all seven tasks registered, including `cartoon-pipeline`. This confirms deployment, not a live fal Gemini generation; no user job was triggered or replayed.

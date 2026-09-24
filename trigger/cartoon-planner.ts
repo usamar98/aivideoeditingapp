@@ -1,32 +1,54 @@
 import { z } from "zod";
+import type { FalClient } from "@fal-ai/client";
 import { cartoonStorySchema } from "../src/lib/cartoons/schema";
-import { MEDIA_LIMITS, readBoundedBody } from "./media-io";
-import { withRequestDeadline } from "./request-deadline";
+import { MEDIA_LIMITS } from "./media-io";
+import { CARTOON_PLANNER_ENDPOINT, CARTOON_PLANNER_MODEL, runFalStage } from "./cartoon-fal";
 
-export const CARTOON_PLANNER_MODEL = "gemini-3.8-flash";
-const endpoint = "https://generativelanguage.googleapis.com/v1beta/interactions";
+export { CARTOON_PLANNER_MODEL, CARTOON_PLANNER_ENDPOINT } from "./cartoon-fal";
 export type PlannerInput = ({ type: "text"; text: string } | { type: "image"; data: string; mime_type: string })[];
 type Store = { load: (name: string) => Promise<Buffer | null>; save: (name: string, value: unknown) => Promise<void> };
-type FailureCode = "missing_key" | "uncertain_submission" | "http_error" | "invalid_response" | "incomplete_response" | "empty_response" | "timeout" | "cancelled" | "transport_error" | "checkpoint_error";
+type FailureCode = "uncertain_submission" | "invalid_response" | "incomplete_response" | "empty_response" | "refused";
 export class CartoonPlannerError extends Error {
-  constructor(readonly code: FailureCode, readonly httpStatus?: number, readonly transportCause?: string) {
-    super(`Cartoon planner ${code} (model ${CARTOON_PLANNER_MODEL}${httpStatus ? `; HTTP ${httpStatus}` : ""}${transportCause ? `; cause ${transportCause}` : ""}). No automatic duplicate submission.`);
+  constructor(readonly code: FailureCode) {
+    super(`Cartoon planner ${code} (fal; model ${CARTOON_PLANNER_MODEL}). No automatic duplicate submission.`);
     this.name = "CartoonPlannerError";
   }
 }
 
-// Never log arbitrary SDK messages, prompts, images, URLs, headers or raw causes.
-// Only recognize fixed error labels from the nested cause chain.
-function transportCause(error: unknown) {
-  const known = new Set(["ECONNRESET", "ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ETIMEDOUT", "UND_ERR_CONNECT_TIMEOUT", "UND_ERR_HEADERS_TIMEOUT", "UND_ERR_BODY_TIMEOUT", "UND_ERR_SOCKET", "ERR_STREAM_PREMATURE_CLOSE"]);
-  let current = error;
-  for (let depth = 0; current && typeof current === "object" && depth < 5; depth++) {
-    const item = current as { code?: unknown; message?: unknown; name?: unknown; cause?: unknown };
-    if (typeof item.code === "string" && known.has(item.code)) return item.code;
-    if (item.name === "TypeError" && item.message === "unusable") return "REQUEST_BODY_UNUSABLE";
-    current = item.cause;
-  }
-  return "UNCLASSIFIED_TRANSPORT_ERROR";
+export function cartoonPlannerRequest(input: PlannerInput) {
+  return {
+    model: CARTOON_PLANNER_MODEL, stream: false, max_tokens: 16_384,
+    // Require schema-capable providers; never silently switch to a different model.
+    provider: { require_parameters: true, allow_fallbacks: true },
+    messages: [{ role: "user", content: input.map((part) => part.type === "text" ? part : {
+      type: "image_url", image_url: { url: `data:${part.mime_type};base64,${part.data}` },
+    }) }],
+    response_format: { type: "json_schema", json_schema: {
+      name: "cartoon_story", strict: true, schema: z.toJSONSchema(cartoonStorySchema, { target: "draft-7" }),
+    } },
+  };
+}
+
+const completionSchema = z.object({
+  choices: z.array(z.object({
+    finish_reason: z.string().nullable(),
+    message: z.object({ content: z.string().nullable(), refusal: z.string().nullable().optional() }),
+  })).length(1),
+  error: z.unknown().optional(),
+});
+export function plannerOutputText(raw: unknown) {
+  const parsed = completionSchema.safeParse(raw);
+  if (!parsed.success || parsed.data.error != null) throw new CartoonPlannerError("invalid_response");
+  const choice = parsed.data.choices[0];
+  if (choice.message.refusal || choice.finish_reason === "content_filter") throw new CartoonPlannerError("refused");
+  if (choice.finish_reason !== "stop") throw new CartoonPlannerError("incomplete_response");
+  const text = choice.message.content;
+  if (!text?.trim()) throw new CartoonPlannerError("empty_response");
+  if (Buffer.byteLength(text) > MEDIA_LIMITS.json) throw new CartoonPlannerError("invalid_response");
+  // Do not include provider text or Zod issue values in task logs.
+  try { cartoonStorySchema.parse(JSON.parse(text)); }
+  catch { throw new CartoonPlannerError("invalid_response"); }
+  return text;
 }
 
 const contentSchema = z.object({ type: z.string(), text: z.string().optional() });
@@ -34,7 +56,7 @@ const interactionSchema = z.object({
   status: z.string().optional(), output_text: z.string().optional(),
   steps: z.array(z.object({ type: z.string(), content: z.array(contentSchema).optional() })).optional(),
 });
-export function plannerOutputText(raw: unknown) {
+function legacyPlannerOutputText(raw: unknown) {
   const parsed = interactionSchema.safeParse(raw);
   if (!parsed.success) throw new CartoonPlannerError("invalid_response");
   const response = parsed.data;
@@ -62,55 +84,26 @@ export function plannerOutputText(raw: unknown) {
 }
 
 export async function runCartoonPlanner(options: {
-  input: PlannerInput; signal: AbortSignal; store: Store; checkpoint: () => Promise<void>;
+  input: PlannerInput; client: FalClient; signal: AbortSignal; store: Store;
+  checkpoint: () => Promise<void>; pause: () => Promise<unknown>;
 }) {
-  const { input, signal, store, checkpoint } = options;
+  const { input, client, signal, store, checkpoint, pause } = options;
   await checkpoint();
   const cached = await store.load("planner-response.json");
   if (cached) {
     let parsed: unknown;
     try { parsed = JSON.parse(cached.toString()); } catch { throw new CartoonPlannerError("invalid_response"); }
-    return plannerOutputText(parsed);
+    return legacyPlannerOutputText(parsed);
   }
+  // A pre-migration Google request may already have incurred a charge. A new
+  // provider is not permission to repeat an ambiguous request in the same job.
   if (await store.load("planner-intent.json")) throw new CartoonPlannerError("uncertain_submission");
-  const key = process.env.GEMINI_API_KEY?.trim();
-  if (!key) throw new CartoonPlannerError("missing_key");
-  const body = JSON.stringify({
-    model: CARTOON_PLANNER_MODEL, input, store: false, stream: false,
-    response_format: { type: "text", mime_type: "application/json", schema: z.toJSONSchema(cartoonStorySchema, { target: "draft-7" }) },
+  const raw = await runFalStage({
+    client, store, signal, checkpoint, pause, name: "planner-fal",
+    endpoint: CARTOON_PLANNER_ENDPOINT, model: CARTOON_PLANNER_MODEL, input: cartoonPlannerRequest(input),
   });
-  // Persist intent BEFORE sending a non-idempotent POST. If its response is lost,
-  // retries stop rather than silently purchasing another story.
-  await store.save("planner-intent.json", { model: CARTOON_PLANNER_MODEL, submittedAt: new Date().toISOString() });
-  await checkpoint();
-  let raw: unknown;
-  try {
-    raw = await withRequestDeadline(signal, 120_000, async (genaiSignal) => {
-      // A fresh serialized body, one fetch, one body read: no SDK Request.clone()
-      // retry path. Keep the exact same Gemini model, endpoint and output schema.
-      const response = await fetch(endpoint, {
-        method: "POST", redirect: "error", signal: genaiSignal,
-        headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body,
-      });
-      if (!response.ok) {
-        await response.body?.cancel().catch(() => undefined);
-        throw new CartoonPlannerError("http_error", response.status);
-      }
-      if (!response.body) throw new CartoonPlannerError("empty_response");
-      const bytes = await readBoundedBody(response.body, MEDIA_LIMITS.json, genaiSignal);
-      try { return JSON.parse(bytes.toString()) as unknown; }
-      catch { throw new CartoonPlannerError("invalid_response"); }
-    });
-  } catch (error) {
-    if (signal.aborted) throw new CartoonPlannerError("cancelled");
-    if (error instanceof CartoonPlannerError) throw error;
-    if (error instanceof Error && error.name === "TimeoutError") throw new CartoonPlannerError("timeout");
-    throw new CartoonPlannerError("transport_error", undefined, transportCause(error));
-  }
-  // Save even malformed/safety-blocked successful responses before validation.
-  // Later attempts can inspect/reuse the private response without another bill.
-  try { await store.save("planner-response.json", raw); }
-  catch { throw new CartoonPlannerError("checkpoint_error"); }
+  // runFalStage saves the complete response (including model/usage) before any
+  // validation and resumes existing request IDs without another paid POST.
   await checkpoint();
   return plannerOutputText(raw);
 }

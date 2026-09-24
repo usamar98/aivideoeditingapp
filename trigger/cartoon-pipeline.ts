@@ -10,7 +10,7 @@ import { cartoonBriefSchema, cartoonStorySchema, validateCartoonStory, CHARACTER
 import { cartoonPlannerPrompt, characterImagePrompt, sceneImagePrompt, cartoonVideoInput } from "../src/lib/cartoons/prompts";
 import { artifactStore, downloadProviderImage, readBoundedBody, MEDIA_LIMITS } from "./media-io";
 import { assertJobActive, claimJob, finishCancelledJob } from "./job-control";
-import { cartoonFalClient, runFalStage } from "./cartoon-fal";
+import { cartoonFalClient, CartoonProviderError, runFalStage } from "./cartoon-fal";
 import { cartoonClipArgs, downloadCartoonVideo } from "./cartoon-media";
 import { CARTOON_PLANNER_MODEL, CartoonPlannerError, runCartoonPlanner, type PlannerInput } from "./cartoon-planner";
 import { withRequestDeadline } from "./request-deadline";
@@ -108,17 +108,21 @@ export const cartoonPipeline = schemaTask({
             });
             input.push({ type: "image", data: bytes.toString("base64"), mime_type: ref.mime });
           }
-          logger.info("Cartoon planner started", { generationId, model: CARTOON_PLANNER_MODEL });
+          logger.info("Cartoon planner started", { generationId, provider: "fal", model: CARTOON_PLANNER_MODEL });
           let outputText: string;
           try {
-            outputText = await runCartoonPlanner({ input, signal, store: { load: artifacts.load, save }, checkpoint });
+            outputText = await runCartoonPlanner({ input, client, signal, store: { load: artifacts.load, save }, checkpoint, pause: () => wait.for({ seconds: 10 }) });
           } catch (error) {
+            if (error instanceof CartoonProviderError) {
+              logger.error("Cartoon planner provider failed", { generationId, provider: "fal", model: CARTOON_PLANNER_MODEL, requestId: error.requestId, httpStatus: error.httpStatus });
+              throw error; // Retry may recover the saved fal request, never submit it twice.
+            }
             if (!(error instanceof CartoonPlannerError)) throw error;
-            logger.error("Cartoon planner failed", { generationId, model: CARTOON_PLANNER_MODEL, code: error.code, httpStatus: error.httpStatus, transportCause: error.transportCause });
+            logger.error("Cartoon planner failed", { generationId, provider: "fal", model: CARTOON_PLANNER_MODEL, code: error.code });
             // Repeating a rejected/uncertain planner POST is not a recovery path.
             throw new AbortTaskRunError(error.message);
           }
-          logger.info("Cartoon planner response saved", { generationId, model: CARTOON_PLANNER_MODEL });
+          logger.info("Cartoon planner response saved", { generationId, provider: "fal", model: CARTOON_PLANNER_MODEL });
           story = cartoonStorySchema.parse(JSON.parse(outputText));
           validateCartoonStory(story, brief); await save("story.json", story);
         }
