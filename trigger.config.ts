@@ -4,7 +4,8 @@ import { defineConfig } from "@trigger.dev/sdk";
 export default defineConfig({
   project: "proj_buramjqzkflsxgozeeew",
   dirs: ["./src/trigger"],
-  runtime: "node",
+  // Gemini's SDK needs native WebSocket; the default "node" image is Node 21.
+  runtime: "node-22",
   maxDuration: 1800,
   retries: {
     enabledInDev: false,

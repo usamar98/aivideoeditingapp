@@ -10,6 +10,13 @@ export const connectivityCheck = task({
       ? payload.message.slice(0, 200)
       : "FrameFoundry development worker is connected.";
     logger.info("Trigger.dev connectivity check completed");
-    return { ok: true, message };
+    return {
+      ok: true,
+      message,
+      runtime: {
+        node: process.versions.node,
+        webSocketAvailable: typeof globalThis.WebSocket === "function",
+      },
+    };
   },
 });
