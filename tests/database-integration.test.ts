@@ -7,6 +7,8 @@ vi.mock("server-only",()=>({}));
 const triggerMocks=vi.hoisted(()=>({list:vi.fn(),retrieve:vi.fn(),cancel:vi.fn()}));
 vi.mock("@trigger.dev/sdk",()=>({runs:triggerMocks}));
 import { cancelJob } from "@/lib/jobs/cancel";
+import { cartoonDemo } from "@/lib/cartoons/demo";
+import { CARTOON_PLAN_CREDITS, cartoonRenderCredits, type CartoonBrief } from "@/lib/cartoons/schema";
 
 const userA="10000000-0000-4000-8000-000000000001",userB="10000000-0000-4000-8000-000000000002",workspace="20000000-0000-4000-8000-000000000001",project="30000000-0000-4000-8000-000000000001",job="40000000-0000-4000-8000-000000000001";
 let db:PGlite;
@@ -19,6 +21,7 @@ beforeAll(async()=>{
     create function auth.role() returns text language sql stable as $$select current_setting('request.jwt.claim.role',true)$$;
     create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
     create table storage.objects(id uuid primary key,name text,bucket_id text);
+    alter table storage.objects enable row level security;
     create function storage.foldername(text) returns text[] language sql as $$select string_to_array($1,'/')$$;
     grant usage on schema public,auth to anon,authenticated,service_role;
     grant execute on all functions in schema auth to anon,authenticated,service_role;
@@ -28,19 +31,99 @@ beforeAll(async()=>{
   await db.exec(initial);
   await db.exec(readFileSync("supabase/migrations/20260922145706_faceless_stripe_profiles.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20260923173517_jobs_cancellation.sql","utf8"));
+  await db.exec(readFileSync("supabase/migrations/20260924135448_cartoon_studio.sql","utf8"));
+  await db.exec("grant usage on schema storage to authenticated; grant select,insert,update,delete on storage.objects to authenticated;");
   await db.exec(`insert into auth.users values ('${userA}'),('${userB}'); insert into public.profiles(id) values ('${userA}'),('${userB}'); insert into public.workspaces(id,name,owner_id) values('${workspace}','Test studio','${userA}'); insert into public.workspace_members(workspace_id,user_id,role) values('${workspace}','${userA}','owner'); insert into public.credit_accounts(workspace_id,cached_balance) values('${workspace}',100); insert into public.faceless_projects(id,user_id,workspace_id,title,brief) values('${project}','${userA}','${workspace}','Test project','{}');`);
 },30000);
 afterAll(async()=>{await db?.close();});
 
 async function asUser(id:string){await db.exec(`reset role; set role authenticated; select set_config('request.jwt.claim.sub','${id}',false); select set_config('request.jwt.claim.role','authenticated',false);`);}
 async function asService(){await db.exec("reset role; set role service_role; select set_config('request.jwt.claim.role','service_role',false);");}
+describe("cartoon database ownership, pricing and settlement", () => {
+  async function fixture(brief: CartoonBrief = cartoonDemo.brief, ready = false) {
+    await asService(); const workspaceId = randomUUID(), projectId = randomUUID();
+    await db.query("insert into public.workspaces(id,name,owner_id) values($1,'Cartoon test',$2)",[workspaceId,userA]);
+    await db.query("insert into public.workspace_members(workspace_id,user_id,role) values($1,$2,'owner')",[workspaceId,userA]);
+    await db.query("insert into public.credit_accounts(workspace_id,cached_balance) values($1,10000)",[workspaceId]);
+    await db.query("insert into public.cartoon_projects(id,user_id,workspace_id,title,brief,storyboard,cast_paths,status) values($1,$2,$3,'Cartoon',$4,$5,$6,$7)",[projectId,userA,workspaceId,JSON.stringify(brief),ready ? JSON.stringify(cartoonDemo.storyboard) : null,JSON.stringify(ready ? {c1:`${workspaceId}/${userA}/portrait.png`}:{}),ready ? "ready":"draft"]);
+    return { workspaceId, projectId };
+  }
+  it("isolates projects and denies browser writes/start/finish", async () => {
+    const {projectId}=await fixture();
+    await asUser(userB); expect((await db.query("select id from public.cartoon_projects where id=$1",[projectId])).rows).toHaveLength(0);
+    await asUser(userA); expect((await db.query("select id from public.cartoon_projects where id=$1",[projectId])).rows).toHaveLength(1);
+    await expect(db.query("update public.cartoon_projects set cast_paths='{}' where id=$1",[projectId])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public.start_cartoon_job($1,$2,gen_random_uuid(),'plan')",[projectId,userA])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public.finish_cartoon_job(gen_random_uuid(),true)")).rejects.toThrow(/permission denied/);
+    await asService(); await expect(db.query("select public.start_cartoon_job($1,$2,gen_random_uuid(),'plan')",[projectId,userB])).rejects.toThrow(/not found/);
+  });
+  it("reserves a plan once, fences a late worker, unlocks and refunds once", async () => {
+    const {projectId,workspaceId}=await fixture(), id=randomUUID();
+    await db.query("select public.start_cartoon_job($1,$2,$3,'plan')",[projectId,userA,id]);
+    expect((await db.query<{id:string}>("select public.start_cartoon_job($1,$2,gen_random_uuid(),'plan') as id",[projectId,userA])).rows[0].id).toBe(id);
+    expect(Number((await db.query<{n:string}>("select cached_balance as n from public.credit_accounts where workspace_id=$1",[workspaceId])).rows[0].n)).toBe(10000-CARTOON_PLAN_CREDITS);
+    await db.query("select public.request_generation_cancellation($1,$2)",[id,userA]);
+    await db.query("select public.confirm_generation_cancellation($1)",[id]);
+    await db.query("select public.confirm_generation_cancellation($1)",[id]);
+    expect((await db.query<{ok:boolean}>("select public.claim_generation_job($1,'late',1) as ok",[id])).rows[0].ok).toBe(false);
+    await db.query("select public.finish_cartoon_job($1,true,$2,$3)",[id,JSON.stringify(cartoonDemo.storyboard),JSON.stringify({c1:"late"})]);
+    expect((await db.query("select status,storyboard from public.cartoon_projects where id=$1",[projectId])).rows[0]).toMatchObject({status:"draft",storyboard:null});
+    expect(Number((await db.query<{n:string}>("select cached_balance as n from public.credit_accounts where workspace_id=$1",[workspaceId])).rows[0].n)).toBe(10000);
+  });
+  it("allows owned reference uploads but blocks browser checkpoint tampering", async () => {
+    const {workspaceId}=await fixture();
+    const checkpointId=randomUUID(),uploadId=randomUUID();
+    await db.exec("reset role");
+    await db.query("insert into storage.objects(id,name,bucket_id) values($1,$2,'private-media')",[checkpointId,`${workspaceId}/${userA}/cartoons/job/result.json`]);
+    await asUser(userA);
+    expect((await db.query("select id from storage.objects where id=$1",[checkpointId])).rows).toHaveLength(1);
+    expect((await db.query("delete from storage.objects where id=$1 returning id",[checkpointId])).rows).toHaveLength(0);
+    expect((await db.query("update storage.objects set name=name where id=$1 returning id",[checkpointId])).rows).toHaveLength(0);
+    await expect(db.query("insert into storage.objects(id,name,bucket_id) values($1,$2,'private-media')",[randomUUID(),`${workspaceId}/${userA}/cartoons/job/fake.json`])).rejects.toThrow(/row-level security/);
+    await db.query("insert into storage.objects(id,name,bucket_id) values($1,$2,'private-media')",[uploadId,`${workspaceId}/${userA}/reference.png`]);
+    await expect(db.query("update storage.objects set name=$2 where id=$1",[uploadId,`${workspaceId}/${userA}/cartoons/job/fake.json`])).rejects.toThrow(/row-level security/);
+  });
+  it("charges the exact server-owned rate for every duration/model", async () => {
+    for (const model of ["kling-o3","seedance-2.5"] as const) for (const duration of [15,30,60] as const) {
+      const brief={...cartoonDemo.brief,model,duration};const {projectId}=await fixture(brief,true),id=randomUUID();
+      await db.query("select public.start_cartoon_job($1,$2,$3,'render')",[projectId,userA,id]);
+      expect(Number((await db.query<{cost:string}>("select estimated_credits as cost from public.generations where id=$1",[id])).rows[0].cost)).toBe(cartoonRenderCredits(brief));
+      await db.query("select public.finish_cartoon_job($1,false)",[id]);
+    }
+  });
+  it("settles successful renders once and rejects foreign output paths", async () => {
+    const {projectId,workspaceId}=await fixture(cartoonDemo.brief,true),id=randomUUID();
+    await db.query("select public.start_cartoon_job($1,$2,$3,'render')",[projectId,userA,id]);
+    await expect(db.query("select public.finish_cartoon_job($1,true,null,null,'foreign/video.mp4')",[id])).rejects.toThrow(/Invalid video/);
+    const output=`${workspaceId}/${userA}/cartoons/${id}/video.mp4`;
+    await db.query("select public.finish_cartoon_job($1,true,null,null,$2)",[id,output]);
+    await db.query("select public.finish_cartoon_job($1,true,null,null,$2)",[id,output]);
+    await db.query("select public.request_generation_cancellation($1,$2)",[id,userA]);
+    await db.query("select public.confirm_generation_cancellation($1)",[id]);
+    expect((await db.query("select status,output_path from public.cartoon_projects where id=$1",[projectId])).rows[0]).toMatchObject({status:"complete",output_path:output});
+    expect(Number((await db.query<{n:string}>("select cached_balance as n from public.credit_accounts where workspace_id=$1",[workspaceId])).rows[0].n)).toBe(9880);
+  });
+  it("enforces the shared two-job limit and leaves cancelled casts editable", async () => {
+    const {projectId,workspaceId}=await fixture(cartoonDemo.brief,true), id=randomUUID(), other=randomUUID(), blocked=randomUUID();
+    await db.query("insert into public.generations(id,workspace_id,requested_by,operation,provider,model,idempotency_key,status,estimated_credits) values($1::uuid,$2,$3,'faceless-script','trigger.dev','gemini',$1::text,'processing',2)",[other,workspaceId,userA]);
+    await db.query("select public.start_cartoon_job($1,$2,$3,'render')",[projectId,userA,id]);
+    await db.query("insert into public.cartoon_projects(id,user_id,workspace_id,title,brief) values($1,$2,$3,'Blocked',$4)",[blocked,userA,workspaceId,JSON.stringify(cartoonDemo.brief)]);
+    await expect(db.query("select public.start_cartoon_job($1,$2,gen_random_uuid(),'plan')",[blocked,userA])).rejects.toThrow(/Two jobs/);
+    await db.query("select public.request_generation_cancellation($1,$2)",[id,userA]);
+    await db.query("select public.finish_cartoon_job($1,true,null,null,$2)",[id,`${workspaceId}/${userA}/cartoons/${id}/video.mp4`]);
+    expect((await db.query("select status,output_path from public.cartoon_projects where id=$1",[projectId])).rows[0]).toMatchObject({status:"ready",output_path:null});
+    const next=randomUUID(); await db.query("select public.start_cartoon_job($1,$2,$3,'plan')",[blocked,userA,next]);
+    await db.query("select public.finish_cartoon_job($1,false)",[next]);
+    await db.query("update public.generations set status='failed' where id=$1",[other]);
+  });
+});
 describe("real Postgres migration and authorization",()=>{
   it("allows username updates but never is_admin escalation",async()=>{await asUser(userA);await db.query("update public.profiles set username='creator_a' where id=$1",[userA]);await expect(db.query("update public.profiles set is_admin=true where id=$1",[userA])).rejects.toThrow();});
   it("isolates private projects between accounts",async()=>{await asUser(userA);expect((await db.query("select id from public.faceless_projects")).rows).toHaveLength(1);await asUser(userB);expect((await db.query("select id from public.faceless_projects")).rows).toHaveLength(0);});
   it("blocks direct job/credit mutations and billing writes",async()=>{await asUser(userA);await expect(db.query("select public.start_faceless_job($1,$2,$3,'script')",[project,userA,job])).rejects.toThrow(/permission denied/);await expect(db.query("select api.settle_generation_credits($1,0,'hack')",[job])).rejects.toThrow(/permission denied/);await expect(db.query("insert into public.billing_customers(user_id,workspace_id,stripe_customer_id) values($1,$2,'cus_fake')",[userA,workspace])).rejects.toThrow(/permission denied/);});
-  it("reserves once and returns the same active job on retries",async()=>{await asService();await db.query("select public.start_faceless_job($1,$2,$3,'script')",[project,userA,job]);const retry=await db.query<{start_faceless_job:string}>("select public.start_faceless_job($1,$2,gen_random_uuid(),'script')",[project,userA]);expect(retry.rows[0].start_faceless_job).toBe(job);expect(Number((await db.query<{cached_balance:string}>("select cached_balance from public.credit_accounts")).rows[0].cached_balance)).toBe(98);});
-  it("refunds failed jobs exactly once",async()=>{await asService();await db.query("select public.finish_faceless_job($1,false)",[job]);await db.query("select public.finish_faceless_job($1,false)",[job]);expect(Number((await db.query<{cached_balance:string}>("select cached_balance from public.credit_accounts")).rows[0].cached_balance)).toBe(100);expect((await db.query<{status:string}>("select status from public.faceless_projects")).rows[0].status).toBe("failed");});
-  it("fulfills a repeated Stripe invoice only once",async()=>{await asService();for(let i=0;i<2;i++)await db.query("select public.apply_credit_purchase($1,100,'stripe:invoice:in_test','in_test')",[workspace]);expect(Number((await db.query<{cached_balance:string}>("select cached_balance from public.credit_accounts")).rows[0].cached_balance)).toBe(200);});
+  it("reserves once and returns the same active job on retries",async()=>{await asService();await db.query("select public.start_faceless_job($1,$2,$3,'script')",[project,userA,job]);const retry=await db.query<{start_faceless_job:string}>("select public.start_faceless_job($1,$2,gen_random_uuid(),'script')",[project,userA]);expect(retry.rows[0].start_faceless_job).toBe(job);expect(Number((await db.query<{cached_balance:string}>(`select cached_balance from public.credit_accounts where workspace_id='${workspace}'`)).rows[0].cached_balance)).toBe(98);});
+  it("refunds failed jobs exactly once",async()=>{await asService();await db.query("select public.finish_faceless_job($1,false)",[job]);await db.query("select public.finish_faceless_job($1,false)",[job]);expect(Number((await db.query<{cached_balance:string}>(`select cached_balance from public.credit_accounts where workspace_id='${workspace}'`)).rows[0].cached_balance)).toBe(100);expect((await db.query<{status:string}>("select status from public.faceless_projects")).rows[0].status).toBe("failed");});
+  it("fulfills a repeated Stripe invoice only once",async()=>{await asService();for(let i=0;i<2;i++)await db.query("select public.apply_credit_purchase($1,100,'stripe:invoice:in_test','in_test')",[workspace]);expect(Number((await db.query<{cached_balance:string}>(`select cached_balance from public.credit_accounts where workspace_id='${workspace}'`)).rows[0].cached_balance)).toBe(200);});
 });
 
 describe("atomic job cancellation", () => {

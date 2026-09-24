@@ -2,3 +2,4 @@
 // these exports through the configured src/trigger directory.
 export { episodePipeline } from "../../trigger/episode-pipeline";
 export { facelessPipeline } from "../../trigger/faceless-pipeline";
+export { cartoonPipeline } from "../../trigger/cartoon-pipeline";

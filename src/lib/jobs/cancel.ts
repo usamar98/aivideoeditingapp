@@ -56,7 +56,7 @@ export async function cancelJob(db: SupabaseClient, admin: SupabaseClient, userI
       const project = z.object({ projectId: z.string().uuid() }).safeParse(job.settings);
       const tag = project.success ? `project:${project.data.projectId}` : `generation:${jobId}`;
       let inspected = 0;
-      for await (const candidate of runs.list({ tag, from: new Date(job.created_at), taskIdentifier: job.operation === "episode-export" ? "episode-pipeline" : "faceless-pipeline" }, requestOptions)) {
+      for await (const candidate of runs.list({ tag, from: new Date(job.created_at), taskIdentifier: job.operation === "episode-export" ? "episode-pipeline" : job.operation.startsWith("cartoon-") ? "cartoon-pipeline" : "faceless-pipeline" }, requestOptions)) {
         if (++inspected > 3) break;
         const run = await runs.retrieve(candidate.id, requestOptions);
         if (z.object({ generationId: z.literal(jobId) }).safeParse(run.payload).success) { runId = run.id; break; }

@@ -57,6 +57,8 @@ In your Stripe test dashboard:
 
 ### Exact catalog (USD)
 
+If credentials are stored only on the server, trusted Trigger.dev project operators can run `stripe-catalog-setup` in **Production**. The worker must have the same live `STRIPE_SECRET_KEY` as Vercel (sync it through the integration or set it securely in Trigger); the task never downloads or prints it. First use `{"mode":"inspect"}` for a read-only report. To create the fixed catalog, explicitly use `{"mode":"apply","confirmation":"create-framefoundry-live-plans"}`. The task rejects non-production environments and test keys, refuses conflicting prices, reuses matching entries, and verifies all six prices using the website's matching rules. It has no public web route, automatic schedule, customer/subscription writes, or charge operations. No key belongs in the task payload. A successful task execution is not enough: verify its output has `ok: true` and `ready: true`. Portal settings and webhook delivery still need separate verification.
+
 | Plan | Monthly payment / credits | Yearly monthly equivalent | Yearly payment / upfront credits |
 | --- | --- | --- | --- |
 | Starter | $29.99 / 440 | $19.99 | $239.88 / 5,280 |
@@ -80,7 +82,7 @@ The new app has replaced Paddle routes and variables. Existing Paddle customers,
 
 The project reference is already in `trigger.config.ts`; change it there when targeting another project. For local **Development**, use `npm run dev:trigger` with the Development key in `.env`, then `npm run test:trigger` to verify a harmless task. The local worker must stay running, and real video jobs need the secrets above in `.env` as well. The connectivity check alone does not verify AI rendering, database access, or recovery of old stuck jobs. See the README's development setup. Production requires a separate worker deployment and a matching Production secret key on Vercel; do not use `tr_dev_` for an always-on production website.
 
-The build includes FFmpeg 7 and DejaVu fonts for captions. Let the extension set `FFMPEG_PATH` and `FFPROBE_PATH` in production. No worker Stripe key is needed. The older cartoon export worker uses `MEDIA_FETCH_HOSTS` for additional exact media hosts; Supabase's host is included automatically. The faceless worker only fetches image results from fal.media over HTTPS, rejects redirects, and copies outputs into your private Supabase bucket.
+The build includes FFmpeg 7 and DejaVu fonts for captions. Let the extension set `FFMPEG_PATH` and `FFPROBE_PATH` in production. Video workers do not need a Stripe key; only the optional operator-only `stripe-catalog-setup` task does. The older cartoon export worker uses `MEDIA_FETCH_HOSTS` for additional exact media hosts; Supabase's host is included automatically. The faceless worker only fetches image results from fal.media over HTTPS, rejects redirects, and copies outputs into your private Supabase bucket.
 
 The runtime is pinned to `node-22` for native WebSocket support. `faceless-pipeline` uses `medium-2x` (2 vCPU / 4 GB RAM); this costs more than the default 0.5 GB worker. FFmpeg uses one decoder/filter thread and two video encoder threads. Images and MP4 checkpoints stream to/from task-owned temporary files, with bounded transfer sizes; only small JSON/base64 voice responses are buffered. Cancellation checkpoints, private storage paths, and credit settlement remain unchanged. No database migration or new environment variable is needed.
 

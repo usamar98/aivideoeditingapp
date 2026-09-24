@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clapperboard, FolderKanban, Images, UserRound, WandSparkles, Video, ListChecks } from "lucide-react";
+import { Clapperboard, FolderKanban, UserRound, WandSparkles, Video, ListChecks } from "lucide-react";
 
 import { BrandMark } from "./brand-mark";
 
@@ -7,8 +7,7 @@ const items = [
   { href: "/studio", label: "Projects", icon: FolderKanban },
   { href: "/studio/faceless", label: "Faceless videos", icon: Video },
   { href: "/studio/jobs", label: "Jobs", icon: ListChecks },
-  { href: "/studio/series/pip-and-moss/episodes/the-cloud-in-a-jar", label: "Episode editor", icon: Clapperboard },
-  { href: "/studio/series/pip-and-moss/episodes/the-cloud-in-a-jar#characters", label: "Characters", icon: Images },
+  { href: "/studio/cartoons", label: "Cartoon videos", icon: Clapperboard },
   { href: "/features/ai-cartoon-series", label: "Feature page", icon: WandSparkles },
 ];
 
