@@ -285,6 +285,15 @@ describe("real Postgres migration and authorization",()=>{
   it("reserves once and returns the same active job on retries",async()=>{await asService();await db.query("select public.start_faceless_job($1,$2,$3,'script')",[project,userA,job]);const retry=await db.query<{start_faceless_job:string}>("select public.start_faceless_job($1,$2,gen_random_uuid(),'script')",[project,userA]);expect(retry.rows[0].start_faceless_job).toBe(job);expect(Number((await db.query<{cached_balance:string}>(`select cached_balance from public.credit_accounts where workspace_id='${workspace}'`)).rows[0].cached_balance)).toBe(98);});
   it("refunds failed jobs exactly once",async()=>{await asService();await db.query("select public.finish_faceless_job($1,false)",[job]);await db.query("select public.finish_faceless_job($1,false)",[job]);expect(Number((await db.query<{cached_balance:string}>(`select cached_balance from public.credit_accounts where workspace_id='${workspace}'`)).rows[0].cached_balance)).toBe(100);expect((await db.query<{status:string}>("select status from public.faceless_projects")).rows[0].status).toBe("failed");});
   it("fulfills a repeated Stripe invoice only once",async()=>{await asService();for(let i=0;i<2;i++)await db.query("select public.apply_credit_purchase($1,100,'stripe:invoice:in_test','in_test')",[workspace]);expect(Number((await db.query<{cached_balance:string}>(`select cached_balance from public.credit_accounts where workspace_id='${workspace}'`)).rows[0].cached_balance)).toBe(200);});
+  it("adds a one-time pack once per session and denies direct user credit grants", async () => {
+    await asService(); const packWorkspace = randomUUID();
+    await db.query("insert into public.workspaces(id,name,owner_id) values($1,'Pack test',$2)", [packWorkspace,userA]);
+    for (let attempt = 0; attempt < 3; attempt++) await db.query("select public.apply_credit_purchase($1,10,'stripe:checkout:cs_pack_owned','cs_pack_owned')", [packWorkspace]);
+    expect(Number((await db.query<{ cached_balance: string }>("select cached_balance from public.credit_accounts where workspace_id=$1", [packWorkspace])).rows[0].cached_balance)).toBe(10);
+    expect((await db.query("select id from public.credit_ledger where idempotency_key='stripe:checkout:cs_pack_owned'")).rows).toHaveLength(1);
+    await asUser(userA);
+    await expect(db.query("select public.apply_credit_purchase($1,10,'stripe:checkout:forged','forged')", [packWorkspace])).rejects.toThrow(/permission denied/);
+  });
 });
 
 describe("atomic job cancellation", () => {

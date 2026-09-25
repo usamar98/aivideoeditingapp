@@ -51,7 +51,7 @@ export async function createCheckout(priceId: string) {
     // Reuse an open checkout to prevent repeated clicks from starting multiple subscriptions.
     const sessions = await stripe.checkout.sessions.list({ customer, status: "open", limit: 100 });
     for (const session of sessions.data) {
-      if (session.metadata?.app === "framefoundry") {
+      if (session.mode === "subscription" && session.metadata?.app === "framefoundry") {
         if (session.metadata.price_id === priceId && session.url) return { url: session.url };
         await stripe.checkout.sessions.expire(session.id);
       }

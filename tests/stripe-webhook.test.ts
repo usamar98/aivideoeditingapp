@@ -1,8 +1,9 @@
 import Stripe from "stripe";
 import { beforeEach,afterEach,describe,it,expect,vi } from "vitest";
+import { packSession } from "./fixtures/credit-pack";
 
-const mocks=vi.hoisted(()=>({duplicate:false,rpc:vi.fn(),upsert:vi.fn(),processed:vi.fn(),subscriptions:vi.fn(),retrieveInvoice:vi.fn(),retrievePrice:vi.fn()}));
-vi.mock("@/lib/billing/stripe",()=>({getStripe:()=>({webhooks:new Stripe("sk_test_local_only").webhooks,subscriptions:{list:mocks.subscriptions},invoices:{retrieve:mocks.retrieveInvoice,listLineItems:async function*(){yield {amount:1900,quantity:1,pricing:{price_details:{price:"price_test"}},parent:{subscription_item_details:{proration:false}}};}},prices:{retrieve:mocks.retrievePrice}})}));
+const mocks=vi.hoisted(()=>({duplicate:false,rpc:vi.fn(),upsert:vi.fn(),processed:vi.fn(),subscriptions:vi.fn(),retrieveInvoice:vi.fn(),retrievePrice:vi.fn(),retrieveSession:vi.fn()}));
+vi.mock("@/lib/billing/stripe",()=>({getStripe:()=>({webhooks:new Stripe("sk_test_local_only").webhooks,checkout:{sessions:{retrieve:mocks.retrieveSession}},subscriptions:{list:mocks.subscriptions},invoices:{retrieve:mocks.retrieveInvoice,listLineItems:async function*(){yield {amount:1900,quantity:1,pricing:{price_details:{price:"price_test"}},parent:{subscription_item_details:{proration:false}}};}},prices:{retrieve:mocks.retrievePrice}})}));
 vi.mock("@/lib/supabase/admin",()=>({createAdminClient:()=>({rpc:mocks.rpc,from:(table:string)=>{const chain={error:null,select:()=>chain,eq:()=>chain,maybeSingle:async()=>({error:null,data:table==="billing_customers"?{user_id:"user_owned",workspace_id:"workspace_owned"}:mocks.duplicate?{processed_at:"2026-09-22"}:null}),upsert:mocks.upsert,update:(value:unknown)=>{mocks.processed(value);return chain;}};return chain;}})}));
 import { POST } from "@/app/api/webhooks/stripe/route";
 const secret="whsec_local_verification_only";
@@ -16,4 +17,45 @@ describe("Stripe webhook boundary",()=>{
   it("uses the owned customer and invoice id for credit fulfillment",async()=>{expect((await POST(request())).status).toBe(200);expect(mocks.rpc).toHaveBeenCalledWith("apply_credit_purchase",{target_workspace_id:"workspace_owned",credit_amount:100,event_key:"stripe:invoice:in_test",external_id:"in_test"});expect(mocks.processed).toHaveBeenCalled();});
   it("returns a retryable error if credits cannot be persisted",async()=>{mocks.rpc.mockResolvedValue({error:{message:"offline"}});const consoleSpy=vi.spyOn(console,"error").mockImplementation(()=>{});expect((await POST(request())).status).toBe(500);expect(mocks.processed).not.toHaveBeenCalled();consoleSpy.mockRestore();});
   it("never grants credits on payment failure",async()=>{expect((await POST(request("invoice.payment_failed"))).status).toBe(200);expect(mocks.rpc).not.toHaveBeenCalled();});
+});
+
+function packRequest(type = "checkout.session.completed", id = "evt_pack", signed = true) {
+  const body = JSON.stringify({ id, object: "event", type, data: { object: packSession() } });
+  return new Request("https://example.test/api/webhooks/stripe", { method: "POST", body, headers: { "stripe-signature": Stripe.webhooks.generateTestHeaderString({ payload: body, secret: signed ? secret : "wrong" }) } });
+}
+describe("one-time credit pack webhook", () => {
+  beforeEach(() => mocks.retrieveSession.mockResolvedValue(packSession()));
+  it("grants only 10 credits after retrieving and verifying the paid checkout", async () => {
+    expect((await POST(packRequest())).status).toBe(200);
+    expect(mocks.retrieveSession).toHaveBeenCalledWith("cs_test_creditpack123", { expand: ["line_items", "payment_intent"] });
+    expect(mocks.rpc).toHaveBeenCalledWith("apply_credit_purchase", { target_workspace_id: "workspace_owned", credit_amount: 10, event_key: "stripe:checkout:cs_test_creditpack123", external_id: "cs_test_creditpack123" });
+    expect(mocks.subscriptions).not.toHaveBeenCalled();
+  });
+  it("uses the same database idempotency key for different delivery events", async () => {
+    await POST(packRequest()); await POST(packRequest("checkout.session.async_payment_succeeded", "evt_second"));
+    expect(mocks.rpc.mock.calls.map((call) => call[1].event_key)).toEqual(["stripe:checkout:cs_test_creditpack123", "stripe:checkout:cs_test_creditpack123"]);
+  });
+  it("ignores processed event replays", async () => {
+    mocks.duplicate = true; expect((await POST(packRequest())).status).toBe(200);
+    expect(mocks.retrieveSession).not.toHaveBeenCalled(); expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("does not grant on an unpaid completion or failed payment", async () => {
+    mocks.retrieveSession.mockResolvedValue(packSession({ payment_status: "unpaid" }));
+    await POST(packRequest()); await POST(packRequest("checkout.session.async_payment_failed", "evt_failed"));
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it.each([{ amount_total: 1 }, { customer: "cus_other" }, { client_reference_id: "other" }])("rejects paid sessions with invalid terms %j", async (override) => {
+    mocks.retrieveSession.mockResolvedValue(packSession(override));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await POST(packRequest())).status).toBe(500); expect(mocks.rpc).not.toHaveBeenCalled(); expect(mocks.processed).not.toHaveBeenCalled(); log.mockRestore();
+  });
+  it("retries failed persistence without marking the event processed", async () => {
+    mocks.rpc.mockResolvedValue({ error: { message: "database unavailable" } });
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await POST(packRequest())).status).toBe(500); expect(mocks.processed).not.toHaveBeenCalled(); log.mockRestore();
+  });
+  it("rejects forged payment webhooks", async () => {
+    expect((await POST(packRequest("checkout.session.completed", "evt_pack", false))).status).toBe(400);
+    expect(mocks.retrieveSession).not.toHaveBeenCalled(); expect(mocks.rpc).not.toHaveBeenCalled();
+  });
 });

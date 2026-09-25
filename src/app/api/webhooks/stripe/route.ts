@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/billing/stripe";
 import { isCreditInvoice } from "@/lib/billing/catalog";
+import { creditPack, creditPackEventKey, isCreditPackSession, validCreditPackSession, isPaidCreditPackSession } from "@/lib/billing/credit-pack";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   try { event = stripe.webhooks.constructEvent(await request.text(), request.headers.get("stripe-signature") || "", secret); }
   catch { return Response.json({ error: "Invalid webhook signature" }, { status: 400 }); }
 
-  const accepted = ["checkout.session.completed", "customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted", "invoice.paid", "invoice.payment_failed", "invoice.payment_action_required"];
+  const accepted = ["checkout.session.completed", "checkout.session.async_payment_succeeded", "checkout.session.async_payment_failed", "customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted", "invoice.paid", "invoice.payment_failed", "invoice.payment_action_required"];
   if (!accepted.includes(event.type)) return Response.json({ received: true });
   try {
     const { data: previous, error: previousError } = await admin.from("webhook_events").select("processed_at").eq("id", event.id).maybeSingle();
@@ -28,6 +29,21 @@ export async function POST(request: Request) {
     if (!customer) return Response.json({ received: true, ignored: true });
     const { error: insertError } = await admin.from("webhook_events").upsert({ id: event.id, provider: "stripe", event_type: event.type, payload: { customer: customerId } }, { onConflict: "id", ignoreDuplicates: true });
     if (insertError) throw insertError;
+    if (event.type.startsWith("checkout.session.") && (event.data.object as Stripe.Checkout.Session).mode === "payment") {
+      const snapshot = event.data.object as Stripe.Checkout.Session;
+      if (!isCreditPackSession(snapshot)) return Response.json({ received: true, ignored: true });
+      const session = await stripe.checkout.sessions.retrieve(snapshot.id, { expand: ["line_items", "payment_intent"] });
+      if (!validCreditPackSession(session, { customerId, userId: customer.user_id, workspaceId: customer.workspace_id })) throw new Error("Credit pack checkout does not match its fixed terms or account.");
+      if (isPaidCreditPackSession(session)) {
+        // Session identity (not event identity) prevents double grants across
+        // event retries, concurrent delivery and async success notifications.
+        const { error } = await admin.rpc("apply_credit_purchase", { target_workspace_id: customer.workspace_id, credit_amount: creditPack.credits, event_key: creditPackEventKey(session.id), external_id: session.id });
+        if (error) throw error;
+      }
+      const { error } = await admin.from("webhook_events").update({ processed_at: new Date().toISOString() }).eq("id", event.id);
+      if (error) throw error;
+      return Response.json({ received: true });
+    }
     // Fetch current state instead of replaying stale subscription snapshots from delayed events.
     const subscriptions = await stripe.subscriptions.list({ customer: customerId, status: "all", expand: ["data.items.data.price.product"], limit: 100 });
     for (const sub of subscriptions.data) {

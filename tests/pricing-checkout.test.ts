@@ -39,8 +39,14 @@ describe("advertised plan checkout boundary", () => {
     expect(mocks.create).not.toHaveBeenCalled();
   });
   it("reuses the selected price's pending session", async () => {
-    mocks.sessions.mockResolvedValue({ data: [{ id: "cs_open", metadata: { app: "framefoundry", price_id: "price_annual" }, url: "https://checkout.stripe.com/open" }] });
+    mocks.sessions.mockResolvedValue({ data: [{ id: "cs_open", mode: "subscription", metadata: { app: "framefoundry", price_id: "price_annual" }, url: "https://checkout.stripe.com/open" }] });
     expect((await createCheckout("price_annual")).url).toBe("https://checkout.stripe.com/open");
     expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("leaves a one-time pack checkout untouched when subscribing", async () => {
+    mocks.sessions.mockResolvedValue({ data: [{ id: "cs_pack", mode: "payment", metadata: { app: "framefoundry", purchase_kind: "credit_pack" }, url: "https://checkout.stripe.com/pack" }] });
+    expect((await createCheckout("price_annual")).url).toContain("checkout.stripe.com");
+    expect(mocks.expire).not.toHaveBeenCalled();
+    expect(mocks.create).toHaveBeenCalled();
   });
 });
