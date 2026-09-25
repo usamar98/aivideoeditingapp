@@ -4,6 +4,8 @@ FrameFoundry is a multi-feature AI video studio with a cream-and-blue public sit
 
 Start with [the deployment guide](docs/DEPLOYMENT.md) for the exact Vercel/worker variables, Stripe product/portal/webhook setup, migrations, and launch checklist. [Faceless workflow research](docs/FACELESS-RESEARCH.md) explains the product examples and deliberately bounded feature scope.
 
+For **Continue with Google** on sign-up/sign-in, follow [Google login setup](docs/GOOGLE-SIGN-IN.md). Configure a Google **Web application OAuth client** in Supabase's Google provider settings; no Google client secret belongs in Vercel's public environment variables.
+
 The checked-in **Pip & Moss** project is an explicitly labelled development fixture. Its generated reference and storyboard art lets the full review/edit/reorder/approve/caption workflow run without spending provider credits. The application never reports that fixture work as a successful provider generation.
 
 ## Local development

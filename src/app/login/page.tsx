@@ -6,15 +6,14 @@ import { AuthForm } from "@/components/studio/auth-form";
 import { BrandMark } from "@/components/studio/brand-mark";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { isFixtureMode } from "@/lib/integrations";
+import { authErrorMessage, safeAuthNextPath } from "@/lib/auth/redirect";
 
 export const metadata: Metadata = { title: "Sign in", robots: { index: false, follow: false } };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string | string[]; error?: string | string[] }> }) {
   const { next, error } = await searchParams;
-  const nextPath = next?.startsWith("/") && !next.startsWith("//") ? next : "/studio";
-  const initialMessage = error === "workspace"
-    ? "Your email was confirmed, but workspace setup could not finish. Sign in to retry."
-    : error === "confirmation" ? "That confirmation link is invalid or expired. Request a new sign-in link." : null;
+  const nextPath = safeAuthNextPath(next);
+  const initialMessage = authErrorMessage(error);
   return (
     <main className="grid min-h-screen place-items-center px-5 py-10">
       <div className="w-full max-w-md">

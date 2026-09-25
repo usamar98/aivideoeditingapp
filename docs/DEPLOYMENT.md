@@ -14,6 +14,8 @@ For the Jobs rollout, apply the third migration, deploy **both updated Trigger.d
 
 ## 2. Vercel variables
 
+Google sign-up/sign-in uses the existing Supabase configuration. Follow [Google login setup](GOOGLE-SIGN-IN.md) for the OAuth client, distinct Google/Supabase callback URLs, provider activation, and verification checklist. No new SQL migration or worker deployment is required for Google login.
+
 Set these in the project's Production environment, replace placeholders, then redeploy:
 
 ```dotenv
