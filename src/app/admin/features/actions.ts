@@ -27,6 +27,10 @@ export async function saveFeatureAction(input: unknown) {
   if (error) return { ok: false as const, error: error.message };
 
   revalidatePath("/features");
+  revalidatePath("/");
+  revalidatePath("/llms.txt");
+  revalidatePath("/features/[slug]", "page");
+  revalidatePath(`${feature.seo.canonicalPath}/opengraph-image`);
   revalidatePath(feature.seo.canonicalPath);
   revalidatePath("/sitemap.xml");
   return { ok: true as const, fixture: false as const };

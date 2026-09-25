@@ -17,7 +17,6 @@ For the Jobs rollout, apply the third migration, deploy **both updated Trigger.d
 Set these in the project's Production environment, replace placeholders, then redeploy:
 
 ```dotenv
-NEXT_PUBLIC_PRODUCT_NAME=FrameFoundry
 NEXT_PUBLIC_SITE_URL=https://YOUR_DOMAIN
 NEXT_PUBLIC_SUPPORT_EMAIL=YOUR_SUPPORT_EMAIL
 NEXT_PUBLIC_DEMO_MODE=false

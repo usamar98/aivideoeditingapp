@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="124" height="40" viewBox="0 0 124 40" fill="none">
+  <title>ETA</title>
+  <g fill="#182D4E">
+    <path d="M0 0h32v8H9v8h20v8H9v8h23v8H0V0Z"/>
+    <path d="M39 0h37v8H62v32h-9V8H39V0Z"/>
+    <path fill-rule="evenodd" d="M98 0h10l16 40h-10l-3-8H95l-3 8H82L98 0Zm0 24h10l-5-14-5 14Z" clip-rule="evenodd"/>
+  </g>
+</svg>

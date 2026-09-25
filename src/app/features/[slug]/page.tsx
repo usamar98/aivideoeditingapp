@@ -3,92 +3,66 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check, Info, TriangleAlert } from "lucide-react";
 import { notFound } from "next/navigation";
-
-import { BrandMark } from "@/components/studio/brand-mark";
+import { SiteHeader, SiteFooter } from "@/components/marketing/site-chrome";
+import { AnswerSection } from "@/components/marketing/answer-section";
+import { JsonLd } from "@/components/marketing/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { brand } from "@/config/brand";
 import { canIndexFeature } from "@/lib/features/catalog";
-import { getFeatureData, getStaticFeatureSlugs } from "@/lib/features/repository";
+import { getFeatureData } from "@/lib/features/repository";
+import { featureEditorial } from "@/lib/seo/editorial-content";
+import { publicMetadata } from "@/lib/seo/metadata";
+import { absoluteUrl, breadcrumbSchema, organizationId, pageSchema } from "@/lib/seo/structured-data";
 
-export async function generateStaticParams() {
-  return (await getStaticFeatureSlugs()).map((slug) => ({ slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const feature = await getFeatureData(slug);
-  if (!feature) return {};
-  const indexable = canIndexFeature(feature);
-  return {
-    title: feature.seo.title,
-    description: feature.seo.description,
-    alternates: { canonical: feature.seo.canonicalPath },
-    robots: { index: indexable, follow: indexable, noarchive: !indexable },
-    openGraph: { title: feature.seo.title, description: feature.seo.description, url: feature.seo.canonicalPath, type: "website" },
-    twitter: { card: "summary_large_image", title: feature.seo.title, description: feature.seo.description },
-  };
+  if (!feature || !canIndexFeature(feature)) notFound();
+  return publicMetadata({ title: feature.seo.title, description: feature.seo.description, path: `/features/${slug}`, image: `/features/${slug}/opengraph-image` });
 }
 
 export default async function FeaturePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const feature = await getFeatureData(slug);
-  if (!feature) notFound();
-  if (feature.developmentOnly && process.env.NODE_ENV === "production") notFound();
+  if (!feature || !canIndexFeature(feature)) notFound();
+  const editorial = featureEditorial[slug];
+  const related = (await Promise.all(feature.relatedFeatures.map(getFeatureData))).filter((item) => item && canIndexFeature(item));
+  const media = feature.exampleMedia.filter((item) => item.published);
+  const path = `/features/${slug}`;
+  const jsonLd = { "@context": "https://schema.org", "@graph": [
+    pageSchema(path, feature.name, feature.description),
+    { "@type": "SoftwareApplication", "@id": `${absoluteUrl(path)}#application`, name: feature.name, applicationCategory: "MultimediaApplication", operatingSystem: "Web", description: feature.description, url: absoluteUrl(path), featureList: feature.capabilities, provider: { "@id": organizationId } },
+    breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Features", path: "/features" }, { name: feature.name, path }]),
+    ...media.filter((item) => item.type === "video" && item.thumbnailUrl && item.publishedAt).map((video) => ({
+      "@type": "VideoObject", name: video.title, description: video.description, contentUrl: absoluteUrl(video.url), thumbnailUrl: absoluteUrl(video.thumbnailUrl!), uploadDate: video.publishedAt, duration: video.durationIso, transcript: video.transcript,
+    })),
+  ] };
+  const studioPath = slug === "faceless-video-generator" ? "/studio/faceless" : slug === "ai-cartoon-series" ? "/studio/cartoons" : "/studio";
 
-  const related = (await Promise.all(feature.relatedFeatures.map(getFeatureData))).filter(Boolean);
-  const canonicalUrl = new URL(feature.seo.canonicalPath, brand.siteUrl).toString();
-  const publishedVideos = feature.exampleMedia.filter((item) => item.type === "video" && item.published && item.thumbnailUrl && item.publishedAt);
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "SoftwareApplication",
-        name: feature.name,
-        applicationCategory: "MultimediaApplication",
-        operatingSystem: "Web",
-        description: feature.description,
-        url: canonicalUrl,
-        featureList: feature.capabilities,
-      },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Features", item: `${brand.siteUrl}/features` },
-          { "@type": "ListItem", position: 2, name: feature.name, item: canonicalUrl },
-        ],
-      },
-      ...publishedVideos.map((video) => ({
-        "@type": "VideoObject",
-        name: video.title,
-        description: video.description,
-        contentUrl: new URL(video.url, brand.siteUrl).toString(),
-        thumbnailUrl: new URL(video.thumbnailUrl!, brand.siteUrl).toString(),
-        uploadDate: video.publishedAt,
-        duration: video.durationIso,
-        transcript: video.transcript,
-      })),
-    ],
-  };
-
-  return (
-    <main className="min-h-screen">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replaceAll("<", "\\u003c") }} />
-      <header className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5 sm:px-8"><Link href="/"><BrandMark /></Link><nav className="flex items-center gap-3"><Button asChild variant="ghost" size="sm"><Link href="/features">All features</Link></Button><Button asChild size="sm"><Link href="/studio">Open studio</Link></Button></nav></header>
-      <section className="mx-auto grid max-w-6xl gap-10 px-5 pb-16 pt-12 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:pt-20">
-        <div><Badge variant={feature.status === "published" ? "success" : "warning"}>{feature.status === "published" ? "Available" : "Development preview"}</Badge><h1 className="mt-5 text-4xl font-bold tracking-[-0.045em] sm:text-5xl">{feature.seo.heading}</h1><p className="mt-5 text-lg leading-8 text-muted-foreground">{feature.description}</p><Button asChild size="lg" className="mt-7"><Link href={slug === "faceless-video-generator" ? "/studio/faceless" : "/studio/cartoons"}>{slug === "faceless-video-generator" ? "Create a faceless video" : "Open the cartoon editor"} <ArrowRight /></Link></Button></div>
-        {feature.exampleMedia[0] && <Card className="overflow-hidden border-primary/20 p-2"><div className="relative aspect-video overflow-hidden rounded-lg"><Image src={feature.exampleMedia[0].url} alt={feature.exampleMedia[0].description} fill loading="eager" fetchPriority="high" sizes="(max-width: 1024px) 100vw, 55vw" className="object-cover" /></div><div className="p-3"><p className="text-sm font-semibold">{feature.exampleMedia[0].title}</p><p className="mt-1 text-xs text-muted-foreground">{feature.exampleMedia[0].description}</p></div></Card>}
+  return <>
+    <SiteHeader />
+    <main id="main-content">
+      <JsonLd data={jsonLd} />
+      <nav aria-label="Breadcrumb" className="mx-auto flex max-w-6xl flex-wrap gap-2 px-6 pt-8 text-sm text-muted-foreground"><Link href="/">Home</Link><span aria-hidden>/</span><Link href="/features">Features</Link><span aria-hidden>/</span><span aria-current="page">{feature.name}</span></nav>
+      <section className={`mx-auto grid max-w-6xl gap-10 px-6 pb-16 pt-10 ${media.length ? "lg:grid-cols-2 lg:items-center" : ""}`}>
+        <div className="max-w-3xl"><Badge variant="success">Available workflow</Badge><h1 className="editorial mt-5 text-4xl tracking-tight sm:text-5xl">{feature.seo.heading}</h1><p className="mt-6 text-lg leading-8 text-muted-foreground">{feature.description}</p><div className="mt-7 flex flex-wrap gap-3"><Button asChild size="lg"><Link href={studioPath}>Start creating <ArrowRight /></Link></Button><Button asChild size="lg" variant="outline"><Link href="/pricing">See pricing</Link></Button></div>{editorial && <p className="mt-5 text-xs text-muted-foreground">ETA product guide · Updated <time dateTime={editorial.updatedAt}>September 25, 2026</time></p>}</div>
+        {media.length > 0 && <div className="space-y-5">{media.map((item, index) => <Card key={item.url} className="overflow-hidden p-2">
+          {item.type === "image" ? <div className="relative aspect-video overflow-hidden rounded-lg"><Image src={item.url} alt={item.description} fill loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" /></div> : <video className="aspect-video w-full rounded-lg" controls preload="none" poster={item.thumbnailUrl} aria-label={item.title} src={item.url}>Your browser does not support video. <a href={item.url}>Download {item.title}</a></video>}
+          <div className="p-3"><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs leading-6 text-muted-foreground">{item.description}</p>{item.type === "video" && item.transcript && <details className="mt-3 text-sm"><summary className="cursor-pointer">Read video transcript</summary><p className="mt-3 whitespace-pre-line leading-7">{item.transcript}</p></details>}</div>
+        </Card>)}</div>}
       </section>
-
-      <section className="border-y border-border bg-card/35"><div className="mx-auto grid max-w-6xl gap-px bg-border lg:grid-cols-3">{feature.benefits.map((benefit) => <div key={benefit} className="flex gap-3 bg-background p-7"><span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-primary/12 text-primary"><Check className="size-3.5" /></span><p className="text-sm leading-6">{benefit}</p></div>)}</div></section>
-
-      <section className="mx-auto grid max-w-6xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-2">
-        <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">What it supports</p><h2 className="mt-3 text-3xl font-bold tracking-tight">A controlled path from idea to export</h2><ul className="mt-6 space-y-4">{feature.capabilities.map((capability) => <li key={capability} className="flex gap-3 text-base leading-7 text-muted-foreground"><Check className="mt-1 size-4 shrink-0 text-primary" />{capability}</li>)}</ul></div>
-        <Card className="p-6"><div className="flex items-center gap-2 text-amber-200"><TriangleAlert className="size-4" /><h2 className="font-semibold">Important limitations</h2></div><ul className="mt-5 space-y-4">{feature.limitations.map((limitation) => <li key={limitation} className="flex gap-3 text-sm leading-6 text-muted-foreground"><Info className="mt-1 size-4 shrink-0" />{limitation}</li>)}</ul></Card>
+      <section aria-label="Benefits" className="border-y border-border"><div className="mx-auto grid max-w-6xl lg:grid-cols-3">{feature.benefits.map((benefit) => <div key={benefit} className="flex gap-3 p-6"><Check className="mt-1 size-4 shrink-0 text-primary" /><p className="text-sm leading-7">{benefit}</p></div>)}</div></section>
+      {editorial && <section className="mx-auto max-w-6xl px-6 py-16"><h2 className="editorial text-3xl sm:text-4xl">How to create your video</h2><p className="mt-5 max-w-3xl text-base leading-8 text-muted-foreground">{editorial.summary}</p><ol className="mt-8 grid gap-8 md:grid-cols-2">{editorial.steps.map((step, index) => <li key={step.title}><span className="eyebrow text-primary">Step {index + 1}</span><h3 className="mt-3 text-lg font-semibold">{step.title}</h3><p className="mt-3 text-sm leading-7 text-muted-foreground">{step.text}</p></li>)}</ol></section>}
+      <section className="mx-auto grid max-w-6xl gap-8 px-6 py-12 lg:grid-cols-2">
+        <div><h2 className="text-2xl font-semibold">What you can create</h2><ul className="mt-6 space-y-4">{feature.capabilities.map((capability) => <li key={capability} className="flex gap-3 text-sm leading-7 text-muted-foreground"><Check className="mt-1 size-4 shrink-0 text-primary" />{capability}</li>)}</ul></div>
+        <Card className="p-6"><div className="flex items-center gap-2 text-foreground"><TriangleAlert className="size-4 text-primary" /><h2 className="text-lg font-semibold">Know the limits before you generate</h2></div><ul className="mt-5 space-y-4">{feature.limitations.map((limitation) => <li key={limitation} className="flex gap-3 text-sm leading-7 text-muted-foreground"><Info className="mt-1 size-4 shrink-0" />{limitation}</li>)}</ul></Card>
       </section>
-
-      {related.length > 0 && <section className="mx-auto max-w-6xl px-5 pb-20 sm:px-8"><h2 className="text-xl font-semibold">Related workflows</h2><div className="mt-4 flex flex-wrap gap-3">{related.map((item) => item && <Button asChild key={item.slug} variant="outline"><Link href={`/features/${item.slug}`}>{item.name}</Link></Button>)}</div></section>}
+      {editorial && <div className="mx-auto max-w-6xl px-6 py-12"><section><h2 className="editorial text-3xl sm:text-4xl">Ideas to get you started</h2><div className="mt-8 grid gap-8 md:grid-cols-3">{editorial.useCases.map((useCase) => <div key={useCase.title}><h3 className="text-lg font-semibold">{useCase.title}</h3><p className="mt-3 text-sm leading-7 text-muted-foreground">{useCase.text}</p></div>)}</div></section><div className="mt-16"><AnswerSection answers={editorial.faqs} /></div></div>}
+      <section className="mx-auto max-w-6xl px-6 pb-20"><h2 className="text-xl font-semibold">Keep exploring</h2><div className="mt-5 flex flex-wrap gap-4">{related.map((item) => item && <Link key={item.slug} className="text-primary underline underline-offset-4" href={`/features/${item.slug}`}>{item.name}</Link>)}<Link className="text-primary underline underline-offset-4" href="/guides/faceless-videos-vs-ai-cartoons">Compare faceless videos and cartoons</Link><Link className="text-primary underline underline-offset-4" href="/contact">Ask a question</Link></div></section>
     </main>
-  );
+    <SiteFooter />
+  </>;
 }

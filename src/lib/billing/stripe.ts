@@ -10,7 +10,7 @@ export function getStripe() {
 }
 
 export function accountReturnUrl() {
-  const url = new URL("/studio/profile", brand.siteUrl);
+  const url = new URL("/studio/profile", brand.appUrl);
   if (process.env.NODE_ENV === "production" && url.protocol !== "https:") throw new Error("Set NEXT_PUBLIC_SITE_URL to your HTTPS site URL.");
   return url.toString();
 }

@@ -2,6 +2,13 @@ import { z } from "zod";
 
 export const featureStatusSchema = z.enum(["draft", "published", "unavailable", "retired"]);
 
+export function isPublicMediaPath(path: string) {
+  return /^\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.(?:png|jpe?g|webp|avif|gif|svg|mp4|webm)$/i.test(path)
+    && !/^\/(?:api|auth|studio|admin)(?:\/|$)/i.test(path);
+}
+
+const publicMediaPath = z.string().refine(isPublicMediaPath, "Use a public, local media file path without redirects, query strings or traversal.");
+
 export const featureDefinitionSchema = z.object({
   slug: z.string().regex(/^[a-z0-9-]+$/),
   name: z.string().min(3),
@@ -15,11 +22,11 @@ export const featureDefinitionSchema = z.object({
     .array(
       z.object({
         type: z.enum(["image", "video"]),
-        url: z.string().startsWith("/"),
+        url: publicMediaPath,
         title: z.string(),
         description: z.string(),
         transcript: z.string().optional(),
-        thumbnailUrl: z.string().startsWith("/").optional(),
+        thumbnailUrl: publicMediaPath.optional(),
         publishedAt: z.string().datetime().optional(),
         durationIso: z.string().regex(/^PT(?=\d|\d+[HMS])(?:\d+H)?(?:\d+M)?(?:\d+S)?$/).optional(),
         published: z.boolean(),
@@ -34,10 +41,12 @@ export const featureDefinitionSchema = z.object({
     title: z.string().max(65),
     description: z.string().max(165),
     heading: z.string(),
-    canonicalPath: z.string().startsWith("/"),
+    canonicalPath: z.string().regex(/^\/features\/[a-z0-9-]+$/),
     editorialOverride: z.boolean(),
   }),
   developmentOnly: z.boolean().default(false),
+}).refine((feature) => feature.seo.canonicalPath === `/features/${feature.slug}`, {
+  message: "The canonical must match the feature's public route.", path: ["seo", "canonicalPath"],
 });
 
 export type FeatureDefinition = z.infer<typeof featureDefinitionSchema>;
@@ -80,12 +89,12 @@ export const featureCatalog: FeatureDefinition[] = [
     relatedFeatures: ["faceless-video-generator"],
     status: "published",
     publishedAt: "2026-09-22T00:00:00.000Z",
-    modifiedAt: "2026-09-22T00:00:00.000Z",
+    modifiedAt: "2026-09-25T00:00:00.000Z",
     seo: {
-      title: "AI Cartoon Series Maker with Consistent Characters",
+      title: "AI Cartoon Video Generator from Prompts & Images",
       description:
         "Create AI cartoon videos from prompts or character images. Review your cast, edit actions and dialogue, then animate with fal models and download your film.",
-      heading: "Your characters. Their next adventure. One prompt.",
+      heading: "AI cartoon videos from your prompt or character images",
       canonicalPath: "/features/ai-cartoon-series",
       editorialOverride: true,
     },
@@ -124,8 +133,8 @@ featureCatalog.push(featureDefinitionSchema.parse({
   benefits: ["Start with an idea or preserve your own script", "Review narration and visual prompts before rendering", "Return to saved projects and private exports"],
   capabilities: ["AI script planning and editable scene ordering", "Cinematic, illustration, and watercolor image prompts", "English, Spanish, and French narration with a configured studio voice", "Vertical and landscape MP4 export with optional burned-in captions"],
   limitations: ["Uses narrated AI still images, not generative moving footage.", "Live generation requires connected providers, a deployed worker, and credits.", "No social auto-posting, background music, or stock footage library in this release. Review factual claims before publishing."],
-  relatedFeatures: ["ai-cartoon-series"], status: "published", publishedAt: "2026-09-22T00:00:00.000Z", modifiedAt: "2026-09-22T00:00:00.000Z",
-  seo: {title: "Faceless Video Generator — Script to Narrated Video", description: "Create faceless shorts from ideas or scripts. Edit scenes, generate AI visuals and narration, add timed captions, and export a private MP4.", heading: "Your story. Your voice. No camera required.", canonicalPath: "/features/faceless-video-generator", editorialOverride: true}, developmentOnly:false,
+  relatedFeatures: ["ai-cartoon-series"], status: "published", publishedAt: "2026-09-22T00:00:00.000Z", modifiedAt: "2026-09-25T00:00:00.000Z",
+  seo: {title: "Faceless Video Generator — Script to Narrated Video", description: "Create faceless shorts from ideas or scripts. Edit scenes, generate AI visuals and narration, add timed captions, and export a private MP4.", heading: "Create faceless videos from an idea or your own script", canonicalPath: "/features/faceless-video-generator", editorialOverride: true}, developmentOnly:false,
 }));
 
 export function getPublishedFeatures() {
