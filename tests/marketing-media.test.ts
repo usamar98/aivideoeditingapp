@@ -18,6 +18,7 @@ import Home from "@/app/page";
 import StudioLibraryPage from "@/app/studio/page";
 import { ExampleVisual, exampleVisuals } from "@/components/marketing/example-visual";
 import { HeroShowcase } from "@/components/marketing/hero-showcase";
+import { UpcomingFeatures } from "@/components/marketing/upcoming-features";
 import { UgcPreview } from "@/components/studio/ugc-preview";
 
 const slugs = ["faceless-video-generator", "ai-cartoon-series", "ai-ugc-product-ads"];
@@ -38,37 +39,53 @@ describe("AI marketing media", () => {
     expect($.text()).toContain("AI-generated concept");
   });
 
-  it("replaces fake hero cards with real, opt-in video and three image concepts", () => {
+  it("renders phone-format inspiration with paused server markup and accessible motion controls", () => {
     const $ = load(renderToStaticMarkup(createElement(HeroShowcase)));
-    const video = $("video");
-    expect(video.length).toBe(1);
-    expect(video.attr("controls")).toBeDefined();
-    expect(video.attr("playsinline")).toBeDefined();
-    expect(video.attr("preload")).toBe("none");
-    expect(video.attr("autoplay")).toBeUndefined();
-    expect(video.attr("loop")).toBeUndefined();
-    expect(video.attr("width")).toBe("1920");
-    expect(video.attr("height")).toBe("1080");
-    expect(video.attr("aria-label")).toContain("AI-generated");
-    expect($(`#${video.attr("aria-describedby")}`).text()).toContain("silent");
-    expect(statSync(assetPath(video.attr("poster")!)).size).toBeGreaterThan(1000);
-    const webm = video.find("source[type='video/webm']");
-    expect(webm.length).toBe(1);
-    const webmBytes = readFileSync(assetPath(webm.attr("src")!));
-    expect(webmBytes.subarray(0, 4).toString("hex")).toBe("1a45dfa3");
-    expect(webmBytes.length).toBeLessThan(500_000);
-    const source = video.find("source[type='video/mp4']");
-    expect(source.attr("type")).toBe("video/mp4");
-    const clip = readFileSync(assetPath(source.attr("src")!));
-    expect(clip.subarray(4, 8).toString()).toBe("ftyp");
-    expect(clip.length).toBeLessThan(2_000_000);
-    expect(clip.includes(Buffer.from("soun"))).toBe(false);
-    expect($("img").length).toBe(3);
+    expect($(".hero-phone").length).toBe(4);
+    expect($(".hero-social").length).toBe(4);
+    expect($("section").attr("data-motion")).toBe("off");
+    expect($("button").text()).toContain("Motion off");
+    expect($("button").attr("aria-pressed")).toBe("false");
+    expect($("video").length).toBe(2);
+    $("video").each((_, element) => {
+      const video = $(element);
+      expect(video.attr("playsinline")).toBeDefined();
+      expect(video.attr("muted")).toBeDefined();
+      expect(video.attr("loop")).toBeDefined();
+      expect(video.attr("preload")).toBe("none");
+      expect(video.attr("autoplay")).toBeUndefined();
+      expect(video.attr("aria-hidden")).toBe("true");
+      expect(statSync(assetPath(video.attr("poster")!)).size).toBeGreaterThan(1000);
+      const webmBytes = readFileSync(assetPath(video.find("source[type='video/webm']").attr("src")!));
+      expect(webmBytes.subarray(0, 4).toString("hex")).toBe("1a45dfa3");
+      expect(webmBytes.length).toBeLessThan(2_000_000);
+      const clip = readFileSync(assetPath(video.find("source[type='video/mp4']").attr("src")!));
+      expect(clip.subarray(4, 8).toString()).toBe("ftyp");
+      expect(clip.length).toBeLessThan(2_000_000);
+      expect(clip.includes(Buffer.from("soun"))).toBe(false);
+    });
+    expect($("img").length).toBe(2);
     expect($.text()).toContain("not ETA exports");
     const credit = $("a[href^='https://pixabay.com/videos/']");
     expect(credit.text()).toContain("michellemorseu");
     expect(credit.attr("rel")).toContain("noopener");
     expect($("iframe").length).toBe(0);
+  });
+
+  it("shows a playable clone concept and four clearly unavailable social integrations", () => {
+    const $ = load(renderToStaticMarkup(createElement(UpcomingFeatures)));
+    expect($("article").length).toBe(5);
+    expect($.text().match(/Coming soon/g)?.length).toBe(5);
+    expect($("video[controls]").length).toBe(1);
+    expect($("video").attr("autoplay")).toBeUndefined();
+    expect($("video").attr("preload")).toBe("none");
+    expect($.text()).toContain("not an ETA clone or a speaking demo");
+    for (const name of ["TikTok", "Instagram", "Facebook", "YouTube"]) {
+      expect($(`article[aria-label='${name} publishing — coming soon']`).length).toBe(1);
+    }
+    expect($("a[href^='/studio'], button").length).toBe(0);
+    expect($.text()).toContain("aren’t available yet");
+    expect($.text()).toContain("No impersonation");
   });
 
   it.each([true, false])("labels the UGC visual as a concept (compact=%s)", (compact) => {
@@ -81,7 +98,7 @@ describe("AI marketing media", () => {
   it("keeps all published homepage feature links and replaces their artwork", async () => {
     const $ = load(renderToStaticMarkup(await Home()));
     expect($("h1").length).toBe(1);
-    expect($("video").length).toBe(1);
+    expect($("video").length).toBe(3);
     for (const slug of slugs) {
       const card = $(`#tools a[href='/features/${slug}']`);
       expect(card.length).toBe(1);

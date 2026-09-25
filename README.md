@@ -4,7 +4,9 @@ FrameFoundry is a multi-feature AI video studio with a cream-and-blue public sit
 
 Start with [the deployment guide](docs/DEPLOYMENT.md) for the exact Vercel/worker variables, Stripe product/portal/webhook setup, migrations, and launch checklist. [Faceless workflow research](docs/FACELESS-RESEARCH.md) explains the product examples and deliberately bounded feature scope.
 
-The temporary [one-time $1 / 10-credit pack](docs/ONE-DOLLAR-CREDIT-PACK.md) reuses existing Stripe keys and billing tables. Its guide covers payment verification and disabling the offer after use.
+The temporary [one-time $1 / 10-credit pack](docs/ONE-DOLLAR-CREDIT-PACK.md) is retired: its cards are hidden and new checkouts are blocked. Payment verification and webhook fulfillment remain available for existing purchases.
+
+Pricing cards offer **1× / 2× / 3× credit bundles** at proportional prices, using the existing Stripe prices and verified checkout quantities. See [credit bundle billing and deployment](docs/CREDIT-BUNDLES.md). The homepage and tools page also preview digital-clone presenters and social publishing as **coming soon**, not active integrations. [Marketing media provenance](docs/MARKETING-MEDIA.md) documents the locally hosted AI inspiration and motion controls.
 
 **Podcast/video → Shorts** is implemented without Klap. See [setup, scope and verification](docs/PODCAST-SHORTS.md) for the new migration, worker deployment, existing fal credentials, assisted speaker framing and credit rules. Preview the editor at `/studio/shorts/demo` and the public guide at `/features/podcast-to-shorts`.
 

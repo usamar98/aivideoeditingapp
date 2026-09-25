@@ -11,14 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { changePassword, createCheckout, openBillingPortal, updateProfile } from "@/app/studio/profile/actions";
 import type { OfferedBillingPlan } from "@/lib/billing/catalog";
-import type { BillingInterval } from "@/lib/billing/pricing";
+import type { BillingInterval, CreditBundle } from "@/lib/billing/pricing";
 import { PricingCards } from "@/components/billing/pricing-cards";
 import { createClient } from "@/lib/supabase/client";
-import { CreditPackCard } from "@/components/billing/credit-pack-card";
-import { createCreditPackCheckout } from "@/app/studio/profile/credit-pack-actions";
 
 export type SubscriptionView = { status: string; plan_name: string; cancel_at_period_end: boolean; current_period_end: string | null };
-export function ProfileSettings({ email, initialUsername, demo, plans, subscription, credits, billingMessage, creditPackMessage, creditPackReady = false, stripeTestMode = false, initialTab = "profile", initialInterval = "month", selectedTier }: { email: string; initialUsername: string; demo: boolean; plans: OfferedBillingPlan[]; subscription: SubscriptionView | null; credits: number; billingMessage: string | null; creditPackMessage?: string | null; creditPackReady?: boolean; stripeTestMode?: boolean; initialTab?: "profile" | "billing"; initialInterval?: BillingInterval; selectedTier?: string }) {
+export function ProfileSettings({ email, initialUsername, demo, plans, subscription, credits, billingMessage, creditPackMessage, initialTab = "profile", initialInterval = "month", initialQuantity = 1, selectedTier }: { email: string; initialUsername: string; demo: boolean; plans: OfferedBillingPlan[]; subscription: SubscriptionView | null; credits: number; billingMessage: string | null; creditPackMessage?: string | null; initialTab?: "profile" | "billing"; initialInterval?: BillingInterval; initialQuantity?: CreditBundle; selectedTier?: string }) {
   const router = useRouter();
   const [username, setUsername] = useState(initialUsername);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -48,10 +46,9 @@ export function ProfileSettings({ email, initialUsername, demo, plans, subscript
         {billingMessage && <p className="mt-5 rounded-lg bg-secondary p-3 text-sm" role="status">{billingMessage}</p>}
         <div className="mt-6 flex flex-wrap gap-3"><Button variant="outline" disabled={pending || demo || !subscription} onClick={() => run(() => openBillingPortal("manage"))}>Manage subscription <ExternalLink /></Button><Button variant="outline" disabled={pending || demo || !subscription} onClick={() => run(() => openBillingPortal("payment"))}>Update payment method</Button>{subscription && !["canceled","incomplete_expired"].includes(subscription.status) && !subscription.cancel_at_period_end && <Button variant="ghost" className="text-destructive" disabled={pending || demo} onClick={() => run(() => openBillingPortal("cancel"))}>Cancel subscription</Button>}<Button variant="ghost" disabled={pending} onClick={() => router.refresh()}>Refresh status</Button></div><p className="mt-4 text-xs leading-6 text-muted-foreground">Stripe securely handles cards, invoices, plan changes, and cancellation confirmation. No card details are stored here. Credits arrive after a confirmed paid invoice; prorated changes do not grant another full credit allocation.</p></Card>
         {creditPackMessage && <p role="status" className="mt-6 rounded-xl border border-primary/20 bg-accent/50 p-4 text-sm">{creditPackMessage}</p>}
-        <CreditPackCard mode="billing" pending={pending} demo={demo} ready={creditPackReady} testMode={stripeTestMode} onBuy={() => run(createCreditPackCheckout)} />
         <h2 className="mb-2 mt-8 text-lg font-semibold">Choose your credit budget</h2>
         <p className="mb-6 text-sm text-muted-foreground">Monthly credits, or twelve months of credits upfront with yearly billing.</p>
-        <PricingCards mode="billing" plans={plans} pending={pending} demo={demo} hasSubscription={Boolean(subscription && !["canceled","incomplete_expired"].includes(subscription.status))} onChoose={(priceId) => run(() => createCheckout(priceId))} initialInterval={initialInterval} selectedTier={selectedTier} />
+        <PricingCards mode="billing" plans={plans} pending={pending} demo={demo} hasSubscription={Boolean(subscription && !["canceled","incomplete_expired"].includes(subscription.status))} onChoose={(priceId, quantity) => run(() => createCheckout(priceId, quantity))} initialInterval={initialInterval} initialQuantity={initialQuantity} selectedTier={selectedTier} />
       </TabsContent>
     </Tabs>{message && <p className="mt-5 rounded-xl border border-primary/20 bg-accent/50 p-4 text-sm" role="status">{message}</p>}<Button variant="ghost" className="mt-8" disabled={demo || pending} onClick={() => run(async () => { const client = createClient(); if (!client) return {error:"Authentication is not configured."}; const {error} = await client.auth.signOut(); if (error) return {error:error.message}; router.push("/login"); return {ok:true}; }, "Signed out.")}><LogOut /> Sign out</Button>
   </main>;

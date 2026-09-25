@@ -1,9 +1,9 @@
 import type Stripe from "stripe";
 
-// Temporary offer: set enabled to false and redeploy to hide it and stop new
-// checkouts. Keep the immutable terms below so delayed paid webhooks still settle.
+// Retired temporary offer: hide every card and reject new checkout requests.
+// Keep the immutable terms below so delayed paid webhooks still settle.
 export const creditPack = {
-  enabled: true,
+  enabled: false,
   id: "eta-10-credits-usd-1-v1",
   name: "Mini credit pack",
   amount: 100,

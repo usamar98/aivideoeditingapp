@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import { describe, expect, it, vi } from "vitest";
-import { planTerms, pricingAccountHref, pricingTiers } from "@/lib/billing/pricing";
+import { creditBundleFromQuery, creditBundleOptions, isCreditBundle, planTerms, pricingAccountHref, pricingTiers } from "@/lib/billing/pricing";
 import { toOfferedBillingPlan } from "@/lib/billing/catalog";
 import { catalogEntries, syncStripeCatalog } from "../scripts/setup-stripe-pricing.mjs";
 
@@ -15,6 +15,21 @@ function priceFor(entry: ReturnType<typeof catalogEntries>[number]) {
 }
 
 describe("three-tier monthly and annual pricing", () => {
+  it.each(creditBundleOptions)("keeps prices and credits proportional for the %i× bundle", (quantity) => {
+    for (const tier of pricingTiers) for (const interval of ["month", "year"] as const) {
+      const base = planTerms(tier, interval);
+      const selected = planTerms(tier, interval, quantity);
+      for (const field of ["amount", "credits", "monthlyEquivalent", "monthlyCredits", "annualSavings"] as const) expect(selected[field]).toBe(base[field] * quantity);
+      expect(selected.lookupKey).toBe(base.lookupKey);
+    }
+  });
+  it("validates credit bundles and safely defaults untrusted query values", () => {
+    for (const value of [undefined, "", "0", "4", "-1", "1.5", "NaN", "100000"]) expect(creditBundleFromQuery(value)).toBe(1);
+    expect(creditBundleFromQuery("2")).toBe(2);
+    expect(creditBundleFromQuery("3")).toBe(3);
+    for (const value of [0, -1, 4, 1.5, NaN, Infinity, "2", null]) expect(isCreditBundle(value)).toBe(false);
+    expect(pricingAccountHref("creator", "year", 3)).toBe("/studio/profile?tab=billing&plan=creator&interval=year&quantity=3");
+  });
   it("uses the requested prices and grants twelve months upfront yearly", () => {
     expect(pricingTiers.map((tier) => planTerms(tier, "month").amount)).toEqual([2999, 4999, 9999]);
     expect(pricingTiers.map((tier) => planTerms(tier, "month").credits)).toEqual([440, 1100, 2200]);

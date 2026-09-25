@@ -17,6 +17,25 @@ beforeEach(() => {
 });
 
 describe("advertised plan checkout boundary", () => {
+  it.each([2, 3])("passes the %i× bundle to Stripe without changing the verified base price", async (quantity) => {
+    await createCheckout("price_annual", quantity);
+    expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ line_items: [{ price: "price_annual", quantity }], metadata: { app: "framefoundry", price_id: "price_annual", credit_bundle: String(quantity) } }), expect.any(Object));
+  });
+  it.each([0, -1, 1.5, 4, NaN, Infinity])("rejects unsupported quantity %s before any checkout work", async (quantity) => {
+    expect((await createCheckout("price_annual", quantity)).error).toContain("supported credit bundle");
+    expect(mocks.account).not.toHaveBeenCalled(); expect(mocks.price).not.toHaveBeenCalled(); expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it("reuses a pending session only when both its price and credit quantity match", async () => {
+    mocks.sessions.mockResolvedValue({ data: [{ id: "cs_open", mode: "subscription", metadata: { app: "framefoundry", price_id: "price_annual", credit_bundle: "2" }, url: "https://checkout.stripe.com/open" }] });
+    expect((await createCheckout("price_annual", 2)).url).toBe("https://checkout.stripe.com/open");
+    expect(mocks.create).not.toHaveBeenCalled(); expect(mocks.expire).not.toHaveBeenCalled();
+  });
+  it("replaces an old base-quantity session when selecting more credits", async () => {
+    mocks.sessions.mockResolvedValue({ data: [{ id: "cs_open", mode: "subscription", metadata: { app: "framefoundry", price_id: "price_annual" }, url: "https://checkout.stripe.com/open" }] });
+    await createCheckout("price_annual", 2);
+    expect(mocks.expire).toHaveBeenCalledWith("cs_open");
+    expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ line_items: [{ price: "price_annual", quantity: 2 }] }), expect.any(Object));
+  });
   it("checks out the selected annual price for the authenticated customer's workspace", async () => {
     expect((await createCheckout("price_annual")).url).toContain("checkout.stripe.com");
     expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ customer: "cus_owned", mode: "subscription", line_items: [{ price: "price_annual", quantity: 1 }], subscription_data: { metadata: { app: "framefoundry", workspace_id: "owned_workspace" } } }), expect.any(Object));

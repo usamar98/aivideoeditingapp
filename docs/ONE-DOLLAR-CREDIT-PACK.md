@@ -1,8 +1,10 @@
 # Temporary $1 credit pack
 
+**Status: retired.** `creditPack.enabled` is `false`. Deploy this version to remove the offer from the homepage, pricing page and account billing, and block new checkout requests. Historical purchase validation, credit delivery and receipt verification remain enabled. Removing the offer does not remove any purchased credits.
+
 This is a genuine **USD $1.00 one-time purchase of 10 ETA credits**, not a subscription, donation, or fake transaction. It does not renew or change an existing plan. The normal monthly/yearly plans are unchanged. Most complete video workflows need more than 10 credits; their studio estimates remain the source of truth.
 
-## Where it appears
+## Where it appeared before retirement
 
 - Homepage pricing and `/pricing`: **Mini credit pack**, below the subscription cards.
 - `/studio/profile?tab=billing#mini-credit-pack`: the signed-in purchase button. Existing subscribers can also buy the pack.
@@ -19,6 +21,12 @@ In the existing Stripe webhook endpoint, keep all subscription events and ensure
 Stripe-hosted Checkout creates the one-time line item server-side at exactly 100 US cents with quantity 1. It does not use the six recurring prices. Promotion codes, adaptive currency pricing, and automatic tax are not enabled on this fixed-total temporary offer; review your tax obligations before offering it more widely.
 
 ## Verifying a real purchase
+
+For an existing purchase, sign in with the **ETA account used during checkout** and visit **My account → Billing → Available credits**, then choose **Refresh status**. A pack adds 10 credits to the existing balance; it does not create a subscription, so "No active plan" can still be correct. Do not pay again if credits are missing.
+
+If credits are missing, inspect the live Stripe endpoint's delivery of `checkout.session.completed` to `https://www.editingapp.live/api/webhooks/stripe`. It must reach the current deployment, verify against that endpoint's `STRIPE_WEBHOOK_SECRET`, and persist the credit ledger entry. Correct the failed delivery/configuration and resend the original event; the session-level idempotency key prevents duplicate credit grants. Do not manually add a second purchase with a different key.
+
+The following describes the original purchase flow (new purchases are now disabled):
 
 1. Sign in and open **My account → Billing → Mini credit pack**.
 2. Choose **Buy 10 credits · $1.00** and review the one-time amount in Stripe Checkout. The account owner/customer must complete the payment themselves.

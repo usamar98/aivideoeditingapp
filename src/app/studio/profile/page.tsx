@@ -4,19 +4,20 @@ import { ProfileSettings, type SubscriptionView } from "@/components/studio/prof
 import { createClient, getViewer } from "@/lib/supabase/server";
 import { getBillingPlans, getStripe } from "@/lib/billing/stripe";
 import type { OfferedBillingPlan } from "@/lib/billing/catalog";
-import { pricingAccountHref, pricingTiers } from "@/lib/billing/pricing";
+import { creditBundleFromQuery, pricingAccountHref, pricingTiers } from "@/lib/billing/pricing";
 import { getCreditPackReceipt } from "@/lib/billing/credit-pack-receipt";
 
 export const metadata = { title: "Your account", robots: { index: false, follow: false } };
 
-export default async function ProfilePage({searchParams}: {searchParams: Promise<{checkout?:string;tab?:string;plan?:string;interval?:string;credit_pack?:string;session_id?:string}>}) {
+export default async function ProfilePage({searchParams}: {searchParams: Promise<{checkout?:string;tab?:string;plan?:string;interval?:string;quantity?:string;credit_pack?:string;session_id?:string}>}) {
   const query = await searchParams;
   const selectedTier = pricingTiers.find((tier) => tier.id === query.plan)?.id;
   const initialInterval = query.interval === "year" ? "year" : "month";
+  const initialQuantity = creditBundleFromQuery(query.quantity);
   const initialTab = query.tab === "billing" || query.checkout || query.credit_pack || selectedTier ? "billing" : "profile";
   const viewer = await getViewer();
   if (!viewer) {
-    const next = selectedTier ? pricingAccountHref(selectedTier, initialInterval) : initialTab === "billing" ? "/studio/profile?tab=billing" : "/studio/profile";
+    const next = selectedTier ? pricingAccountHref(selectedTier, initialInterval, initialQuantity) : initialTab === "billing" ? "/studio/profile?tab=billing" : "/studio/profile";
     redirect(`/login?next=${encodeURIComponent(next)}`);
   }
   let username = viewer.fixture ? "demo_creator" : "";
@@ -46,5 +47,5 @@ export default async function ProfilePage({searchParams}: {searchParams: Promise
   }
   if (!viewer.fixture && process.env.STRIPE_SECRET_KEY) { try { plans = await getBillingPlans(); } catch { billingMessage = "Billing plans could not be loaded. Please try again later."; } }
   if (!process.env.STRIPE_SECRET_KEY) billingMessage = "Stripe is not connected yet. Billing actions become available after setup.";
-  return <WorkspaceShell title="Account settings" active="My account"><ProfileSettings email={viewer.email} initialUsername={username} demo={viewer.fixture} credits={credits} subscription={subscription} plans={plans} billingMessage={billingMessage} creditPackMessage={creditPackMessage} creditPackReady={Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET)} stripeTestMode={Boolean(process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") || process.env.STRIPE_SECRET_KEY?.startsWith("rk_test_"))} initialTab={initialTab} initialInterval={initialInterval} selectedTier={selectedTier} /></WorkspaceShell>;
+  return <WorkspaceShell title="Account settings" active="My account"><ProfileSettings email={viewer.email} initialUsername={username} demo={viewer.fixture} credits={credits} subscription={subscription} plans={plans} billingMessage={billingMessage} creditPackMessage={creditPackMessage} initialTab={initialTab} initialInterval={initialInterval} initialQuantity={initialQuantity} selectedTier={selectedTier} /></WorkspaceShell>;
 }

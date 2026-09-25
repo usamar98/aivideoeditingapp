@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { MarketingPage } from "@/components/marketing/site-chrome";
 import { JsonLd } from "@/components/marketing/json-ld";
+import { UpcomingFeatures } from "@/components/marketing/upcoming-features";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublishedFeaturesData } from "@/lib/features/repository";
@@ -24,6 +25,7 @@ export default async function FeaturesPage() {
     <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
       {features.map((feature) => <Card key={feature.slug}><CardHeader><CardTitle>{feature.name}</CardTitle><CardDescription className="leading-7">{feature.description}</CardDescription></CardHeader><CardContent><Button asChild variant="outline"><Link href={`/features/${feature.slug}`}>Explore {feature.name.toLowerCase()} <ArrowRight /></Link></Button></CardContent></Card>)}
     </div>
+    <UpcomingFeatures />
     <section className="mt-12 max-w-3xl space-y-4 text-base leading-8 text-muted-foreground">
       <h2 className="text-2xl font-semibold text-foreground">Choose the workflow that fits your idea</h2>
       <p>Faceless videos combine still images with narration and optional captions. Cartoons generate moving character scenes with actions and dialogue. UGC product ads pair a fictional AI presenter with your product photos and editable hook variants. Every workflow has a review step before the separate rendering stage.</p>

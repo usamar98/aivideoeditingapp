@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/billing/stripe";
 import { isCreditInvoice } from "@/lib/billing/catalog";
+import { isCreditBundle } from "@/lib/billing/pricing";
 import { creditPack, creditPackEventKey, isCreditPackSession, validCreditPackSession, isPaidCreditPackSession } from "@/lib/billing/credit-pack";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -62,9 +63,12 @@ export async function POST(request: Request) {
           if (!priceId || line.amount <= 0 || line.parent?.subscription_item_details?.proration) continue;
           const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
           const product = price.product;
-          const quantity = line.quantity || 1;
+          const quantity = line.quantity ?? 1;
           const creditAmount = Number(price.metadata.credits);
-          if (typeof product !== "string" && !product.deleted && product.metadata.app === "framefoundry" && Number.isSafeInteger(creditAmount) && creditAmount > 0 && creditAmount <= 100000 && quantity === 1) credits += creditAmount;
+          if (typeof product !== "string" && !product.deleted && product.metadata.app === "framefoundry" && Number.isSafeInteger(creditAmount) && creditAmount > 0 && creditAmount <= 100000) {
+            if (!isCreditBundle(quantity)) throw new Error("Invoice has an unsupported credit bundle quantity; manual review required.");
+            credits += creditAmount * quantity;
+          }
         }
         if (credits > 0) {
           const { error } = await admin.rpc("apply_credit_purchase", { target_workspace_id: customer.workspace_id, credit_amount: credits, event_key: `stripe:invoice:${invoice.id}`, external_id: invoice.id });

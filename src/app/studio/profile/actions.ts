@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireAccount, publicError } from "@/lib/account";
 import { accountReturnUrl, getBillingCustomer, getStripe } from "@/lib/billing/stripe";
 import { managedSubscriptionStatuses, toOfferedBillingPlan } from "@/lib/billing/catalog";
+import { isCreditBundle } from "@/lib/billing/pricing";
 
 export async function updateProfile(input: unknown) {
   try {
@@ -33,9 +34,10 @@ export async function changePassword(input: unknown) {
   } catch (error) { return { error: publicError(error) }; }
 }
 
-export async function createCheckout(priceId: string) {
+export async function createCheckout(priceId: string, quantity: number = 1) {
   try {
     z.string().regex(/^price_[a-zA-Z0-9]+$/).parse(priceId);
+    if (!isCreditBundle(quantity)) throw new Error("Choose a supported credit bundle (1×, 2× or 3×).");
     const account = await requireAccount();
     const stripe = getStripe();
     const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
@@ -52,15 +54,15 @@ export async function createCheckout(priceId: string) {
     const sessions = await stripe.checkout.sessions.list({ customer, status: "open", limit: 100 });
     for (const session of sessions.data) {
       if (session.mode === "subscription" && session.metadata?.app === "framefoundry") {
-        if (session.metadata.price_id === priceId && session.url) return { url: session.url };
+        if (session.metadata.price_id === priceId && Number(session.metadata.credit_bundle || 1) === quantity && session.url) return { url: session.url };
         await stripe.checkout.sessions.expire(session.id);
       }
     }
     uncertain = true;
     const session = await stripe.checkout.sessions.create({
       customer, mode: "subscription", client_reference_id: account.user.id,
-      line_items: [{ price: priceId, quantity: 1 }],
-      metadata: { app: "framefoundry", price_id: priceId },
+      line_items: [{ price: priceId, quantity }],
+      metadata: { app: "framefoundry", price_id: priceId, credit_bundle: String(quantity) },
       subscription_data: { metadata: { app: "framefoundry", workspace_id: account.workspaceId } },
       success_url: `${accountReturnUrl()}?checkout=success`, cancel_url: `${accountReturnUrl()}?checkout=cancelled`,
     }, { idempotencyKey: `checkout:${account.user.id}:${lockToken}` });

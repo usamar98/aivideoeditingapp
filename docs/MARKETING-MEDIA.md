@@ -1,6 +1,6 @@
 # Marketing media
 
-Updated: 2026-09-25.
+Updated: 2026-09-26.
 
 ## Presentation and provenance
 
@@ -48,9 +48,22 @@ Use case: ads-marketing. Asset type: AI-generated product-ad concept image for a
 - Video: original 1920 × 1080 H.264 MP4, approximately 6.13 seconds, silent (no audio track). Also encoded as 1280 × 720 VP9 WebM (CRF 33), offered first for broader embedded-browser compatibility. Poster extracted at 0.3 seconds. No narrative/content edits to the stock footage. Integrated into the designed hero with original concept images, captions and website copy; not offered as standalone stock for resale/download.
 - The license permits free commercial use and adaptation, subject to restrictions on standalone distribution, misleading attribution/endorsement, trademarks, and other third-party rights. The fictional forest clip shows no identifiable people or branding. Keep the visible source credit and the “not ETA exports” disclosure when reusing it.
 
+## AI portrait video for the hero and coming-soon preview
+
+- Title: AI generated, woman, beauty, portrait.
+- Creator: freestock_video, via Pixabay.
+- Source: https://pixabay.com/videos/ai-generated-woman-beauty-portrait-294774/
+- Source page explicitly identifies it as **AI generated**, published August 3, 2025. No model or real-person identity is claimed.
+- License: Pixabay Content License, reviewed September 26, 2026: https://pixabay.com/service/license-summary/. Commercial adaptation is permitted subject to the license and third-party rights; this is an integrated marketing illustration, not a standalone stock offering.
+- Download URL observed on the source page: https://cdn.pixabay.com/video/2025/08/01/294774_large.mp4
+- The clip was capped at six seconds (approximately 5.21 seconds of available footage) and resized to 540 × 968, with audio removed, encoded as H.264 MP4 (688,566 bytes) and VP9 WebM (1,039,038 bytes). The JPEG poster is extracted at 0.3 seconds (59,718 bytes).
+- Local files: `ai-portrait.mp4`, `ai-portrait.webm`, and `ai-portrait-poster.jpg` in `public/examples/`.
+- Visible disclosure: **AI portrait inspiration, not an ETA clone or a speaking demo**. It is not a generated customer result, a real digital-cloning demonstration, an endorsement or a promise that the planned feature is available.
+- The four social publishing cards are static, explicitly coming soon; brand icons identify planned destinations without implying affiliation or a working integration.
+
 ## Performance and accessibility
 
-- Native video controls, keyboard-accessible playback, inline playback, WebM with MP4 fallback, matching local poster, fixed aspect ratio, and a text description of the silent clip.
-- Playback is opt-in: no autoplay or looping, so reduced-motion visitors are not forced into movement. `preload="none"` avoids downloading the MP4 before playback.
-- Next Image provides responsive sources, meaningful alt text, and lazy loading for the concept artwork. The studio's first above-the-fold image loads eagerly.
+- The digital-clone preview has native, keyboard-accessible controls and opt-in playback. All videos use WebM with MP4 fallback, inline playback, local posters and fixed aspect ratios.
+- The hero uses two silent looping background videos and gently moving phone/social wrappers. **Pause motion** stops both video and CSS animation. Motion begins only after hydration when reduced-motion and Save-Data preferences allow it; background video pauses when off-screen or the page is hidden. The server renders static posters. `preload="none"` avoids fetching video before playback.
+- Next Image provides responsive sources and lazy loading for the concept artwork. Decorative hero media is hidden from assistive technology, with descriptive text and disclosures in the hero. The studio's first above-the-fold image loads eagerly.
 - Asset/link/provenance regression checks live in `tests/marketing-media.test.ts`.
