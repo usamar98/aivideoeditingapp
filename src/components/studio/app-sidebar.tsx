@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clapperboard, FolderKanban, UserRound, WandSparkles, Video, ListChecks, Megaphone } from "lucide-react";
+import { Clapperboard, FolderKanban, UserRound, WandSparkles, Video, ListChecks, Megaphone, Scissors } from "lucide-react";
 
 import { BrandMark } from "./brand-mark";
 
@@ -9,6 +9,7 @@ const items = [
   { href: "/studio/jobs", label: "Jobs", icon: ListChecks },
   { href: "/studio/cartoons", label: "Cartoon videos", icon: Clapperboard },
   { href: "/studio/ugc", label: "UGC & product ads", icon: Megaphone },
+  { href: "/studio/shorts", label: "Podcast Shorts", icon: Scissors },
   { href: "/features", label: "Explore features", icon: WandSparkles },
 ];
 

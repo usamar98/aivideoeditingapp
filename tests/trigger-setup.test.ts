@@ -9,6 +9,7 @@ vi.mock("@trigger.dev/sdk", () => ({
 vi.mock("@trigger.dev/build/extensions/core", () => ({
   aptGet: vi.fn(),
   ffmpeg: vi.fn(),
+  additionalFiles: vi.fn(),
 }));
 import { connectivityCheck } from "../src/trigger/connectivity-check";
 import triggerConfig from "../trigger.config";

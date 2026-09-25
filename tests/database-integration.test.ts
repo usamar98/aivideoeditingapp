@@ -11,6 +11,7 @@ import { cartoonDemo } from "@/lib/cartoons/demo";
 import { CARTOON_PLAN_CREDITS, cartoonRenderCredits, type CartoonBrief } from "@/lib/cartoons/schema";
 import { ugcDemo } from "@/lib/ugc/demo";
 import { UGC_PLAN_CREDITS, ugcRenderCredits } from "@/lib/ugc/schema";
+import { shortsDemo } from "@/lib/shorts/demo";
 
 const userA="10000000-0000-4000-8000-000000000001",userB="10000000-0000-4000-8000-000000000002",workspace="20000000-0000-4000-8000-000000000001",project="30000000-0000-4000-8000-000000000001",job="40000000-0000-4000-8000-000000000001";
 let db:PGlite;
@@ -35,6 +36,7 @@ beforeAll(async()=>{
   await db.exec(readFileSync("supabase/migrations/20260923173517_jobs_cancellation.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20260924135448_cartoon_studio.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20260925120544_ugc_product_ads.sql","utf8"));
+  await db.exec(readFileSync("supabase/migrations/20260925165638_podcast_shorts.sql","utf8"));
   await db.exec("grant usage on schema storage to authenticated; grant select,insert,update,delete on storage.objects to authenticated;");
   await db.exec(`insert into auth.users values ('${userA}'),('${userB}'); insert into public.profiles(id) values ('${userA}'),('${userB}'); insert into public.workspaces(id,name,owner_id) values('${workspace}','Test studio','${userA}'); insert into public.workspace_members(workspace_id,user_id,role) values('${workspace}','${userA}','owner'); insert into public.credit_accounts(workspace_id,cached_balance) values('${workspace}',100); insert into public.faceless_projects(id,user_id,workspace_id,title,brief) values('${project}','${userA}','${workspace}','Test project','{}');`);
 },30000);
@@ -42,6 +44,83 @@ afterAll(async()=>{await db?.close();});
 
 async function asUser(id:string){await db.exec(`reset role; set role authenticated; select set_config('request.jwt.claim.sub','${id}',false); select set_config('request.jwt.claim.role','authenticated',false);`);}
 async function asService(){await db.exec("reset role; set role service_role; select set_config('request.jwt.claim.role','service_role',false);");}
+
+describe("Shorts database permissions, credit settlement and cancellation", () => {
+  async function fixture(ready = false) {
+    await asService(); const workspaceId = randomUUID(), projectId = randomUUID();
+    await db.query("insert into public.workspaces(id,name,owner_id) values($1,'Shorts test',$2)",[workspaceId,userA]);
+    await db.query("insert into public.workspace_members(workspace_id,user_id,role) values($1,$2,'owner')",[workspaceId,userA]);
+    await db.query("insert into public.credit_accounts(workspace_id,cached_balance) values($1,10000)",[workspaceId]);
+    await db.query("insert into public.shorts_projects(id,user_id,workspace_id,title,brief,analysis,plan,status) values($1,$2,$3,'Podcast',$4,$5,$6,$7)",[projectId,userA,workspaceId,JSON.stringify(shortsDemo.brief),ready ? JSON.stringify(shortsDemo.analysis) : null,ready ? JSON.stringify(shortsDemo.plan) : null,ready ? "ready" : "draft"]);
+    return { workspaceId, projectId };
+  }
+  async function balance(workspaceId: string) { return Number((await db.query<{ n: string }>("select cached_balance as n from public.credit_accounts where workspace_id=$1",[workspaceId])).rows[0].n); }
+  it("isolates owners and denies direct billing, project edits and media tampering", async () => {
+    const { projectId, workspaceId } = await fixture();
+    await db.query("insert into public.workspace_members(workspace_id,user_id,role) values($1,$2,'editor')",[workspaceId,userB]);
+    await db.exec("reset role"); const assetId = randomUUID();
+    await db.query("insert into storage.objects(id,name,bucket_id) values($1,$2,'private-media')",[assetId,`${workspaceId}/${userA}/shorts-inputs/source.mp4`]);
+    await asUser(userB);
+    expect((await db.query("select id from public.shorts_projects where id=$1",[projectId])).rows).toHaveLength(0);
+    expect((await db.query("select id from storage.objects where id=$1",[assetId])).rows).toHaveLength(0);
+    await asUser(userA);
+    expect((await db.query("select id from storage.objects where id=$1",[assetId])).rows).toHaveLength(1);
+    expect((await db.query("update storage.objects set name=name where id=$1 returning id",[assetId])).rows).toHaveLength(0);
+    expect((await db.query("delete from storage.objects where id=$1 returning id",[assetId])).rows).toHaveLength(0);
+    await expect(db.query("insert into storage.objects(id,name,bucket_id) values(gen_random_uuid(),$1,'private-media')",[`${workspaceId}/${userA}/shorts/fake/result.json`])).rejects.toThrow(/row-level security/);
+    await expect(db.query("update public.shorts_projects set status='complete' where id=$1",[projectId])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public.start_shorts_job($1,$2,gen_random_uuid(),'analyze')",[projectId,userA])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public.finish_shorts_job(gen_random_uuid(),true)")).rejects.toThrow(/permission denied/);
+    await asService(); await expect(db.query("select public.start_shorts_job($1,$2,gen_random_uuid(),'analyze')",[projectId,userB])).rejects.toThrow(/not found/);
+  });
+  it("reserves analysis once and cancels with exactly one refund while fencing late workers", async () => {
+    const { projectId, workspaceId } = await fixture(), id = randomUUID();
+    await db.query("select public.start_shorts_job($1,$2,$3,'analyze')",[projectId,userA,id]);
+    expect((await db.query<{ id: string }>("select public.start_shorts_job($1,$2,gen_random_uuid(),'analyze') as id",[projectId,userA])).rows[0].id).toBe(id);
+    expect(await balance(workspaceId)).toBe(9960);
+    await expect(db.query("select public.start_shorts_job($1,$2,gen_random_uuid(),'render',array['clip-1'])",[projectId,userA])).rejects.toThrow(/stage/);
+    await db.query("select public.request_generation_cancellation($1,$2)",[id,userA]);
+    await db.query("select public.finish_shorts_job($1,true,$2,$3)",[id,JSON.stringify(shortsDemo.analysis),JSON.stringify(shortsDemo.plan)]);
+    await db.query("select public.confirm_generation_cancellation($1)",[id]);
+    expect(await balance(workspaceId)).toBe(10000);
+    expect((await db.query<{ ok: boolean }>("select public.claim_generation_job($1,'late',1) as ok",[id])).rows[0].ok).toBe(false);
+    expect((await db.query("select status,analysis from public.shorts_projects where id=$1",[projectId])).rows[0]).toMatchObject({ status: "draft", analysis: null });
+  });
+  it("charges completed analysis, enforces revisions, and refunds failed selected exports", async () => {
+    const { projectId, workspaceId } = await fixture(), id = randomUUID();
+    await db.query("select public.start_shorts_job($1,$2,$3,'analyze')",[projectId,userA,id]);
+    await db.query("select public.finish_shorts_job($1,true,$2,$3)",[id,JSON.stringify(shortsDemo.analysis),JSON.stringify(shortsDemo.plan)]);
+    await db.query("select public.finish_shorts_job($1,true,$2,$3)",[id,JSON.stringify(shortsDemo.analysis),JSON.stringify(shortsDemo.plan)]);
+    expect(await balance(workspaceId)).toBe(9960);
+    await expect(db.query("select public.start_shorts_job($1,$2,gen_random_uuid(),'analyze')",[projectId,userA])).rejects.toThrow(/already analyzed/);
+    await db.query("select public.save_shorts_plan($1,$2,0,$3)",[projectId,userA,JSON.stringify(shortsDemo.plan)]);
+    await expect(db.query("select public.save_shorts_plan($1,$2,0,$3)",[projectId,userA,JSON.stringify(shortsDemo.plan)])).rejects.toThrow(/another tab/);
+    await expect(db.query("select public.start_shorts_job($1,$2,gen_random_uuid(),'render',array['clip-1'],0)",[projectId,userA])).rejects.toThrow(/changed/);
+    for (const selection of [[],["clip-1","clip-1"],["clip-5"]]) await expect(db.query("select public.start_shorts_job($1,$2,gen_random_uuid(),'render',$3,1)",[projectId,userA,selection])).rejects.toThrow(/distinct saved clips/);
+    const render = randomUUID(); await db.query("select public.start_shorts_job($1,$2,$3,'render',array['clip-1','clip-2'],1)",[projectId,userA,render]);
+    expect(await balance(workspaceId)).toBe(9940);
+    await expect(db.query("select public.save_shorts_plan($1,$2,1,$3)",[projectId,userA,JSON.stringify(shortsDemo.plan)])).rejects.toThrow(/Wait/);
+    await db.query("select public.finish_shorts_job($1,false)",[render]); expect(await balance(workspaceId)).toBe(9960);
+  });
+  it("publishes only complete owned output paths and preserves earlier clips on failed rerenders", async () => {
+    const { projectId, workspaceId } = await fixture(true), id = randomUUID();
+    await db.query("select public.start_shorts_job($1,$2,$3,'render',array['clip-1'])",[projectId,userA,id]);
+    const output = { "clip-1": { videoPath: `${workspaceId}/${userA}/shorts/${id}/clip-1.mp4`, captionsPath: `${workspaceId}/${userA}/shorts/${id}/clip-1.srt`, title: "Tip", start: 0, end: 30, framingNote: "Manual", createdAt: new Date().toISOString() } };
+    await expect(db.query("select public.finish_shorts_job($1,true,null,null,'{}')",[id])).rejects.toThrow(/Missing selected/);
+    await expect(db.query("select public.finish_shorts_job($1,true,null,null,$2)",[id,JSON.stringify({ "clip-1": { ...output["clip-1"], videoPath: "foreign.mp4" } })])).rejects.toThrow(/Invalid clip output/);
+    await db.query("select public.finish_shorts_job($1,true,null,null,$2)",[id,JSON.stringify(output)]);
+    await db.query("select public.finish_shorts_job($1,true,null,null,$2)",[id,JSON.stringify(output)]);
+    expect(await balance(workspaceId)).toBe(9990);
+    const next = randomUUID(); await db.query("select public.start_shorts_job($1,$2,$3,'render',array['clip-1'])",[projectId,userA,next]);
+    await db.query("select public.finish_shorts_job($1,false)",[next]);
+    expect((await db.query<{ outputs: unknown }>("select outputs from public.shorts_projects where id=$1",[projectId])).rows[0].outputs).toEqual(output);
+  });
+  it("uses the shared two-job workspace cap", async () => {
+    const { projectId, workspaceId } = await fixture();
+    for (let i=0;i<2;i++) await db.query("insert into public.generations(id,workspace_id,requested_by,operation,provider,model,idempotency_key,status,estimated_credits) values(gen_random_uuid(),$1,$2,'faceless-script','trigger','gemini',gen_random_uuid()::text,'reserved',2)",[workspaceId,userA]);
+    await expect(db.query("select public.start_shorts_job($1,$2,gen_random_uuid(),'analyze')",[projectId,userA])).rejects.toThrow(/Two jobs/);
+  });
+});
 
 describe("UGC database ownership, revisions and credit lifecycle", () => {
   async function fixture(ready = false, duration: 15 | 30 = 15) {

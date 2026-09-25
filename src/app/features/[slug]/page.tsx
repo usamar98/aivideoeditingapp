@@ -15,6 +15,7 @@ import { featureEditorial } from "@/lib/seo/editorial-content";
 import { publicMetadata } from "@/lib/seo/metadata";
 import { absoluteUrl, breadcrumbSchema, organizationId, pageSchema } from "@/lib/seo/structured-data";
 import { UgcPreview } from "@/components/studio/ugc-preview";
+import { ShortsPreview } from "@/components/studio/shorts-preview";
 
 export const dynamic = "force-dynamic";
 
@@ -41,16 +42,17 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
       "@type": "VideoObject", name: video.title, description: video.description, contentUrl: absoluteUrl(video.url), thumbnailUrl: absoluteUrl(video.thumbnailUrl!), uploadDate: video.publishedAt, duration: video.durationIso, transcript: video.transcript,
     })),
   ] };
-  const studioPath = slug === "ai-ugc-product-ads" ? "/studio/ugc" : slug === "faceless-video-generator" ? "/studio/faceless" : slug === "ai-cartoon-series" ? "/studio/cartoons" : "/studio";
+  const studioPath = slug === "podcast-to-shorts" ? "/studio/shorts" : slug === "ai-ugc-product-ads" ? "/studio/ugc" : slug === "faceless-video-generator" ? "/studio/faceless" : slug === "ai-cartoon-series" ? "/studio/cartoons" : "/studio";
 
   return <>
     <SiteHeader />
     <main id="main-content">
       <JsonLd data={jsonLd} />
       <nav aria-label="Breadcrumb" className="mx-auto flex max-w-6xl flex-wrap gap-2 px-6 pt-8 text-sm text-muted-foreground"><Link href="/">Home</Link><span aria-hidden>/</span><Link href="/features">Features</Link><span aria-hidden>/</span><span aria-current="page">{feature.name}</span></nav>
-      <section className={`mx-auto grid max-w-6xl gap-10 px-6 pb-16 pt-10 ${media.length || slug === "ai-ugc-product-ads" ? "lg:grid-cols-2 lg:items-center" : ""}`}>
+      <section className={`mx-auto grid max-w-6xl gap-10 px-6 pb-16 pt-10 ${media.length || slug === "ai-ugc-product-ads" || slug === "podcast-to-shorts" ? "lg:grid-cols-2 lg:items-center" : ""}`}>
         <div className="max-w-3xl"><Badge variant="success">Available workflow</Badge><h1 className="editorial mt-5 text-4xl tracking-tight sm:text-5xl">{feature.seo.heading}</h1><p className="mt-6 text-lg leading-8 text-muted-foreground">{feature.description}</p><div className="mt-7 flex flex-wrap gap-3"><Button asChild size="lg"><Link href={studioPath}>Start creating <ArrowRight /></Link></Button><Button asChild size="lg" variant="outline"><Link href="/pricing">See pricing</Link></Button></div>{editorial && <p className="mt-5 text-xs text-muted-foreground">ETA product guide · Updated <time dateTime={editorial.updatedAt}>September 25, 2026</time></p>}</div>
         {slug === "ai-ugc-product-ads" && <div className="overflow-hidden rounded-3xl border border-border"><UgcPreview /><div className="bg-card p-5 text-center"><Link href="/studio/ugc/demo" className="text-sm text-primary underline underline-offset-4">Explore the sample hook editor →</Link></div></div>}
+        {slug === "podcast-to-shorts" && <div><ShortsPreview /><Link href="/studio/shorts/demo" className="mt-4 block text-center text-sm text-primary underline">Try the sample clip editor →</Link></div>}
         {media.length > 0 && <div className="space-y-5">{media.map((item, index) => <Card key={item.url} className="overflow-hidden p-2">
           {item.type === "image" ? <div className="relative aspect-video overflow-hidden rounded-lg"><Image src={item.url} alt={item.description} fill loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" /></div> : <video className="aspect-video w-full rounded-lg" controls preload="none" poster={item.thumbnailUrl} aria-label={item.title} src={item.url}>Your browser does not support video. <a href={item.url}>Download {item.title}</a></video>}
           <div className="p-3"><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs leading-6 text-muted-foreground">{item.description}</p>{item.type === "video" && item.transcript && <details className="mt-3 text-sm"><summary className="cursor-pointer">Read video transcript</summary><p className="mt-3 whitespace-pre-line leading-7">{item.transcript}</p></details>}</div>

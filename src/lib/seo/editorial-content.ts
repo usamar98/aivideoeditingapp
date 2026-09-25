@@ -1,6 +1,7 @@
 import { formatUsd, planTerms, pricingTiers } from "@/lib/billing/pricing";
 import { CARTOON_PLAN_CREDITS, cartoonModels, cartoonRenderCredits } from "@/lib/cartoons/schema";
 import { UGC_PLAN_CREDITS, ugcRenderCredits } from "@/lib/ugc/schema";
+import { shortsEditorial } from "@/lib/shorts/editorial";
 
 export type Answer = { question: string; answer: string };
 
@@ -20,7 +21,7 @@ const cancellationAnswer = "Open Jobs to view waiting, running, completed, faile
 export const homeFaqs: Answer[] = [
   {
     question: "What can I create with ETA?",
-    answer: "ETA has three video workflows: narrated faceless videos, character-led AI cartoons, and AI UGC product ads. The ad studio combines a fictional AI presenter with your product photos, captions and three editable hooks. All workflows have a review step before rendering and export private MP4 files.",
+    answer: "ETA has four video workflows: narrated faceless videos, character-led AI cartoons, AI UGC product ads, and podcast-to-Shorts editing. Shorts repurpose your recordings into selected highlights with framing controls and animated captions. All workflows have a review step before rendering and export private MP4 files.",
   },
   {
     question: "What is the difference between faceless videos and cartoons?",
@@ -40,7 +41,7 @@ export const homeFaqs: Answer[] = [
   },
   {
     question: "Which video formats and languages are supported?",
-    answer: "All three workflows support vertical 9:16 and landscape 16:9 MP4 files. Faceless videos target 30 or 60 seconds with English, Spanish or French narration. Cartoons offer 15, 30 or 60 seconds at 720p with English generated speech. UGC product ads offer 15 or 30 seconds in English, plus square 1:1 exports. Review pronunciation and dialogue before sharing.",
+    answer: "Faceless videos and cartoons support vertical and landscape MP4 files; UGC ads also offer square exports. Podcast Shorts export 15–60 second clips in vertical 720 × 1280 with original audio and optional captions. Language support and generation lengths differ by tool; check the relevant feature page and review the result before sharing.",
   },
   { question: "Can I cancel a running generation?", answer: cancellationAnswer },
   {
@@ -50,6 +51,7 @@ export const homeFaqs: Answer[] = [
 ];
 
 export const featureEditorial: Record<string, FeatureEditorial> = {
+  "podcast-to-shorts": shortsEditorial,
   "ai-ugc-product-ads": {
     updatedAt: "2026-09-25",
     summary: "ETA’s AI UGC ad generator combines a fictional talking presenter with your actual product photos. Start from a public product page or upload the images yourself. Review the imported facts, define your audience and approved benefits, then create a presenter and three hook options. Edit the shared script and choose which variants to render. Product photos remain separate from generated footage to preserve the original packaging and appearance. This is a guided ad-creation workflow, not a real customer testimonial service or an ad-buying platform.",

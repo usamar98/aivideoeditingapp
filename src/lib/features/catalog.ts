@@ -163,3 +163,15 @@ export function getFeature(slug: string) {
 export function canIndexFeature(feature: FeatureDefinition) {
   return feature.status === "published" && !feature.developmentOnly;
 }
+
+featureCatalog.push(featureDefinitionSchema.parse({
+  slug: "podcast-to-shorts", name: "Podcast & video to Shorts",
+  description: "Turn recorded podcasts, interviews and talking videos into vertical Shorts. Find useful moments, review the cuts, follow faces near selected speaker positions and add animated captions.",
+  audience: ["Podcasters", "Educators", "Interviewers", "Content teams"], searchIntent: "Turn a long podcast or talking video into captioned vertical short clips",
+  benefits: ["Find useful moments without reviewing every minute manually", "Keep control of clip boundaries, captions and speaker framing", "Reuse original footage and voices in downloadable vertical videos"],
+  capabilities: ["Private resumable MP4, MOV and WebM uploads up to 200 MB, 1080p and 30 minutes", "Whisper transcription with word timestamps and speaker labels through fal", "Gemini on fal suggests up to five self-contained highlights", "Editable 15–60 second cuts, titles and caption-word corrections", "Assisted face-follow with voice-to-position mapping, manual crop or full-frame fit", "Animated word-highlight or clean captions, 720 × 1280 MP4 and separate SRT exports", "Saved projects, selected-clip rendering, background jobs and cancellation"],
+  limitations: ["Requires a video recording with spoken audio, 30 seconds to 30 minutes long. Audio-only podcasts and link imports are not supported in this release.", "Face-follow uses detected faces near your chosen anchor. It is not guaranteed active-speaker recognition: match voices to positions for multi-person recordings and review camera changes.", "Transcripts and suggested moments need human review. Caption corrections do not alter the original spoken audio. No promised views, virality or search position.", "Analysis costs 40 credits; export costs 10 credits per selected clip. Completed analysis remains charged when you choose not to export. Re-rendering costs credits again.", "Live processing requires the Shorts migration, deployed worker with OpenCV/FFmpeg, fal access and account credits. No automatic social publishing or scheduling."],
+  exampleMedia: [], relatedFeatures: ["faceless-video-generator", "ai-ugc-product-ads"], status: "published", developmentOnly: false,
+  publishedAt: "2026-09-25T00:00:00.000Z", modifiedAt: "2026-09-25T00:00:00.000Z",
+  seo: { title: "Podcast to Shorts — AI Video Clipper & Captions", description: "Turn podcast recordings into vertical Shorts. Find highlights, edit cuts, adjust speaker framing and add animated captions. Review and export with ETA.", heading: "Turn your podcast or long video into ready-to-post Shorts", canonicalPath: "/features/podcast-to-shorts", editorialOverride: true },
+}));

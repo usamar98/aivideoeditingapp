@@ -1,4 +1,4 @@
-import { aptGet, ffmpeg } from "@trigger.dev/build/extensions/core";
+import { additionalFiles, aptGet, ffmpeg } from "@trigger.dev/build/extensions/core";
 import { defineConfig } from "@trigger.dev/sdk";
 
 export default defineConfig({
@@ -18,6 +18,6 @@ export default defineConfig({
     },
   },
   build: {
-    extensions: [ffmpeg({ version: "7" }), aptGet({ packages: ["fonts-dejavu-core"] })],
+    extensions: [ffmpeg({ version: "7" }), aptGet({ packages: ["fonts-dejavu-core", "fonts-noto-core", "python3-opencv", "opencv-data"] }), additionalFiles({ files: ["./trigger/shorts-faces.py"] })],
   },
 });

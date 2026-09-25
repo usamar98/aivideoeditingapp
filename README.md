@@ -4,6 +4,8 @@ FrameFoundry is a multi-feature AI video studio with a cream-and-blue public sit
 
 Start with [the deployment guide](docs/DEPLOYMENT.md) for the exact Vercel/worker variables, Stripe product/portal/webhook setup, migrations, and launch checklist. [Faceless workflow research](docs/FACELESS-RESEARCH.md) explains the product examples and deliberately bounded feature scope.
 
+**Podcast/video → Shorts** is implemented without Klap. See [setup, scope and verification](docs/PODCAST-SHORTS.md) for the new migration, worker deployment, existing fal credentials, assisted speaker framing and credit rules. Preview the editor at `/studio/shorts/demo` and the public guide at `/features/podcast-to-shorts`.
+
 For **Continue with Google** on sign-up/sign-in, follow [Google login setup](docs/GOOGLE-SIGN-IN.md). Configure a Google **Web application OAuth client** in Supabase's Google provider settings; no Google client secret belongs in Vercel's public environment variables.
 
 The checked-in **Pip & Moss** project is an explicitly labelled development fixture. Its generated reference and storyboard art lets the full review/edit/reorder/approve/caption workflow run without spending provider credits. The application never reports that fixture work as a successful provider generation.
@@ -40,8 +42,8 @@ Trigger discovers tasks in `src/trigger/`: the connectivity check and re-exports
 
 ## Production setup
 
-1. Create a Supabase project and apply the three files in `supabase/migrations/` in order, skipping those already applied. Existing installations with faceless/Stripe support need `20260923173517_jobs_cancellation.sql`. Add `api` to **Project Settings → API → Exposed schemas**. Set the site URL and `/auth/callback` redirect in Auth settings.
-2. Create a Trigger.dev project, add the worker environment variables from the deployment guide, and deploy both `trigger/episode-pipeline.ts` and `trigger/faceless-pipeline.ts` using `trigger.config.ts`. The Trigger build bundles FFmpeg 7 and caption fonts; the web request only queues work.
+1. Create a Supabase project and apply pending files in `supabase/migrations/` in filename order, skipping those already applied. Shorts adds `20260925165638_podcast_shorts.sql` after the UGC migration. Add `api` to **Project Settings → API → Exposed schemas**. Set the site URL and `/auth/callback` redirect in Auth settings.
+2. Create a Trigger.dev project, add the worker environment variables from the deployment guide, and deploy the exported tasks in `src/trigger/` using `trigger.config.ts`. The Trigger build bundles FFmpeg 7, caption fonts and OpenCV for Shorts; the web request only queues work.
 3. Preview the three monthly/yearly plans with `npm run billing:setup`. To create the six matching Stripe prices, securely set `STRIPE_SECRET_KEY` in the terminal environment and run `npm run billing:setup -- --apply` (live mode also requires `--live`). The script does not automatically load `.env.local`. Activate the customer portal and point signed webhooks at `/api/webhooks/stripe`. Only `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are needed as Stripe environment variables; there are no monthly/yearly price-ID variables. See the deployment guide for exact prices, manual catalog setup, required events, and portal settings. Annual plans grant 12× the monthly credits upfront per paid year.
 4. Add Gemini, fal.ai, and ElevenLabs API credentials. Provider subscriptions on consumer websites do not imply API access. Confirm commercial rights, regional availability, pricing, and the chosen preset voices before enabling paid generation.
 5. Deploy the Next.js app to Vercel with `NEXT_PUBLIC_DEMO_MODE=false`, the production site URL, all server secrets, and the public Supabase values. Do not expose `SUPABASE_SECRET_KEY` or any provider key with a `NEXT_PUBLIC_` prefix.

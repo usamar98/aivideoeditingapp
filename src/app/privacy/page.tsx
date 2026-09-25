@@ -10,13 +10,14 @@ export const metadata = publicMetadata({ title, description, path: "/privacy" })
 const sections: LegalSection[] = [
   {
     id: "scope", title: "About this policy",
-    content: <><p>This policy explains how ETA (“we”, “us” or “our”) handles personal information when you visit editingapp.live or use our AI video creation studio. It covers faceless videos, AI cartoons, product ads, accounts and subscriptions.</p><p>For privacy questions or requests, contact <a href={`mailto:${brand.supportEmail}`}>{brand.supportEmail}</a>. Our <Link href="/terms">Terms of Service</Link> explain the rules for using ETA.</p></>,
+    content: <><p>This policy explains how ETA (“we”, “us” or “our”) handles personal information when you visit editingapp.live or use our AI video creation studio. It covers faceless videos, AI cartoons, product ads, podcast Shorts, accounts and subscriptions.</p><p>For privacy questions or requests, contact <a href={`mailto:${brand.supportEmail}`}>{brand.supportEmail}</a>. Our <Link href="/terms">Terms of Service</Link> explain the rules for using ETA.</p></>,
   },
   {
     id: "information", title: "Information we process",
     content: <ul>
       <li><strong>Account information:</strong> your email address, authentication identifier, profile name, sign-in provider and account settings. Email/password authentication is handled by our authentication provider.</li>
       <li><strong>Creative content:</strong> prompts, scripts, storyboards, character references, product images and links, generated images, audio, captions and videos, and the settings you choose.</li>
+      <li><strong>Podcast Shorts:</strong> uploaded recordings, extracted audio, word-timed transcripts, anonymous speaker labels, selected clip boundaries, caption corrections and speaker-position settings. Audio and transcripts are sent to fal and its model providers for transcription and highlight selection. Optional face-follow computes temporary face positions inside the background worker to crop footage; it does not identify people by name or create stored facial identity profiles. Saved transcripts and clip projects remain part of your private workspace.</li>
       <li><strong>Service records:</strong> workspace membership, generation job identifiers, statuses, errors, credit reservations and credit transactions.</li>
       <li><strong>Billing information:</strong> Stripe customer and subscription identifiers, plan, payment status and transaction records. Payment details are collected by Stripe; ETA does not store your full card number or card security code.</li>
       <li><strong>Technical and support information:</strong> IP addresses, browser and device information, request logs, security events, and messages or attachments you send to support. Our hosting and service providers may process this information while delivering the service.</li>

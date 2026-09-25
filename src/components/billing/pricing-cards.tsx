@@ -77,6 +77,6 @@ export function PricingCards(props: PricingCardsProps) {
         </Card>;
       })}
     </div>
-    <p className="mx-auto mt-6 max-w-2xl text-center text-xs leading-6 text-muted-foreground">All prices are in USD. All three tools share your credit balance; each shows its generation cost before you confirm. Faceless rendering uses 20 credits; an AI-written script uses 2 more. Cartoon and UGC costs depend on the selected output. Regeneration costs additional credits. Credits are added only after confirmed payment. Applicable taxes, if any, are shown at checkout.</p>
+    <p className="mx-auto mt-6 max-w-2xl text-center text-xs leading-6 text-muted-foreground">All prices are in USD. All tools share your credit balance; each shows its generation cost before you confirm. Faceless rendering uses 20 credits; an AI-written script uses 2 more. Cartoon and UGC costs depend on the selected output. Podcast Shorts analysis uses 40 credits, with 10 more per exported clip. Regeneration costs additional credits. Credits are added only after confirmed payment. Applicable taxes, if any, are shown at checkout.</p>
   </div>;
 }
