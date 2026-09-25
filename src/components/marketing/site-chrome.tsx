@@ -14,7 +14,7 @@ export function SiteHeader() {
 export function SiteFooter() {
   return <footer className="mx-auto mt-8 flex max-w-7xl flex-wrap items-center justify-between gap-6 border-t border-border px-6 py-8 text-sm lg:px-10">
     <Link href="/" aria-label="ETA home"><BrandMark /></Link>
-    <nav aria-label="Footer navigation" className="flex flex-wrap gap-x-5 gap-y-3"><Link href="/features">Features</Link><Link href="/pricing">Pricing</Link><Link href="/guides">Guides</Link><Link href="/about">About ETA</Link><Link href="/contact">Contact</Link></nav>
+    <nav aria-label="Footer navigation" className="flex flex-wrap gap-x-5 gap-y-3"><Link href="/features">Features</Link><Link href="/pricing">Pricing</Link><Link href="/guides">Guides</Link><Link href="/about">About ETA</Link><Link href="/contact">Contact</Link><Link href="/privacy">Privacy Policy</Link><Link href="/terms">Terms of Service</Link></nav>
     <a className="break-all text-muted-foreground" href={`mailto:${brand.supportEmail}`}>{brand.supportEmail}</a>
   </footer>;
 }

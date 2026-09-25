@@ -14,9 +14,14 @@ No new database migration, Google API key, service account, or dependency is nee
 
 1. Open <https://console.cloud.google.com/auth/overview> and select/create a project.
 2. Configure **Branding** with ETA, its logo, `https://www.editingapp.live`, the actual
-   public privacy/terms URLs, and an eligible support email offered by Google.
+   public privacy/terms URLs below, and an eligible support email offered by Google.
    Use `support@editingapp.live` on the website. Complete domain/brand verification
    if requested; do not invent legal-page URLs that have not been published.
+   After deploying these pages, use:
+   - Privacy Policy: `https://www.editingapp.live/privacy`
+   - Terms of Service: `https://www.editingapp.live/terms`
+   Both pages are public without sign-in and linked in the homepage footer and
+   account form. Verify they return HTTP 200 on production before submitting.
 3. Set **Audience → External**. While Testing, add your own Google account as a test
    user. Publish the consent configuration for public launch and complete any
    verification Google requests. Never ask customers to bypass warnings.

@@ -36,4 +36,6 @@ export const publicPages = [
   { path: "/guides/faceless-videos-vs-ai-cartoons", title: "Faceless videos vs AI cartoons", description: "Compare narrated image-based shorts with character-led AI animation.", modifiedAt: "2026-09-25" },
   { path: "/about", title: "About ETA", description: "What ETA creates, how it works and its current limitations.", modifiedAt: "2026-09-25" },
   { path: "/contact", title: "Contact ETA", description: "Get help with your account, billing or a video job.", modifiedAt: "2026-09-25" },
+  { path: "/privacy", title: "Privacy Policy", description: "How ETA handles accounts, Google sign-in, creative content and privacy requests.", modifiedAt: "2026-09-25" },
+  { path: "/terms", title: "Terms of Service", description: "Rules for accounts, subscriptions, credits, cancellations and AI content.", modifiedAt: "2026-09-25" },
 ] as const;

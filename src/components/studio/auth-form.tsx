@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowRight, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -96,6 +97,9 @@ export function AuthForm({ nextPath, demoMode, initialMessage = null }: { nextPa
       <div className="grid grid-cols-2 rounded-lg bg-secondary p-1" aria-label="Authentication mode">
         {(["sign-in", "sign-up"] as const).map((value) => <button key={value} type="button" disabled={pending !== null} aria-pressed={mode === value} onClick={() => setMode(value)} className={`h-8 rounded-md text-sm font-medium disabled:opacity-50 ${mode === value ? "bg-background text-foreground shadow" : "text-muted-foreground"}`}>{value === "sign-in" ? "Sign in" : "Create account"}</button>)}
       </div>
+      <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">
+        By creating an account with Google or email, you agree to our <Link href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">Terms of Service<span className="sr-only"> (opens in a new tab)</span></Link>. Read our <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">Privacy Policy<span className="sr-only"> (opens in a new tab)</span></Link> to learn how we handle your information.
+      </p>
       <Button type="button" variant="outline" className="mt-5 w-full gap-2.5 border-[#747775] bg-white font-medium text-[#1f1f1f] hover:bg-[#f2f2f2]" disabled={pending !== null} aria-busy={pending === "google"} onClick={continueWithGoogle}>
         <Image src="https://developers.google.com/static/identity/images/g-logo.png" width={20} height={20} alt="" unoptimized />
         {pending === "google" ? "Connecting to Google…" : "Continue with Google"}
