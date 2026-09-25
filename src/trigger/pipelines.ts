@@ -3,3 +3,4 @@
 export { episodePipeline } from "../../trigger/episode-pipeline";
 export { facelessPipeline } from "../../trigger/faceless-pipeline";
 export { cartoonPipeline } from "../../trigger/cartoon-pipeline";
+export { ugcPipeline } from "../../trigger/ugc-pipeline";

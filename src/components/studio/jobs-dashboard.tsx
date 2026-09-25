@@ -10,7 +10,7 @@ import { CancelJobButton } from "./cancel-job-button";
 import { activeJobStatuses, jobFilters, jobStatusLabel, type JobFilter, type JobsPageData } from "@/lib/jobs/types";
 
 const labels: Record<JobFilter, string> = { running: "Running", done: "Done", failed: "Failed", cancelled: "Cancelled" };
-const operationLabels: Record<string, string> = { "faceless-script": "AI script", "faceless-render": "Faceless render", "episode-export": "Episode export", "cartoon-plan": "Cartoon cast & story", "cartoon-render": "Cartoon animation" };
+const operationLabels: Record<string, string> = { "faceless-script": "AI script", "faceless-render": "Faceless render", "episode-export": "Episode export", "cartoon-plan": "Cartoon cast & story", "cartoon-render": "Cartoon animation", "ugc-plan": "Ad presenter & hooks", "ugc-render": "UGC ad variants" };
 const dateFormat = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
 
 export function JobsDashboard({ initial, demo, initialError }: { initial: JobsPageData; demo: boolean; initialError: string | null }) {

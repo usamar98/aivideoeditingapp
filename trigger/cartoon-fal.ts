@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CHARACTER_IMAGE_MODEL, cartoonModels } from "../src/lib/cartoons/schema";
 import { MEDIA_LIMITS, readBoundedBody } from "./media-io";
 import { withRequestDeadline } from "./request-deadline";
+import { UGC_AVATAR_MODEL } from "../src/lib/ugc/schema";
 
 // Verified against fal's OpenRouter catalog on 2026-09-24. Server-owned, never user supplied.
 export const CARTOON_PLANNER_MODEL = "google/gemini-3.8-flash";
@@ -23,7 +24,7 @@ export function cartoonFalClient() {
   const client = createFalClient({ credentials: key, retry: { maxRetries: 0 } });
   // SDK 1.10.1 queue.submit overrides config.retry with three retries. Use a
   // single native POST for this non-idempotent operation; retain SDK read/cancel.
-  const allowed = new Set([CARTOON_PLANNER_ENDPOINT, `${CHARACTER_IMAGE_MODEL}/text-to-image`, `${CHARACTER_IMAGE_MODEL}/edit`, ...Object.values(cartoonModels).map((model) => model.endpoint)]);
+  const allowed = new Set([CARTOON_PLANNER_ENDPOINT, UGC_AVATAR_MODEL, `${CHARACTER_IMAGE_MODEL}/text-to-image`, `${CHARACTER_IMAGE_MODEL}/edit`, ...Object.values(cartoonModels).map((model) => model.endpoint)]);
   client.queue.submit = async (endpoint, options) => {
     if (!allowed.has(endpoint)) throw new Error("Cartoon model is not allowlisted");
     if (endpoint === CARTOON_PLANNER_ENDPOINT && (options.input as { model?: unknown } | undefined)?.model !== CARTOON_PLANNER_MODEL) throw new Error("Cartoon planner model is not allowlisted");

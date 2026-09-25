@@ -64,7 +64,7 @@ export function PricingCards(props: PricingCardsProps) {
             <p className="mt-2 text-xs leading-5 text-muted-foreground">{annual ? `All ${terms.credits.toLocaleString("en-US")} credits upfront each paid year — equivalent to ${tier.monthlyCredits.toLocaleString("en-US")} per month, not a monthly refill.` : `${tier.monthlyCredits.toLocaleString("en-US")} credits after each successful monthly payment.`}</p>
           </div>
           <ul className="mb-7 space-y-3 text-sm">
-            {["Faceless video generator", "AI scripts, narration & visuals", "Editable scenes & timed captions", "Download your finished videos"].map((feature) => <li key={feature} className="flex gap-2.5"><Check className="mt-0.5 size-4 shrink-0 text-primary" /><span>{feature}</span></li>)}
+            {["Faceless videos & AI cartoons", "AI UGC & product ads", "Editable scripts, scenes & hooks", "Private video downloads & captions"].map((feature) => <li key={feature} className="flex gap-2.5"><Check className="mt-0.5 size-4 shrink-0 text-primary" /><span>{feature}</span></li>)}
           </ul>
           <div className="mt-auto">
             {props.mode === "billing" ? <>
@@ -77,6 +77,6 @@ export function PricingCards(props: PricingCardsProps) {
         </Card>;
       })}
     </div>
-    <p className="mx-auto mt-6 max-w-2xl text-center text-xs leading-6 text-muted-foreground">All prices are in USD. Faceless rendering uses 20 credits; an AI-written script uses 2 more. Edits that require another generation use additional credits. Credits are added only after confirmed payment. Applicable taxes, if any, are shown at checkout.</p>
+    <p className="mx-auto mt-6 max-w-2xl text-center text-xs leading-6 text-muted-foreground">All prices are in USD. All three tools share your credit balance; each shows its generation cost before you confirm. Faceless rendering uses 20 credits; an AI-written script uses 2 more. Cartoon and UGC costs depend on the selected output. Regeneration costs additional credits. Credits are added only after confirmed payment. Applicable taxes, if any, are shown at checkout.</p>
   </div>;
 }

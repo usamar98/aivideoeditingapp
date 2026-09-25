@@ -29,8 +29,8 @@ export function isPublicPath(path: string): boolean {
 
 // Change these only when the corresponding public content is materially edited.
 export const publicPages = [
-  { path: "/", title: "AI video generator", description: "Create faceless videos and AI cartoons with ETA.", modifiedAt: "2026-09-25" },
-  { path: "/features", title: "AI video creation tools", description: "Compare ETA's faceless video and cartoon workflows.", modifiedAt: "2026-09-25" },
+  { path: "/", title: "AI video generator", description: "Create faceless videos, AI cartoons and UGC product ads with ETA.", modifiedAt: "2026-09-25" },
+  { path: "/features", title: "AI video creation tools", description: "Compare ETA's faceless video, cartoon and UGC ad workflows.", modifiedAt: "2026-09-25" },
   { path: "/pricing", title: "Plans and credits", description: "Monthly and annual prices, credits and billing questions.", modifiedAt: "2026-09-25" },
   { path: "/guides", title: "Video creation guides", description: "Practical guidance for choosing and reviewing AI video workflows.", modifiedAt: "2026-09-25" },
   { path: "/guides/faceless-videos-vs-ai-cartoons", title: "Faceless videos vs AI cartoons", description: "Compare narrated image-based shorts with character-led AI animation.", modifiedAt: "2026-09-25" },

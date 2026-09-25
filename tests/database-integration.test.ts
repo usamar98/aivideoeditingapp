@@ -9,6 +9,8 @@ vi.mock("@trigger.dev/sdk",()=>({runs:triggerMocks}));
 import { cancelJob } from "@/lib/jobs/cancel";
 import { cartoonDemo } from "@/lib/cartoons/demo";
 import { CARTOON_PLAN_CREDITS, cartoonRenderCredits, type CartoonBrief } from "@/lib/cartoons/schema";
+import { ugcDemo } from "@/lib/ugc/demo";
+import { UGC_PLAN_CREDITS, ugcRenderCredits } from "@/lib/ugc/schema";
 
 const userA="10000000-0000-4000-8000-000000000001",userB="10000000-0000-4000-8000-000000000002",workspace="20000000-0000-4000-8000-000000000001",project="30000000-0000-4000-8000-000000000001",job="40000000-0000-4000-8000-000000000001";
 let db:PGlite;
@@ -32,6 +34,7 @@ beforeAll(async()=>{
   await db.exec(readFileSync("supabase/migrations/20260922145706_faceless_stripe_profiles.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20260923173517_jobs_cancellation.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20260924135448_cartoon_studio.sql","utf8"));
+  await db.exec(readFileSync("supabase/migrations/20260925120544_ugc_product_ads.sql","utf8"));
   await db.exec("grant usage on schema storage to authenticated; grant select,insert,update,delete on storage.objects to authenticated;");
   await db.exec(`insert into auth.users values ('${userA}'),('${userB}'); insert into public.profiles(id) values ('${userA}'),('${userB}'); insert into public.workspaces(id,name,owner_id) values('${workspace}','Test studio','${userA}'); insert into public.workspace_members(workspace_id,user_id,role) values('${workspace}','${userA}','owner'); insert into public.credit_accounts(workspace_id,cached_balance) values('${workspace}',100); insert into public.faceless_projects(id,user_id,workspace_id,title,brief) values('${project}','${userA}','${workspace}','Test project','{}');`);
 },30000);
@@ -39,6 +42,85 @@ afterAll(async()=>{await db?.close();});
 
 async function asUser(id:string){await db.exec(`reset role; set role authenticated; select set_config('request.jwt.claim.sub','${id}',false); select set_config('request.jwt.claim.role','authenticated',false);`);}
 async function asService(){await db.exec("reset role; set role service_role; select set_config('request.jwt.claim.role','service_role',false);");}
+
+describe("UGC database ownership, revisions and credit lifecycle", () => {
+  async function fixture(ready = false, duration: 15 | 30 = 15) {
+    await asService(); const workspaceId = randomUUID(), projectId = randomUUID();
+    await db.query("insert into public.workspaces(id,name,owner_id) values($1,'UGC test',$2)",[workspaceId,userA]);
+    await db.query("insert into public.workspace_members(workspace_id,user_id,role) values($1,$2,'owner')",[workspaceId,userA]);
+    await db.query("insert into public.credit_accounts(workspace_id,cached_balance) values($1,10000)",[workspaceId]);
+    await db.query("insert into public.ugc_projects(id,user_id,workspace_id,title,brief,plan,presenter_path,status) values($1,$2,$3,'Product ad',$4,$5,$6,$7)",[projectId,userA,workspaceId,JSON.stringify({...ugcDemo.brief,duration}),ready ? JSON.stringify(ugcDemo.plan) : null,ready ? `${workspaceId}/${userA}/ugc/old/presenter.png` : null,ready ? "ready" : "draft"]);
+    return { workspaceId,projectId };
+  }
+  it("isolates accounts and denies browser writes and billing RPCs", async () => {
+    const {projectId}=await fixture(); await asUser(userB);
+    expect((await db.query("select id from public.ugc_projects where id=$1",[projectId])).rows).toHaveLength(0);
+    await asUser(userA); expect((await db.query("select id from public.ugc_projects where id=$1",[projectId])).rows).toHaveLength(1);
+    await expect(db.query("update public.ugc_projects set outputs='{}' where id=$1",[projectId])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public.start_ugc_job($1,$2,gen_random_uuid(),'plan')",[projectId,userA])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public.finish_ugc_job(gen_random_uuid(),true)")).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public.reserve_ugc_import($1)",[userA])).rejects.toThrow(/permission denied/);
+    await asService(); await expect(db.query("select public.start_ugc_job($1,$2,gen_random_uuid(),'plan')",[projectId,userB])).rejects.toThrow(/not found/);
+  });
+  it("reserves planning once, blocks double stages and returns cancellation credits once", async () => {
+    const {projectId,workspaceId}=await fixture(), id=randomUUID();
+    await db.query("select public.start_ugc_job($1,$2,$3,'plan')",[projectId,userA,id]);
+    expect((await db.query<{id:string}>("select public.start_ugc_job($1,$2,gen_random_uuid(),'plan') as id",[projectId,userA])).rows[0].id).toBe(id);
+    await expect(db.query("select public.start_ugc_job($1,$2,gen_random_uuid(),'render',array['hook-1'])",[projectId,userA])).rejects.toThrow(/stage/);
+    expect(Number((await db.query<{n:string}>("select estimated_credits as n from public.generations where id=$1",[id])).rows[0].n)).toBe(UGC_PLAN_CREDITS);
+    await db.query("select public.request_generation_cancellation($1,$2)",[id,userA]);
+    await db.query("select public.finish_ugc_job($1,true,$2,$3)",[id,JSON.stringify(ugcDemo.plan),`${workspaceId}/${userA}/ugc/${id}/presenter.png`]);
+    await db.query("select public.confirm_generation_cancellation($1)",[id]);
+    expect((await db.query<{ok:boolean}>("select public.claim_generation_job($1,'late',1) as ok",[id])).rows[0].ok).toBe(false);
+    expect((await db.query("select status,plan from public.ugc_projects where id=$1",[projectId])).rows[0]).toMatchObject({status:"draft",plan:null});
+    expect(Number((await db.query<{n:string}>("select cached_balance as n from public.credit_accounts where workspace_id=$1",[workspaceId])).rows[0].n)).toBe(10000);
+  });
+  it("charges the exact selected variant count and rejects duplicates", async () => {
+    for (const duration of [15,30] as const) for (const count of [1,2,3]) {
+      const {projectId}=await fixture(true,duration),id=randomUUID(),hooks=["hook-1","hook-2","hook-3"].slice(0,count);
+      await db.query("select public.start_ugc_job($1,$2,$3,'render',$4)",[projectId,userA,id,hooks]);
+      expect(Number((await db.query<{cost:string}>("select estimated_credits as cost from public.generations where id=$1",[id])).rows[0].cost)).toBe(ugcRenderCredits(duration,count));
+      await db.query("select public.finish_ugc_job($1,false)",[id]);
+      await expect(db.query("select public.start_ugc_job($1,$2,gen_random_uuid(),'render',array['hook-1','hook-1'])",[projectId,userA])).rejects.toThrow(/different hooks/);
+      await expect(db.query("select public.start_ugc_job($1,$2,gen_random_uuid(),'render',array[]::text[])",[projectId,userA])).rejects.toThrow(/different hooks/);
+    }
+  });
+  it("locks edits during renders and rejects stale revisions from another tab", async () => {
+    const {projectId}=await fixture(true);
+    await db.query("select public.save_ugc_plan($1,$2,0,$3)",[projectId,userA,JSON.stringify(ugcDemo.plan)]);
+    await expect(db.query("select public.save_ugc_plan($1,$2,0,$3)",[projectId,userA,JSON.stringify(ugcDemo.plan)])).rejects.toThrow(/another tab/);
+    await expect(db.query("select public.start_ugc_job($1,$2,gen_random_uuid(),'render',array['hook-1'],0)",[projectId,userA])).rejects.toThrow(/Plan changed/);
+    const id=randomUUID();await db.query("select public.start_ugc_job($1,$2,$3,'render',array['hook-1'],1)",[projectId,userA,id]);
+    await expect(db.query("select public.save_ugc_plan($1,$2,1,$3)",[projectId,userA,JSON.stringify(ugcDemo.plan)])).rejects.toThrow(/Wait/);
+    await db.query("select public.finish_ugc_job($1,false)",[id]);
+  });
+  it("publishes only complete owned output paths and settles success once", async () => {
+    const {projectId,workspaceId}=await fixture(true),id=randomUUID();
+    await db.query("select public.start_ugc_job($1,$2,$3,'render',array['hook-1'])",[projectId,userA,id]);
+    await expect(db.query("select public.finish_ugc_job($1,true,null,null,'{}')",[id])).rejects.toThrow(/Missing selected/);
+    const output={"hook-1":{videoPath:`${workspaceId}/${userA}/ugc/${id}/hook-1.mp4`,captionsPath:`${workspaceId}/${userA}/ugc/${id}/hook-1.srt`,script:"A test script",angle:"Question",createdAt:new Date().toISOString()}};
+    await expect(db.query("select public.finish_ugc_job($1,true,null,null,$2)",[id,JSON.stringify({"hook-1":{...output["hook-1"],videoPath:"foreign.mp4"}})])).rejects.toThrow(/Invalid ad output/);
+    await db.query("select public.finish_ugc_job($1,true,null,null,$2)",[id,JSON.stringify(output)]);
+    await db.query("select public.finish_ugc_job($1,true,null,null,$2)",[id,JSON.stringify(output)]);
+    expect(Number((await db.query<{n:string}>("select cached_balance as n from public.credit_accounts where workspace_id=$1",[workspaceId])).rows[0].n)).toBe(9880);
+    const next=randomUUID();await db.query("select public.start_ugc_job($1,$2,$3,'render',array['hook-2'])",[projectId,userA,next]);await db.query("select public.finish_ugc_job($1,false)",[next]);
+    expect((await db.query<{outputs:unknown}>("select outputs from public.ugc_projects where id=$1",[projectId])).rows[0].outputs).toEqual(output);
+  });
+  it("protects approved product images and checkpoints from browser writes", async () => {
+    const {workspaceId}=await fixture();await db.exec("reset role"); const id=randomUUID();
+    await db.query("insert into storage.objects(id,name,bucket_id) values($1,$2,'private-media')",[id,`${workspaceId}/${userA}/ugc-inputs/product.png`]);
+    await asUser(userA);
+    expect((await db.query("select id from storage.objects where id=$1",[id])).rows).toHaveLength(1);
+    expect((await db.query("update storage.objects set name=name where id=$1 returning id",[id])).rows).toHaveLength(0);
+    expect((await db.query("delete from storage.objects where id=$1 returning id",[id])).rows).toHaveLength(0);
+    await expect(db.query("insert into storage.objects(id,name,bucket_id) values($1,$2,'private-media')",[randomUUID(),`${workspaceId}/${userA}/ugc/fake/result.json`])).rejects.toThrow(/row-level security/);
+  });
+  it("enforces the shared workspace concurrency cap", async () => {
+    const {projectId,workspaceId}=await fixture();
+    for(let i=0;i<2;i++)await db.query("insert into public.generations(id,workspace_id,requested_by,operation,provider,model,idempotency_key,status,estimated_credits) values(gen_random_uuid(),$1,$2,'faceless-script','trigger','gemini',gen_random_uuid()::text,'reserved',2)",[workspaceId,userA]);
+    await expect(db.query("select public.start_ugc_job($1,$2,gen_random_uuid(),'plan')",[projectId,userA])).rejects.toThrow(/Two jobs/);
+  });
+});
 describe("cartoon database ownership, pricing and settlement", () => {
   async function fixture(brief: CartoonBrief = cartoonDemo.brief, ready = false) {
     await asService(); const workspaceId = randomUUID(), projectId = randomUUID();

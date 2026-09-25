@@ -143,6 +143,19 @@ export function getPublishedFeatures() {
   );
 }
 
+featureCatalog.push(featureDefinitionSchema.parse({
+  slug: "ai-ugc-product-ads", name: "AI UGC & product ads",
+  description: "Turn product photos or a public product link into UGC-style ads with a fictional AI presenter, original product visuals, timed captions and three editable opening hooks.",
+  audience: ["Ecommerce brands", "Performance marketers", "Small businesses", "Agencies"],
+  searchIntent: "Create AI presenter product ads from product images or a product URL",
+  benefits: ["Review product facts and ad scripts before spending on video", "Test different hooks with the same presenter and shared message", "Keep original product photos visible instead of regenerating packaging"],
+  capabilities: ["Public HTTPS product-page import or one to four uploaded product photos", "Four presenter directions with a newly generated fictional adult portrait", "Three editable opening hooks, a shared body and spoken call to action", "Kling AI Avatar v2 Pro on fal with English studio-voice narration", "15- or 30-second MP4s in vertical, square or landscape formats with optional burned-in captions and separate SRT files", "Private saved projects, selected-variant rendering, background progress and cancellation"],
+  limitations: ["AI UGC means UGC-style advertising, not a genuine customer review. Every export visibly identifies the AI presenter.", "Product photos appear in a composed layout beside or below the presenter; this does not simulate hands-on product use or a real unboxing.", "Protected or JavaScript-only product pages may require manual photos and details. Check every imported or generated claim before rendering.", "Uses one configured studio voice. No real-person cloning, automatic publishing, ad buying or performance guarantees. Lip sync and generated appearances can vary.", "Live generation requires the UGC migration, deployed worker, fal and ElevenLabs access, and credits."],
+  exampleMedia: [], relatedFeatures: ["faceless-video-generator", "ai-cartoon-series"], status: "published", developmentOnly: false,
+  publishedAt: "2026-09-25T00:00:00.000Z", modifiedAt: "2026-09-25T00:00:00.000Z",
+  seo: { title: "AI UGC Ad Generator — Product Images & Links to Video", description: "Create AI presenter ads from product images or links. Edit three hooks, add product visuals and captions, then export private ad variants with ETA.", heading: "AI UGC and product ads from your images or product link", canonicalPath: "/features/ai-ugc-product-ads", editorialOverride: true },
+}));
+
 export function getFeature(slug: string) {
   return featureCatalog.find((feature) => feature.slug === slug);
 }

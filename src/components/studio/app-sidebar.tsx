@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clapperboard, FolderKanban, UserRound, WandSparkles, Video, ListChecks } from "lucide-react";
+import { Clapperboard, FolderKanban, UserRound, WandSparkles, Video, ListChecks, Megaphone } from "lucide-react";
 
 import { BrandMark } from "./brand-mark";
 
@@ -8,7 +8,8 @@ const items = [
   { href: "/studio/faceless", label: "Faceless videos", icon: Video },
   { href: "/studio/jobs", label: "Jobs", icon: ListChecks },
   { href: "/studio/cartoons", label: "Cartoon videos", icon: Clapperboard },
-  { href: "/features/ai-cartoon-series", label: "Feature page", icon: WandSparkles },
+  { href: "/studio/ugc", label: "UGC & product ads", icon: Megaphone },
+  { href: "/features", label: "Explore features", icon: WandSparkles },
 ];
 
 export function AppSidebar({ active = "Episode editor" }: { active?: string }) {

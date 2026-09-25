@@ -22,7 +22,7 @@ export async function getJobs(db: SupabaseClient, userId: string, filter: JobFil
       title: info.projectTitle || info.storyboard?.title || info.brief?.topic?.slice(0, 100) || (job.operation === "episode-export" ? "Episode export" : "Faceless video"),
       createdAt: job.created_at, completedAt: job.completed_at, cancelRequested: Boolean(job.cancel_requested_at),
       reservedCredits: Number(job.estimated_credits), usedCredits: job.reported_credits === null ? null : Number(job.reported_credits),
-      projectHref: info.projectId ? `/studio/${job.operation.startsWith("cartoon-") ? "cartoons" : "faceless"}/${info.projectId}` : null,
+      projectHref: info.projectId ? `/studio/${job.operation.startsWith("ugc-") ? "ugc" : job.operation.startsWith("cartoon-") ? "cartoons" : "faceless"}/${info.projectId}` : null,
     };
   }) };
 }

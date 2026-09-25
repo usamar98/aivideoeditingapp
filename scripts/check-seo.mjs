@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 const origin = new URL(process.argv[2] || "http://localhost:3002");
 const production = process.argv.includes("--production");
 const canonicalOrigin = "https://www.editingapp.live";
-const paths = ["/", "/features", "/features/ai-cartoon-series", "/features/faceless-video-generator", "/pricing", "/guides", "/guides/faceless-videos-vs-ai-cartoons", "/about", "/contact"];
+const paths = ["/", "/features", "/features/ai-cartoon-series", "/features/faceless-video-generator", "/features/ai-ugc-product-ads", "/pricing", "/guides", "/guides/faceless-videos-vs-ai-cartoons", "/about", "/contact"];
 const titles = new Set();
 const descriptions = new Set();
 const results = [];
@@ -77,9 +77,10 @@ assert.equal(llmsResponse.status, 200);
 const llms = await llmsResponse.text();
 assert.ok(llms.startsWith("# ETA\n"));
 assert.ok(llms.includes(`${canonicalOrigin}/pricing`));
+assert.ok(llms.includes(`${canonicalOrigin}/features/ai-ugc-product-ads`), "UGC feature in AI discovery file");
 assert.ok(!/https?:\/\/[^\s)]*\/(studio|admin|api|auth)(\/|\b)/.test(llms));
 
-for (const path of ["/login", "/studio", "/studio/jobs", "/admin/features", "/api/health"]) {
+for (const path of ["/login", "/studio", "/studio/jobs", "/studio/ugc", "/studio/ugc/demo", "/api/ugc/00000000-0000-4000-8000-000000000001", "/admin/features", "/api/health"]) {
   const response = await request(path, "manual");
   assert.ok(response.headers.get("x-robots-tag")?.includes("noindex"), `${path}: private/auth noindex header`);
   if (path === "/login") assert.ok(!(await response.text()).includes('rel="canonical"'), "Login must not inherit homepage canonical");

@@ -1,5 +1,5 @@
 export const activeJobStatuses = ["created", "reserved", "submitted", "processing"] as const;
-export const jobOperations = ["faceless-script", "faceless-render", "episode-export", "cartoon-plan", "cartoon-render"] as const;
+export const jobOperations = ["faceless-script", "faceless-render", "episode-export", "cartoon-plan", "cartoon-render", "ugc-plan", "ugc-render"] as const;
 export type JobFilter = "running" | "done" | "failed" | "cancelled";
 export const jobFilters: JobFilter[] = ["running", "done", "failed", "cancelled"];
 export type JobView = {

@@ -16,6 +16,7 @@ export function llmsDocument(features: FeatureDefinition[]) {
     "", "## Product boundaries", "",
     "- Faceless output combines AI still images, narration and optional timed captions. It is not generative moving footage.",
     "- Cartoon output is reference-guided character animation. Exact visual consistency, spoken words and lip sync are not guaranteed.",
+    "- AI UGC ads combine a fictional disclosed AI presenter with original product photos, three editable hooks and captions. They are not real customer testimonials or hands-on product demonstrations.",
     "- Generation is credit-based. Pricing and feature pages explain separate planning and rendering charges.",
     "- Videos require human review. ETA does not currently post to social accounts automatically.",
     "- Page content is the source of product facts; this optional directory does not guarantee search ranking or AI citations.",

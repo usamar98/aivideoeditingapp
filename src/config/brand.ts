@@ -6,7 +6,7 @@ export const brand = {
   name: "ETA",
   shortName: "ETA",
   description:
-    "Create faceless videos and AI cartoons from prompts or character images. Review scripts, scenes and dialogue, then generate and download your video with ETA.",
+    "Create faceless videos, AI cartoons and UGC product ads with ETA. Review scripts, presenters and hooks, then generate private videos with AI tools.",
   siteUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
   // Preserve the configured local/preview origin for operational billing returns.
   appUrl: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
