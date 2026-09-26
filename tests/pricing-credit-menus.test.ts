@@ -6,6 +6,22 @@ import { PricingCards } from "@/components/billing/pricing-cards";
 import type { OfferedBillingPlan } from "@/lib/billing/catalog";
 
 describe("credit allowance menus", () => {
+  it("highlights only the $49.99 Creator tier with a blue border and Popular badge", () => {
+    const $ = load(renderToStaticMarkup(createElement(PricingCards)));
+    const creator = $("[data-pricing-tier='creator']");
+    expect(creator.text()).toContain("$49.99");
+    expect(creator.text()).toContain("Popular");
+    expect(creator.hasClass("border-2")).toBe(true);
+    expect(creator.hasClass("border-primary")).toBe(true);
+    expect(creator.attr("style")).toContain("border-color:var(--primary)");
+    expect($("[data-pricing-tier='starter']").text()).not.toContain("Popular");
+    expect($("[data-pricing-tier='studio']").text()).not.toContain("Popular");
+  });
+  it("keeps the Popular badge visible when Creator is the selected plan", () => {
+    const $ = load(renderToStaticMarkup(createElement(PricingCards, { selectedTier: "creator" })));
+    expect($("[data-pricing-tier='creator']").text()).toContain("Popular");
+    expect($("[data-pricing-tier='creator']").text()).toContain("Your selection");
+  });
   it.each([1, 2] as const)("enables the 2× choice only when its actual discounted price exists (available bundle %i)", (creditBundle) => {
     const plan: OfferedBillingPlan = { id: "price_test", name: "Creator", description: "", tierId: "creator", creditBundle, amount: creditBundle === 2 ? 64778 : 35988, credits: creditBundle === 2 ? 26400 : 13200, currency: "usd", interval: "year", intervalCount: 1 };
     const $ = load(renderToStaticMarkup(createElement(PricingCards, { mode: "billing", plans: [plan], pending: false, demo: false, hasSubscription: false, onChoose: () => {}, selectedTier: "creator", initialQuantity: 2, initialInterval: "year" })));

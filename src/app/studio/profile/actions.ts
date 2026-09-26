@@ -7,6 +7,7 @@ import { requireAccount, publicError } from "@/lib/account";
 import { accountReturnUrl, getBillingCustomer, getStripe } from "@/lib/billing/stripe";
 import { managedSubscriptionStatuses, toOfferedBillingPlan } from "@/lib/billing/catalog";
 import { isCreditBundle } from "@/lib/billing/pricing";
+import { creatorOffer, creatorOfferCheckout, isCreatorOfferActive, isCreatorOfferPlan } from "@/lib/billing/creator-offer";
 
 export async function updateProfile(input: unknown) {
   try {
@@ -34,14 +35,18 @@ export async function changePassword(input: unknown) {
   } catch (error) { return { error: publicError(error) }; }
 }
 
-export async function createCheckout(priceId: string, quantity: number = 1) {
+export async function createCheckout(priceId: string, quantity: number = 1, offerId?: string) {
   try {
     z.string().regex(/^price_[a-zA-Z0-9]+$/).parse(priceId);
     if (!isCreditBundle(quantity)) throw new Error("Choose a supported credit bundle (1×, 2× or 3×).");
+    if (offerId !== undefined && offerId !== creatorOffer.id) throw new Error("This offer is not available. Refresh billing to review the current plan.");
+    if (offerId && !isCreatorOfferActive(Date.now())) throw new Error("This offer has ended. Refresh billing to review the current plan before continuing.");
     const account = await requireAccount();
     const stripe = getStripe();
     const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
-    if (toOfferedBillingPlan(price)?.creditBundle !== quantity) throw new Error("This plan is not available. Refresh billing to see the current plans.");
+    const plan = toOfferedBillingPlan(price);
+    if (plan?.creditBundle !== quantity) throw new Error("This plan is not available. Refresh billing to see the current plans.");
+    if (offerId && !isCreatorOfferPlan(plan)) throw new Error("This offer applies only to the Creator monthly base plan.");
     const customer = await getBillingCustomer(account);
     const lockToken = randomUUID();
     const {data:lease,error:leaseError} = await account.admin.from("billing_customers").update({checkout_lock_token:lockToken,checkout_lock_until:new Date(Date.now()+300000).toISOString()}).eq("user_id",account.user.id).or(`checkout_lock_until.is.null,checkout_lock_until.lt.${new Date().toISOString()}`).select("user_id").maybeSingle();
@@ -50,21 +55,30 @@ export async function createCheckout(priceId: string, quantity: number = 1) {
     try {
     const subscriptions = await stripe.subscriptions.list({ customer, status: "all", limit: 100 });
     if (subscriptions.data.some((sub) => managedSubscriptionStatuses.has(sub.status))) throw new Error("You already have a subscription. Use Manage subscription to change your plan.");
+    if (subscriptions.has_more) throw new Error("Subscription history needs review before opening another checkout. Contact support.");
+    const newSubscriber = subscriptions.data.length === 0;
+    if (offerId && !newSubscriber) throw new Error("This offer is for first-time subscribers. Refresh billing to choose a regular plan.");
+    const applyOffer = newSubscriber && isCreatorOfferPlan(plan) && isCreatorOfferActive(Date.now());
+    if (offerId && !applyOffer) throw new Error("This offer has ended. Refresh billing to review the current plan before continuing.");
+    const expectedOffer = applyOffer ? creatorOffer.id : "";
     // Reuse an open checkout to prevent repeated clicks from starting multiple subscriptions.
     const sessions = await stripe.checkout.sessions.list({ customer, status: "open", limit: 100 });
+    if (sessions.has_more) throw new Error("Too many open checkout sessions. Please contact support before trying again.");
     for (const session of sessions.data) {
       if (session.mode === "subscription" && session.metadata?.app === "framefoundry") {
-        if (session.metadata.price_id === priceId && Number(session.metadata.credit_bundle || 1) === quantity && session.url) return { url: session.url };
+        if (session.metadata.price_id === priceId && Number(session.metadata.credit_bundle || 1) === quantity && (session.metadata.offer_id || "") === expectedOffer && session.url) return { url: session.url };
         await stripe.checkout.sessions.expire(session.id);
       }
     }
+    const offerFields = applyOffer ? creatorOfferCheckout(priceId, typeof price.product === "string" ? price.product : price.product.id, account.workspaceId, Date.now()) : {};
     uncertain = true;
     const session = await stripe.checkout.sessions.create({
       customer, mode: "subscription", client_reference_id: account.user.id,
       // Each immutable price already includes the selected bundle and discount.
       line_items: [{ price: priceId, quantity: 1 }],
-      metadata: { app: "framefoundry", price_id: priceId, credit_bundle: String(quantity) },
+      metadata: { app: "framefoundry", price_id: priceId, credit_bundle: String(quantity), ...(applyOffer ? { offer_id: creatorOffer.id } : {}) },
       subscription_data: { metadata: { app: "framefoundry", workspace_id: account.workspaceId } },
+      ...offerFields,
       success_url: `${accountReturnUrl()}?checkout=success`, cancel_url: `${accountReturnUrl()}?checkout=cancelled`,
     }, { idempotencyKey: `checkout:${account.user.id}:${lockToken}` });
     if (!session.url) throw new Error("Stripe did not return a checkout URL.");

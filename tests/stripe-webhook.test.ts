@@ -2,16 +2,43 @@ import Stripe from "stripe";
 import { beforeEach,afterEach,describe,it,expect,vi } from "vitest";
 import { packSession } from "./fixtures/credit-pack";
 import { catalogEntries } from "@/lib/billing/setup-stripe-catalog.mjs";
+import { offerInvoice, offerLines, offerPrices } from "./fixtures/creator-offer";
 
-const mocks=vi.hoisted(()=>({duplicate:false,quantity:1,proration:false,rpc:vi.fn(),upsert:vi.fn(),processed:vi.fn(),subscriptions:vi.fn(),retrieveInvoice:vi.fn(),retrievePrice:vi.fn(),retrieveSession:vi.fn()}));
-vi.mock("@/lib/billing/stripe",()=>({getStripe:()=>({webhooks:new Stripe("sk_test_local_only").webhooks,checkout:{sessions:{retrieve:mocks.retrieveSession}},subscriptions:{list:mocks.subscriptions},invoices:{retrieve:mocks.retrieveInvoice,listLineItems:async function*(){yield {amount:1900,quantity:mocks.quantity,pricing:{price_details:{price:"price_test"}},parent:{subscription_item_details:{proration:mocks.proration}}};}},prices:{retrieve:mocks.retrievePrice}})}));
+const mocks=vi.hoisted(()=>({duplicate:false,quantity:1,proration:false,lines:null as Stripe.InvoiceLineItem[] | null,rpc:vi.fn(),upsert:vi.fn(),processed:vi.fn(),subscriptions:vi.fn(),retrieveInvoice:vi.fn(),retrievePrice:vi.fn(),retrieveSession:vi.fn()}));
+vi.mock("@/lib/billing/stripe",()=>({getStripe:()=>({webhooks:new Stripe("sk_test_local_only").webhooks,checkout:{sessions:{retrieve:mocks.retrieveSession}},subscriptions:{list:mocks.subscriptions},invoices:{retrieve:mocks.retrieveInvoice,listLineItems:async function*(){if(mocks.lines){yield* mocks.lines;return;}yield {amount:1900,quantity:mocks.quantity,pricing:{price_details:{price:"price_test"}},parent:{subscription_item_details:{proration:mocks.proration}}};}},prices:{retrieve:mocks.retrievePrice}})}));
 vi.mock("@/lib/supabase/admin",()=>({createAdminClient:()=>({rpc:mocks.rpc,from:(table:string)=>{const chain={error:null,select:()=>chain,eq:()=>chain,maybeSingle:async()=>({error:null,data:table==="billing_customers"?{user_id:"user_owned",workspace_id:"workspace_owned"}:mocks.duplicate?{processed_at:"2026-09-22"}:null}),upsert:mocks.upsert,update:(value:unknown)=>{mocks.processed(value);return chain;}};return chain;}})}));
 import { POST } from "@/app/api/webhooks/stripe/route";
 const secret="whsec_local_verification_only";
 function request(type="invoice.paid",signatureValid=true){const body=JSON.stringify({id:"evt_local",object:"event",created:Math.floor(Date.now()/1000),type,data:{object:{id:"in_test",customer:"cus_owned"}}});const signature=Stripe.webhooks.generateTestHeaderString({payload:body,secret:signatureValid?secret:"wrong"});return new Request("https://example.test/api/webhooks/stripe",{method:"POST",headers:{"stripe-signature":signature},body});}
-beforeEach(()=>{vi.clearAllMocks();mocks.duplicate=false;mocks.quantity=1;mocks.proration=false;vi.stubEnv("STRIPE_SECRET_KEY","sk_test_local_only");vi.stubEnv("STRIPE_WEBHOOK_SECRET",secret);mocks.rpc.mockResolvedValue({error:null});mocks.upsert.mockResolvedValue({error:null});mocks.subscriptions.mockResolvedValue({data:[]});mocks.retrieveInvoice.mockResolvedValue({id:"in_test",billing_reason:"subscription_cycle",status:"paid",amount_paid:1900});mocks.retrievePrice.mockResolvedValue({metadata:{credits:"100"},product:{metadata:{app:"framefoundry"}}});});
+beforeEach(()=>{vi.clearAllMocks();mocks.duplicate=false;mocks.quantity=1;mocks.proration=false;mocks.lines=null;vi.stubEnv("STRIPE_SECRET_KEY","sk_test_local_only");vi.stubEnv("STRIPE_WEBHOOK_SECRET",secret);mocks.rpc.mockResolvedValue({error:null});mocks.upsert.mockResolvedValue({error:null});mocks.subscriptions.mockResolvedValue({data:[]});mocks.retrieveInvoice.mockResolvedValue({id:"in_test",billing_reason:"subscription_cycle",status:"paid",amount_paid:1900});mocks.retrievePrice.mockResolvedValue({metadata:{credits:"100"},product:{metadata:{app:"framefoundry"}}});});
 afterEach(()=>vi.unstubAllEnvs());
 describe("Stripe webhook boundary",()=>{
+  it("grants the Creator promotion exactly once under the invoice idempotency key", async () => {
+    mocks.lines = offerLines(); mocks.retrieveInvoice.mockResolvedValue(offerInvoice());
+    mocks.retrievePrice.mockImplementation(async (id: string) => offerPrices().get(id));
+    expect((await POST(request())).status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledWith("apply_credit_purchase", { target_workspace_id: "workspace_owned", credit_amount: 1100, event_key: "stripe:invoice:in_offer", external_id: "in_offer" });
+    mocks.duplicate = true; await POST(request()); expect(mocks.rpc).toHaveBeenCalledTimes(1);
+  });
+  it("uses the same grant identity if a paid offer invoice is delivered under another event", async () => {
+    mocks.lines = offerLines(); mocks.retrieveInvoice.mockResolvedValue(offerInvoice()); mocks.retrievePrice.mockImplementation(async (id: string) => offerPrices().get(id));
+    await POST(request()); await POST(request());
+    expect(mocks.rpc.mock.calls.map((call) => call[1].event_key)).toEqual(["stripe:invoice:in_offer", "stripe:invoice:in_offer"]);
+  });
+  it("never grants another allowance for a zero-dollar promotional invoice", async () => {
+    mocks.retrieveInvoice.mockResolvedValue(offerInvoice({ amount_paid: 0, subtotal: 0, billing_reason: "subscription_cycle" }));
+    expect((await POST(request())).status).toBe(200); expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("grants normal monthly credits after the promotional period ends", async () => {
+    mocks.lines = [{ ...offerLines()[0], amount: 4999 }]; mocks.retrieveInvoice.mockResolvedValue(offerInvoice({ id: "in_renewal", billing_reason: "subscription_cycle" })); mocks.retrievePrice.mockImplementation(async (id: string) => offerPrices().get(id));
+    expect((await POST(request())).status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledWith("apply_credit_purchase", expect.objectContaining({ credit_amount: 1100, event_key: "stripe:invoice:in_renewal" }));
+  });
+  it("rejects a malformed offer invoice and leaves it retryable", async () => {
+    mocks.lines = offerLines(); mocks.lines[1].quantity = 2; mocks.retrieveInvoice.mockResolvedValue(offerInvoice()); mocks.retrievePrice.mockImplementation(async (id: string) => offerPrices().get(id));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await POST(request())).status).toBe(500); expect(mocks.rpc).not.toHaveBeenCalled(); expect(mocks.processed).not.toHaveBeenCalled(); log.mockRestore();
+  });
   it.each(catalogEntries())("fulfills the complete $lookupKey bundle once at Stripe quantity one", async (entry) => {
     mocks.retrievePrice.mockResolvedValue({ metadata: { credits: String(entry.credits) }, product: { metadata: { app: "framefoundry" } } });
     mocks.retrieveInvoice.mockResolvedValue({ id: "in_test", billing_reason: "subscription_cycle", status: "paid", amount_paid: entry.amount });

@@ -2,6 +2,8 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/billing/stripe";
 import { isCreditInvoice } from "@/lib/billing/catalog";
 import { isCreditBundle } from "@/lib/billing/pricing";
+import { creatorOffer } from "@/lib/billing/creator-offer";
+import { creatorOfferInvoiceCredits } from "@/lib/billing/creator-offer-invoice";
 import { creditPack, creditPackEventKey, isCreditPackSession, validCreditPackSession, isPaidCreditPackSession } from "@/lib/billing/credit-pack";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -56,12 +58,23 @@ export async function POST(request: Request) {
     if (event.type === "invoice.paid") {
       const invoice = await stripe.invoices.retrieve((event.data.object as Stripe.Invoice).id);
       if (isCreditInvoice(invoice.billing_reason, invoice.status === "paid", invoice.amount_paid)) {
-        let credits = 0;
+        const lines: Stripe.InvoiceLineItem[] = [];
+        const prices = new Map<string, Stripe.Price>();
+        const initialOffer = invoice.billing_reason === "subscription_create" && invoice.parent?.subscription_details?.metadata?.offer_id === creatorOffer.id;
         for await (const line of stripe.invoices.listLineItems(invoice.id, { limit: 100 })) {
+          lines.push(line);
+          const priceRef = line.pricing?.price_details?.price;
+          const priceId = typeof priceRef === "string" ? priceRef : priceRef?.id;
+          if (priceId && (initialOffer || line.amount > 0) && !prices.has(priceId)) prices.set(priceId, await stripe.prices.retrieve(priceId, { expand: ["product"] }));
+        }
+        const offerCredits = creatorOfferInvoiceCredits(invoice, lines, prices, customer.workspace_id);
+        let credits = offerCredits ?? 0;
+        for (const line of offerCredits === null ? lines : []) {
           const priceRef = line.pricing?.price_details?.price;
           const priceId = typeof priceRef === "string" ? priceRef : priceRef?.id;
           if (!priceId || line.amount <= 0 || line.parent?.subscription_item_details?.proration) continue;
-          const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
+          const price = prices.get(priceId);
+          if (!price) throw new Error("Invoice price could not be verified.");
           const product = price.product;
           const quantity = line.quantity ?? 1;
           const creditAmount = Number(price.metadata.credits);

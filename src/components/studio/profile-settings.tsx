@@ -48,7 +48,7 @@ export function ProfileSettings({ email, initialUsername, demo, plans, subscript
         {creditPackMessage && <p role="status" className="mt-6 rounded-xl border border-primary/20 bg-accent/50 p-4 text-sm">{creditPackMessage}</p>}
         <h2 className="mb-2 mt-8 text-lg font-semibold">Choose your credit budget</h2>
         <p className="mb-6 text-sm text-muted-foreground">Monthly credits, or twelve months of credits upfront with yearly billing.</p>
-        <PricingCards mode="billing" plans={plans} pending={pending} demo={demo} hasSubscription={Boolean(subscription && !["canceled","incomplete_expired"].includes(subscription.status))} onChoose={(priceId, quantity) => run(() => createCheckout(priceId, quantity))} initialInterval={initialInterval} initialQuantity={initialQuantity} selectedTier={selectedTier} />
+        <PricingCards mode="billing" plans={plans} pending={pending} demo={demo} hasSubscription={Boolean(subscription && !["canceled","incomplete_expired"].includes(subscription.status))} offerEligible={!subscription} onChoose={(priceId, quantity, offerId) => run(() => createCheckout(priceId, quantity, offerId))} initialInterval={initialInterval} initialQuantity={initialQuantity} selectedTier={selectedTier} />
       </TabsContent>
     </Tabs>{message && <p className="mt-5 rounded-xl border border-primary/20 bg-accent/50 p-4 text-sm" role="status">{message}</p>}<Button variant="ghost" className="mt-8" disabled={demo || pending} onClick={() => run(async () => { const client = createClient(); if (!client) return {error:"Authentication is not configured."}; const {error} = await client.auth.signOut(); if (error) return {error:error.message}; router.push("/login"); return {ok:true}; }, "Signed out.")}><LogOut /> Sign out</Button>
   </main>;
