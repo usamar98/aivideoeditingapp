@@ -167,13 +167,31 @@ describe("AI marketing media", () => {
 
   it("updates the actual studio cards without changing generation entry points", async () => {
     const $ = load(renderToStaticMarkup(await StudioLibraryPage()));
-    expect($("main img").length).toBe(3);
+    expect($("main img").length).toBe(4);
     expect($("main img[loading='eager']").length).toBe(1);
-    for (const path of ["/studio/faceless", "/studio/cartoons", "/studio/ugc"]) {
+    for (const path of ["/studio/faceless", "/studio/cartoons", "/studio/ugc", "/studio/shorts"]) {
       expect($(`main a[href='${path}']`).length).toBe(1);
     }
     expect($.text()).toContain("Demo workspace");
     expect($.text()).toContain("Recent projects");
     expect($.text().match(/AI-generated concept/g)?.length).toBe(3);
+  });
+
+  it("matches the homepage's six-card order in a responsive studio grid", async () => {
+    const $ = load(renderToStaticMarkup(await StudioLibraryPage()));
+    const grid = $('[data-testid="feature-grid"]');
+    expect(grid.parent().attr("class")).toContain("@container");
+    expect(grid.attr("class")).toContain("@xl:grid-cols-2");
+    expect(grid.attr("class")).toContain("@4xl:grid-cols-3");
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone", "social-publishing"]);
+    expect(grid.find('[class*="col-span"]').length).toBe(0);
+    expect(grid.find("h2").length).toBe(6);
+    expect(grid.find("h3").length).toBe(0);
+    expect(grid.find("a[href^='/features/']").length).toBe(0);
+    for (const feature of ["digital-clone", "social-publishing"]) {
+      const card = grid.find(`[data-feature='${feature}']`);
+      expect(card.text()).toContain("Coming soon");
+      expect(card.find("a[href^='/studio'], button").length).toBe(0);
+    }
   });
 });
