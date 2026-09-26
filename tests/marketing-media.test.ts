@@ -16,6 +16,7 @@ vi.mock("@/components/studio/workspace-shell", () => ({ WorkspaceShell: ({ child
 
 import Home from "@/app/page";
 import StudioLibraryPage from "@/app/studio/page";
+import FeaturesPage from "@/app/features/page";
 import { ExampleVisual, exampleVisuals } from "@/components/marketing/example-visual";
 import { HeroShowcase } from "@/components/marketing/hero-showcase";
 import { heroMediaRows, heroStockCredits } from "@/components/marketing/hero-media";
@@ -163,6 +164,38 @@ describe("AI marketing media", () => {
     mocks.published.mockResolvedValue([]);
     const $ = load(renderToStaticMarkup(await Home()));
     expect($("#tools a[href^='/features/']").length).toBe(0);
+  });
+
+  it("uses the studio's six-card design and order on the public feature directory", async () => {
+    const published = [...slugs, "podcast-to-shorts"];
+    mocks.published.mockResolvedValue([...published].reverse().map((slug) => ({ slug, name: slug, description: "Published tool" })));
+    const $ = load(renderToStaticMarkup(await FeaturesPage()));
+    const grid = $('[data-testid="feature-grid"]');
+    expect(grid.attr("class")).toContain("sm:grid-cols-2");
+    expect(grid.attr("class")).toContain("lg:grid-cols-3");
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...published, "digital-clone", "social-publishing"]);
+    expect(grid.find("h2").length).toBe(6);
+    expect(grid.find("img").length).toBe(4);
+    expect(grid.find("video[controls]").length).toBe(1);
+    expect(grid.find('[class*="col-span"]').length).toBe(0);
+    expect(grid.find("a[href^='/studio']").length).toBe(0);
+    for (const slug of published) expect(grid.find(`a[href='/features/${slug}']`).length).toBe(1);
+    for (const slug of ["digital-clone", "social-publishing"]) {
+      expect($(`[data-feature='${slug}']`).length).toBe(1);
+      expect(grid.find(`[data-feature='${slug}']`).text()).toContain("Coming soon");
+    }
+    const schema = JSON.parse($("script[type='application/ld+json']").first().text());
+    const items = schema["@graph"].find((item: { "@type": string }) => item["@type"] === "ItemList").itemListElement;
+    expect(items.map((item: { url: string }) => new URL(item.url).pathname)).toEqual(published.map((slug) => `/features/${slug}`));
+  });
+
+  it("keeps unpublished tools hidden and custom published tools linked in the feature directory", async () => {
+    mocks.published.mockResolvedValue([{ slug: "custom-video-tool", name: "Custom video tool", description: "A published custom workflow." }]);
+    const $ = load(renderToStaticMarkup(await FeaturesPage()));
+    const grid = $('[data-testid="feature-grid"]');
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual(["digital-clone", "social-publishing", "custom-video-tool"]);
+    expect(grid.find("a[href^='/features/']").length).toBe(1);
+    expect(grid.find("a[href='/features/custom-video-tool']").text()).toContain("A published custom workflow.");
   });
 
   it("updates the actual studio cards without changing generation entry points", async () => {

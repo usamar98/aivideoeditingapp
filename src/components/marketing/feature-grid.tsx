@@ -9,9 +9,15 @@ const liveCards = [
   { slug: "ai-ugc-product-ads", title: "AI UGC and product-ad studio", variant: "ugc", label: "AI presenter ads", description: "Turn product photos or a link into presenter-led ads with three opening hooks and captions.", detail: "AI presenters · Product visuals · Hooks", studioHref: "/studio/ugc", studioAction: "Create product ads" },
 ] as const;
 
-export function FeatureGrid({ published, mode = "marketing" }: { published: string[]; mode?: "marketing" | "studio" }) {
+export const featuredToolSlugs: readonly string[] = [...liveCards.map((card) => card.slug), "podcast-to-shorts"];
+
+export function FeatureGrid({ published, mode = "marketing", additionalFeatures = [] }: {
+  published: string[];
+  mode?: "marketing" | "studio" | "directory";
+  additionalFeatures?: { slug: string; name: string; description: string }[];
+}) {
   const studio = mode === "studio";
-  const Heading = studio ? "h2" : "h3";
+  const Heading = mode === "marketing" ? "h3" : "h2";
   return <div className={studio ? "mt-8 grid items-stretch gap-6 @xl:grid-cols-2 @4xl:grid-cols-3" : "mt-10 grid items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3"} data-testid="feature-grid">
     {liveCards.filter((card) => published.includes(card.slug)).map((card) => <article data-feature={card.slug} key={card.slug} className="overflow-hidden rounded-2xl border border-border bg-card">
       <Link href={studio ? card.studioHref : `/features/${card.slug}`} className="group flex h-full flex-col">
@@ -30,5 +36,12 @@ export function FeatureGrid({ published, mode = "marketing" }: { published: stri
       </Link>
     </article>}
     <UpcomingFeatures headingLevel={Heading} />
+    {additionalFeatures.filter((feature) => published.includes(feature.slug) && !featuredToolSlugs.includes(feature.slug)).map((feature) => <article key={feature.slug} data-feature={feature.slug} className="overflow-hidden rounded-2xl border border-border bg-card">
+      <Link href={`/features/${feature.slug}`} className="group flex h-full flex-col p-6">
+        <Heading className="text-xl font-semibold">{feature.name}</Heading>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">{feature.description}</p>
+        <span className="mt-auto flex items-center gap-2 pt-5 text-sm font-semibold text-primary">Explore the tool <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
+      </Link>
+    </article>)}
   </div>;
 }
