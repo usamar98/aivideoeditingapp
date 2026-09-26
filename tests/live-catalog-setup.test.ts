@@ -67,7 +67,7 @@ describe("server-only live catalog setup", () => {
     const fake = provider();
     const result = await runLiveCatalogSetup(inspect, fake.options);
     expect(result).toMatchObject({ ok: true, mode: "inspect", ready: false });
-    expect(result.plans).toHaveLength(6);
+    expect(result.plans).toHaveLength(18);
     expect(result.plans?.every((plan) => plan.status === "missing")).toBe(true);
     expect(fake.client.prices.create).not.toHaveBeenCalled();
     expect(fake.client.products.create).not.toHaveBeenCalled();
@@ -78,13 +78,15 @@ describe("server-only live catalog setup", () => {
     const result = await runLiveCatalogSetup(apply, fake.options);
     expect(result).toMatchObject({ ok: true, ready: true });
     expect(result.plans?.map((plan) => [plan.amount, plan.credits])).toEqual([
-      [2999, 440], [23988, 5280], [4999, 1100], [35988, 13200], [9999, 2200], [95988, 26400],
+      [2999, 440], [5398, 880], [7647, 1320], [23988, 5280], [43178, 10560], [61169, 15840],
+      [4999, 1100], [8998, 2200], [12747, 3300], [35988, 13200], [64778, 26400], [91769, 39600],
+      [9999, 2200], [17998, 4400], [25497, 6600], [95988, 26400], [172778, 52800], [244769, 79200],
     ]);
     expect(fake.client.products.create).toHaveBeenCalledTimes(3);
-    expect(fake.client.prices.create).toHaveBeenCalledTimes(6);
+    expect(fake.client.prices.create).toHaveBeenCalledTimes(18);
     expect(await runLiveCatalogSetup(apply, fake.options)).toMatchObject({ ok: true, ready: true });
     expect(fake.client.products.create).toHaveBeenCalledTimes(3);
-    expect(fake.client.prices.create).toHaveBeenCalledTimes(6);
+    expect(fake.client.prices.create).toHaveBeenCalledTimes(18);
     expect(await runLiveCatalogSetup(inspect, fake.options)).toMatchObject({ ok: true, ready: true });
     expect(JSON.stringify(result)).not.toContain(fake.options.secretKey);
   });

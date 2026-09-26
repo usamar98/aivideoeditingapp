@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import { schemaTask, wait, metadata, logger, AbortTaskRunError } from "@trigger.dev/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { cartoonBriefSchema, cartoonStorySchema, validateCartoonStory, CHARACTER_IMAGE_MODEL, type CartoonStory } from "../src/lib/cartoons/schema";
+import { cartoonBriefSchema, cartoonStorySchema, isDirectCartoonModel, cartoonResolution, validateCartoonStory, CHARACTER_IMAGE_MODEL, type CartoonStory } from "../src/lib/cartoons/schema";
 import { cartoonPlannerPrompt, characterImagePrompt, sceneImagePrompt, cartoonVideoInput } from "../src/lib/cartoons/prompts";
 import { artifactStore, downloadProviderImage, readBoundedBody, MEDIA_LIMITS } from "./media-io";
 import { assertJobActive, claimJob, finishCancelledJob } from "./job-control";
@@ -43,6 +43,7 @@ export const cartoonPipeline = schemaTask({
     if (error || !job || !["cartoon-plan", "cartoon-render"].includes(job.operation)) throw new Error("Cartoon job not found");
     const settings = z.object({ projectId: z.string().uuid(), kind: z.enum(["plan", "render"]), brief: cartoonBriefSchema, storyboard: cartoonStorySchema.nullable(), castPaths: pathsSchema }).parse(job.settings);
     const { brief } = settings;
+    const direct = isDirectCartoonModel(brief.model);
     const bucket = db.storage.from("private-media");
     const ownerPrefix = `${job.workspace_id}/${job.requested_by}/`;
     const prefix = `${ownerPrefix}cartoons/${generationId}`;
@@ -128,7 +129,7 @@ export const cartoonPipeline = schemaTask({
         }
         validateCartoonStory(story, brief);
         const castPaths: Record<string, string> = {};
-        for (const character of story.characters) {
+        for (const character of direct ? [] : story.characters) {
           await phase(`Designing ${character.name} (${Object.keys(castPaths).length + 1}/${story.characters.length})`);
           const refs = character.referenceSlot ? [await signed(references[character.referenceSlot - 1].path)] : [];
           castPaths[character.id] = await image(`cast-${character.id}`, characterImagePrompt(character, brief), refs, true);
@@ -142,11 +143,11 @@ export const cartoonPipeline = schemaTask({
         await phase(`Animating scene ${index + 1} of ${story.scenes.length}`);
         const clip = path.join(work, `clip-${index}.mp4`);
         if (await artifacts.loadFile(`clip-${index}.mp4`, clip, MEDIA_LIMITS.video)) continue;
-        const refs = await Promise.all(scene.characterIds.map((id) => signed(settings.castPaths[id])));
-        const frame = await image(`frame-${index}`, sceneImagePrompt(scene, story, brief), refs, false);
+        const refs = direct ? [] : await Promise.all(scene.characterIds.map((id) => signed(settings.castPaths[id])));
+        const frameUrl = direct ? "" : await signed(await image(`frame-${index}`, sceneImagePrompt(scene, story, brief), refs, false));
         const raw = path.join(work, `raw-${index}.mp4`);
         if (!await artifacts.loadFile(`raw-${index}.mp4`, raw, MEDIA_LIMITS.video)) {
-          const request = cartoonVideoInput(scene, story, brief, await signed(frame), refs, job.requested_by);
+          const request = cartoonVideoInput(scene, story, brief, frameUrl, refs, job.requested_by);
           const result = z.object({ video: z.object({ url: z.string().url() }) }).parse(await provider(`video-${index}`, request.endpoint, request.input));
           await downloadCartoonVideo(result.video.url, raw, signal);
           await artifacts.saveFile(`raw-${index}.mp4`, raw, "video/mp4", MEDIA_LIMITS.video);
@@ -155,8 +156,8 @@ export const cartoonPipeline = schemaTask({
         const probe = await exec(process.env.FFPROBE_PATH || "ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_type", "-of", "json", `raw-${index}.mp4`], { cwd: work, signal, timeout: 30_000, maxBuffer: 256 * 1024 });
         const media = z.object({ streams: z.array(z.object({ codec_type: z.string() })), format: z.object({ duration: z.string() }) }).parse(JSON.parse(probe.stdout));
         const seconds = Number(media.format.duration);
-        if (!Number.isFinite(seconds) || seconds < scene.duration - 1 || seconds > scene.duration + 3 || !media.streams.some((s) => s.codec_type === "audio")) throw new Error("Provider returned an incomplete clip or missing audio");
-        await exec(process.env.FFMPEG_PATH || "ffmpeg", cartoonClipArgs(index, scene.duration, brief.aspectRatio === "9:16"), { cwd: work, signal, timeout: 180_000, maxBuffer: 256 * 1024 });
+        if (!Number.isFinite(seconds) || seconds < scene.duration - 1 || seconds > scene.duration + 3 || (brief.audio !== false && !media.streams.some((s) => s.codec_type === "audio"))) throw new Error("Provider returned an incomplete clip or missing audio");
+        await exec(process.env.FFMPEG_PATH || "ffmpeg", cartoonClipArgs(index, scene.duration, brief.aspectRatio === "9:16", cartoonResolution(brief), brief.audio !== false), { cwd: work, signal, timeout: 180_000, maxBuffer: 256 * 1024 });
         await artifacts.saveFile(`clip-${index}.mp4`, clip, "video/mp4", MEDIA_LIMITS.video);
       }
       await phase("Assembling your cartoon with dialogue");

@@ -2,9 +2,20 @@ import { z } from "zod";
 
 export const cartoonStyles = { "3d": "Cinematic 3D", "2d": "Hand-drawn 2D", anime: "Anime", clay: "Clay animation" } as const;
 export const cartoonModels = {
-  "kling-o3": { name: "Kling O3 Pro", endpoint: "fal-ai/kling-video/o3/pro/reference-to-video", creditsPerSecond: 8, description: "Character-guided animation · native dialogue" },
-  "seedance-2.5": { name: "Seedance 2.5", endpoint: "bytedance/seedance-2.5/reference-to-video", creditsPerSecond: 24, description: "Premium reference-guided animation · native audio" },
+  "kling-o3": { name: "Kling O3 Pro · character reference", endpoint: "fal-ai/kling-video/o3/pro/reference-to-video", inputMode: "reference", creditsPerSecond: 8, resolutions: ["720p"], defaultResolution: "720p", description: "Character-guided animation · native dialogue" },
+  "seedance-2.5": { name: "Seedance 2.5 · character reference", endpoint: "bytedance/seedance-2.5/reference-to-video", inputMode: "reference", creditsPerSecond: 24, resolutions: ["720p"], defaultResolution: "720p", description: "Premium reference-guided animation · native audio" },
+  "minimax-h3-turbo": { name: "MiniMax H3 Max Turbo · direct prompt", endpoint: "minimax/h3-max-turbo/text-to-video", inputMode: "text", creditsPerSecond: 3, resolutions: ["480p", "768p", "1080p"], defaultResolution: "768p", description: "Direct text-to-video · no character-image step · native sound" },
+  "seedance-2.5-t2v": { name: "Seedance 2.5 · direct prompt", endpoint: "bytedance/seedance-2.5/text-to-video", inputMode: "text", creditsPerSecond: 31, resolutions: ["480p", "720p", "1080p"], defaultResolution: "720p", description: "Direct text-to-video · no character-image step · native audio" },
+  "kling-v3": { name: "Kling V3 Pro · direct prompt", endpoint: "fal-ai/kling-video/v3/pro/text-to-video", inputMode: "text", creditsPerSecond: 11, resolutions: ["720p"], defaultResolution: "720p", description: "Direct text-to-video · optional generated sound · 720p export" },
 } as const;
+export type CartoonModel = keyof typeof cartoonModels;
+export type CartoonResolution = "480p" | "720p" | "768p" | "1080p";
+export function isDirectCartoonModel(model: CartoonModel) { return cartoonModels[model].inputMode === "text"; }
+export function isSeedanceModel(model: CartoonModel) { return model === "seedance-2.5" || model === "seedance-2.5-t2v"; }
+export function cartoonResolution(brief: { model: CartoonModel; resolution?: CartoonResolution }) {
+  return brief.resolution ?? cartoonModels[brief.model].defaultResolution;
+}
+export function cartoonPlanCredits(brief: { model: CartoonModel }) { return isDirectCartoonModel(brief.model) ? 2 : CARTOON_PLAN_CREDITS; }
 export const CARTOON_PLAN_CREDITS = 40;
 export const CHARACTER_IMAGE_MODEL = "openai/gpt-image-2.5/sunburst";
 export const cartoonBriefSchema = z.object({
@@ -12,9 +23,16 @@ export const cartoonBriefSchema = z.object({
   style: z.enum(["3d", "2d", "anime", "clay"]),
   aspectRatio: z.enum(["16:9", "9:16"]),
   duration: z.union([z.literal(15), z.literal(30), z.literal(60)]),
-  model: z.enum(["kling-o3", "seedance-2.5"]),
+  model: z.enum(["kling-o3", "seedance-2.5", "minimax-h3-turbo", "seedance-2.5-t2v", "kling-v3"]),
+  resolution: z.enum(["480p", "720p", "768p", "1080p"]).optional(),
+  audio: z.boolean().optional(),
   references: z.array(z.object({ assetId: z.string().uuid(), name: z.string().trim().min(1).max(40) })).max(3),
   rightsConfirmed: z.literal(true),
+}).superRefine((brief, ctx) => {
+  const resolutions: readonly string[] = cartoonModels[brief.model].resolutions;
+  if (!resolutions.includes(cartoonResolution(brief))) ctx.addIssue({ code: "custom", path: ["resolution"], message: "Choose a supported resolution for this model." });
+  if (isDirectCartoonModel(brief.model) && brief.references.length) ctx.addIssue({ code: "custom", path: ["references"], message: "Direct-prompt models do not accept character images. Remove them or choose a character-reference model." });
+  if (brief.audio === false && brief.model !== "kling-v3") ctx.addIssue({ code: "custom", path: ["audio"], message: "This model uses generated audio." });
 });
 export const cartoonCharacterSchema = z.object({
   id: z.string().regex(/^c[1-3]$/), name: z.string().min(1).max(40),
@@ -53,8 +71,17 @@ export function validateCartoonStory(story: CartoonStory, brief: CartoonBrief) {
     if (words > scene.duration * 2) throw new Error(`Shorten dialogue in “${scene.title}” to ${scene.duration * 2} words or fewer.`);
   }
 }
-export function cartoonRenderCredits(brief: Pick<CartoonBrief, "model" | "duration">) {
-  return cartoonModels[brief.model].creditsPerSecond * brief.duration;
+// Credit-only rate card. Keep the reservation RPC in sync; never accept a client-supplied cost.
+export function cartoonRenderCredits(brief: Pick<CartoonBrief, "model" | "duration" | "resolution" | "audio">) {
+  const resolution = cartoonResolution(brief);
+  const allowed: readonly string[] = cartoonModels[brief.model].resolutions;
+  if (!allowed.includes(resolution)) throw new Error("Unsupported resolution for this model.");
+  const rates: Partial<Record<CartoonModel, Partial<Record<CartoonResolution, number>>>> = {
+    "minimax-h3-turbo": { "480p": 2, "768p": 3, "1080p": 6 },
+    "seedance-2.5-t2v": { "480p": 15, "720p": 31, "1080p": 76 },
+  };
+  const rate = brief.model === "kling-v3" ? (brief.audio === false ? 8 : 11) : rates[brief.model]?.[resolution] ?? cartoonModels[brief.model].creditsPerSecond;
+  return rate * brief.duration;
 }
 export type CartoonProjectView = {
   id: string; title: string; status: string; brief: CartoonBrief; storyboard: CartoonStory | null;

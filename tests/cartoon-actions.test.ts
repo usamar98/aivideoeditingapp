@@ -48,8 +48,8 @@ describe("cartoon server actions", () => {
     mocks.saved.mockResolvedValue({ data: null, error: null });
     expect((await startCartoonJob(projectId, "render")).error).toContain("state changed");
   });
-  it("requires owner opt-in for Seedance, without silently falling back", async () => {
-    mocks.project.mockResolvedValue({ data: { brief: { ...cartoonDemo.brief, model: "seedance-2.5" }, storyboard: cartoonDemo.storyboard } });
+  it.each(["seedance-2.5", "seedance-2.5-t2v"])("requires owner opt-in for %s, without silently falling back", async (model) => {
+    mocks.project.mockResolvedValue({ data: { brief: { ...cartoonDemo.brief, model }, storyboard: cartoonDemo.storyboard } });
     expect((await startCartoonJob(projectId, "render")).error).toContain("Seedance access"); expect(mocks.rpc).not.toHaveBeenCalled();
   });
   it("cannot alter approved cast references or render excessive dialogue", async () => {

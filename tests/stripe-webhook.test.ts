@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { beforeEach,afterEach,describe,it,expect,vi } from "vitest";
 import { packSession } from "./fixtures/credit-pack";
+import { catalogEntries } from "@/lib/billing/setup-stripe-catalog.mjs";
 
 const mocks=vi.hoisted(()=>({duplicate:false,quantity:1,proration:false,rpc:vi.fn(),upsert:vi.fn(),processed:vi.fn(),subscriptions:vi.fn(),retrieveInvoice:vi.fn(),retrievePrice:vi.fn(),retrieveSession:vi.fn()}));
 vi.mock("@/lib/billing/stripe",()=>({getStripe:()=>({webhooks:new Stripe("sk_test_local_only").webhooks,checkout:{sessions:{retrieve:mocks.retrieveSession}},subscriptions:{list:mocks.subscriptions},invoices:{retrieve:mocks.retrieveInvoice,listLineItems:async function*(){yield {amount:1900,quantity:mocks.quantity,pricing:{price_details:{price:"price_test"}},parent:{subscription_item_details:{proration:mocks.proration}}};}},prices:{retrieve:mocks.retrievePrice}})}));
@@ -11,6 +12,14 @@ function request(type="invoice.paid",signatureValid=true){const body=JSON.string
 beforeEach(()=>{vi.clearAllMocks();mocks.duplicate=false;mocks.quantity=1;mocks.proration=false;vi.stubEnv("STRIPE_SECRET_KEY","sk_test_local_only");vi.stubEnv("STRIPE_WEBHOOK_SECRET",secret);mocks.rpc.mockResolvedValue({error:null});mocks.upsert.mockResolvedValue({error:null});mocks.subscriptions.mockResolvedValue({data:[]});mocks.retrieveInvoice.mockResolvedValue({id:"in_test",billing_reason:"subscription_cycle",status:"paid",amount_paid:1900});mocks.retrievePrice.mockResolvedValue({metadata:{credits:"100"},product:{metadata:{app:"framefoundry"}}});});
 afterEach(()=>vi.unstubAllEnvs());
 describe("Stripe webhook boundary",()=>{
+  it.each(catalogEntries())("fulfills the complete $lookupKey bundle once at Stripe quantity one", async (entry) => {
+    mocks.retrievePrice.mockResolvedValue({ metadata: { credits: String(entry.credits) }, product: { metadata: { app: "framefoundry" } } });
+    mocks.retrieveInvoice.mockResolvedValue({ id: "in_test", billing_reason: "subscription_cycle", status: "paid", amount_paid: entry.amount });
+    expect((await POST(request())).status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledWith("apply_credit_purchase", expect.objectContaining({ credit_amount: entry.credits, event_key: "stripe:invoice:in_test" }));
+    mocks.duplicate = true; await POST(request());
+    expect(mocks.rpc).toHaveBeenCalledTimes(1);
+  });
   it.each([[440,2],[1100,3],[13200,2],[26400,3]])("grants verified %i credits × %i invoice quantity, idempotently",async(credits,quantity)=>{
     mocks.quantity=quantity;mocks.retrievePrice.mockResolvedValue({metadata:{credits:String(credits)},product:{metadata:{app:"framefoundry"}}});
     expect((await POST(request())).status).toBe(200);

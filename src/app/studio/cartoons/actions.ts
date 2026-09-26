@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { tasks } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { requireAccount, publicError } from "@/lib/account";
-import { cartoonBriefSchema, cartoonStorySchema, validateCartoonStory } from "@/lib/cartoons/schema";
+import { isSeedanceModel, cartoonBriefSchema, cartoonStorySchema, validateCartoonStory } from "@/lib/cartoons/schema";
 import { recordDispatchFailure, type JobStage } from "@/lib/jobs/diagnostics";
 import type { cartoonPipeline } from "../../../../trigger/cartoon-pipeline";
 
@@ -30,7 +30,7 @@ export async function createCartoonUpload(input: unknown) {
 export async function createCartoonProject(input: unknown) {
   try {
     const brief = cartoonBriefSchema.parse(input);
-    if (brief.model === "seedance-2.5" && process.env.CARTOON_SEEDANCE_ENABLED !== "true") throw new Error("Seedance access has not been enabled by the studio owner. Select Kling O3 Pro.");
+    if (isSeedanceModel(brief.model) && process.env.CARTOON_SEEDANCE_ENABLED !== "true") throw new Error("Seedance access has not been enabled by the studio owner. Select Kling O3 Pro.");
     const { db, admin, user, workspaceId } = await requireAccount();
     const daily = await db.from("cartoon_projects").select("id", { head: true, count: "exact" }).eq("user_id", user.id).gte("created_at", new Date(Date.now() - 86400000).toISOString());
     if (daily.error) throw new Error("Apply the cartoon-studio migration before creating cartoons.");
@@ -71,7 +71,7 @@ export async function startCartoonJob(id: string, kind: "plan" | "render") {
     const { data: project } = await db.from("cartoon_projects").select("brief,storyboard").eq("id", id).eq("user_id", user.id).single();
     if (!project) throw new Error("Project not found.");
     const brief = cartoonBriefSchema.parse(project.brief);
-    if (brief.model === "seedance-2.5" && process.env.CARTOON_SEEDANCE_ENABLED !== "true") throw new Error("Seedance access must be enabled by the owner first.");
+    if (isSeedanceModel(brief.model) && process.env.CARTOON_SEEDANCE_ENABLED !== "true") throw new Error("Seedance access must be enabled by the owner first.");
     if (kind === "render") validateCartoonStory(cartoonStorySchema.parse(project.storyboard), brief);
     const reserved = await admin.rpc("start_cartoon_job", { project_id: id, owner_id: user.id, job_id: randomUUID(), job_kind: kind });
     if (reserved.error || !reserved.data) throw new Error(reserved.error?.message || "Could not reserve credits.");

@@ -1,8 +1,8 @@
 import type Stripe from "stripe";
-import { planTerms, pricingTiers, type BillingInterval } from "./pricing";
+import { planTerms, pricingTiers, creditBundleOptions, type CreditBundle, type BillingInterval } from "./pricing";
 
 export type BillingPlan = { id: string; name: string; description: string; amount: number; currency: string; interval: string; intervalCount: number; credits: number };
-export type OfferedBillingPlan = BillingPlan & { tierId: string; interval: BillingInterval };
+export type OfferedBillingPlan = BillingPlan & { tierId: string; interval: BillingInterval; creditBundle: CreditBundle };
 
 export function toBillingPlan(price: Stripe.Price): BillingPlan | null {
   const product = price.product;
@@ -19,9 +19,11 @@ export function toOfferedBillingPlan(price: Stripe.Price): OfferedBillingPlan | 
   if (!plan || plan.currency !== "usd" || plan.intervalCount !== 1 || price.transform_quantity) return null;
   if (plan.interval !== "month" && plan.interval !== "year") return null;
   for (const tier of pricingTiers) {
-    const terms = planTerms(tier, plan.interval);
-    if (price.lookup_key === terms.lookupKey && plan.amount === terms.amount && plan.credits === terms.credits) {
-      return { ...plan, name: tier.name, description: tier.description, tierId: tier.id, interval: plan.interval };
+    for (const creditBundle of creditBundleOptions) {
+      const terms = planTerms(tier, plan.interval, creditBundle);
+      if (price.lookup_key === terms.lookupKey && plan.amount === terms.amount && plan.credits === terms.credits) {
+        return { ...plan, name: tier.name, description: tier.description, tierId: tier.id, interval: plan.interval, creditBundle };
+      }
     }
   }
   return null;

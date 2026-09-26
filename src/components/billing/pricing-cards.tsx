@@ -6,7 +6,7 @@ import { ArrowRight, Check, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { creditBundleOptions, isCreditBundle, formatUsd, planTerms, pricingAccountHref, pricingTiers, type BillingInterval, type CreditBundle } from "@/lib/billing/pricing";
+import { bundleDiscount, creditBundleOptions, isCreditBundle, formatUsd, planTerms, pricingAccountHref, pricingTiers, type BillingInterval, type CreditBundle } from "@/lib/billing/pricing";
 import type { OfferedBillingPlan } from "@/lib/billing/catalog";
 
 type PricingCardsProps = {
@@ -49,7 +49,7 @@ export function PricingCards(props: PricingCardsProps) {
         const terms = planTerms(tier, interval, quantity);
         const featured = tier.id === "creator";
         const selected = props.selectedTier === tier.id;
-        const price = props.mode === "billing" ? props.plans.find((plan) => plan.tierId === tier.id && plan.interval === interval) : undefined;
+        const price = props.mode === "billing" ? props.plans.find((plan) => plan.tierId === tier.id && plan.interval === interval && plan.creditBundle === quantity) : undefined;
         const disabled = props.mode === "billing" && (props.pending || props.demo || props.hasSubscription || !price);
 
         return <Card key={tier.id} className={cn("relative flex flex-col rounded-2xl p-6 sm:p-7", featured && "border-primary/50 bg-accent/30 shadow-sm", selected && "ring-2 ring-primary ring-offset-2")}>
@@ -60,10 +60,10 @@ export function PricingCards(props: PricingCardsProps) {
           <p className="mt-3 min-h-12 text-sm leading-6 text-muted-foreground">{tier.description}</p>
           <div className="mt-5"><label htmlFor={`${id}-${tier.id}-credits`} className="mb-2 block text-xs font-semibold text-foreground">Choose your credits</label>
             <select id={`${id}-${tier.id}-credits`} aria-label={`${tier.name} credit allowance`} value={quantity} disabled={props.mode === "billing" && props.pending} onChange={(event) => { const next = Number(event.target.value); if (isCreditBundle(next)) setQuantities((current) => ({ ...current, [tier.id]: next })); }} className="w-full rounded-xl border border-primary/20 bg-background px-3 py-3 text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary">
-              {creditBundleOptions.map((bundle) => <option key={bundle} value={bundle}>{(tier.monthlyCredits * bundle).toLocaleString("en-US")} credits{annual ? "/mo equiv." : " / month"}{bundle === 1 ? " · Base" : ` · ${bundle}×`}</option>)}
+              {creditBundleOptions.map((bundle) => <option key={bundle} value={bundle}>{(tier.monthlyCredits * bundle).toLocaleString("en-US")} credits{annual ? "/mo equiv." : " / month"}{bundle === 1 ? " · Base" : ` · ${bundle}× · ${bundleDiscount(bundle)}% off`}</option>)}
             </select>
           </div>
-          <div aria-live="polite" aria-atomic="true"><p className="mt-6 flex flex-wrap items-baseline gap-1.5"><span className="text-4xl font-semibold tracking-tight">{formatUsd(terms.monthlyEquivalent)}</span><span className="text-sm text-muted-foreground">/ month</span></p>
+          <div aria-live="polite" aria-atomic="true">{terms.discountPercent > 0 && <p className="mt-4 text-xs font-semibold text-primary"><s className="mr-2 text-muted-foreground">{formatUsd(terms.undiscountedAmount / (annual ? 12 : 1))}/mo</s>{terms.discountPercent}% bundle discount · save {formatUsd(terms.bundleSavings)} {annual ? "per year" : "per month"}</p>}<p className="mt-6 flex flex-wrap items-baseline gap-1.5"><span className="text-4xl font-semibold tracking-tight">{formatUsd(terms.monthlyEquivalent)}</span><span className="text-sm text-muted-foreground">/ month</span></p>
           <p className="mt-2 text-sm text-muted-foreground">{annual ? `${formatUsd(terms.amount)} billed yearly` : `${formatUsd(terms.amount)} billed monthly`}</p></div>
           <p className="mt-3 min-h-5 text-xs font-medium text-primary">{annual ? `Save ${formatUsd(terms.annualSavings)} per year vs. monthly` : "A monthly subscription. Cancel future renewals anytime."}</p>
 

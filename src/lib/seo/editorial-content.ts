@@ -29,7 +29,7 @@ export const homeFaqs: Answer[] = [
   },
   {
     question: "Can I review my video before paying for the final render?",
-    answer: `Yes. Review and edit the plan before starting the separate rendering stage. Faceless AI script writing costs 2 credits, or use your own script without that writing charge. Cartoon cast and story creation costs ${CARTOON_PLAN_CREDITS} credits. UGC presenter and hook planning costs ${UGC_PLAN_CREDITS} credits. Completed planning stages remain charged even if you choose not to render.`,
+    answer: `Yes. Review and edit the plan before starting the separate rendering stage. Faceless AI script writing costs 2 credits, or use your own script without that writing charge. Cartoon reference-mode cast and story creation costs ${CARTOON_PLAN_CREDITS} credits; direct-prompt story planning costs 2 credits. UGC presenter and hook planning costs ${UGC_PLAN_CREDITS} credits. Completed planning stages remain charged even if you choose not to render.`,
   },
   {
     question: "How much does ETA cost?",
@@ -37,7 +37,7 @@ export const homeFaqs: Answer[] = [
   },
   {
     question: "Can I use my own cartoon character images?",
-    answer: "Yes. Add up to three character references, with one clear character per image. PNG, JPG and WebP files up to 8 MB each are supported. You must have permission to use the references. AI adapts the images into cast portraits, but appearance and voice consistency can vary.",
+    answer: "Yes, with a character-reference model. Add up to three character references, with one clear character per image. PNG, JPG and WebP files up to 8 MB each are supported. You must have permission to use the references. AI adapts the images into cast portraits, but appearance and voice consistency can vary.",
   },
   {
     question: "Which video formats and languages are supported?",
@@ -137,16 +137,16 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
     ],
   },
   "ai-cartoon-series": {
-    updatedAt: "2026-09-25",
-    summary: "ETA’s AI cartoon studio creates a short animated film from a story prompt or your own character artwork. AI prepares up to three characters and an editable scene plan with actions, camera directions and dialogue. Review the cast portraits and text storyboard first, then approve animation separately. Reused character references guide the film, but exact appearance, spoken words and cross-scene voice consistency are not guaranteed.",
+    updatedAt: "2026-09-26",
+    summary: "ETA’s AI cartoon studio creates a short animated film from a story prompt or your own character artwork. AI prepares up to three characters and an editable scene plan with actions, camera directions and dialogue. Choose character-reference animation to review portraits first, or a direct-prompt model that skips image generation. Review the text storyboard and approve animation separately. Exact appearance, spoken words and cross-scene voice consistency are not guaranteed.",
     steps: [
       {
         title: "Describe a small, clear story",
         text: "Name the characters, setting, problem and ending. Choose 15, 30 or 60 seconds and a vertical or landscape canvas. Pick Cinematic 3D, Hand-drawn 2D, Anime or Clay animation as art direction. A focused adventure with a few actions is easier to review than a crowded list of events.",
       },
       {
-        title: "Add references and approve cast creation",
-        text: "Optionally upload one clear image for each of up to three characters and give each a name. Use artwork you have permission to submit. Confirm the cast-and-story credit cost, then review the generated portraits and text scenes. The review screen is not a set of finished animated scene previews.",
+        title: "Choose your model and review the estimate",
+        text: "Choose a model, its supported resolution and, for Kling V3 Pro, sound on or off. Reference models let you upload up to three authorized character images and generate cast portraits. Direct-prompt models skip images and create a text story for review. Each shows its story and animation credit costs before confirmation.",
       },
       {
         title: "Refine the actions and spoken lines",
@@ -154,7 +154,7 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
       },
       {
         title: "Animate, review and download",
-        text: "Confirm the separate animation cost. ETA reuses character references while generating scenes, preserves their generated audio and joins them into an MP4. Follow progress in Jobs and return when it finishes. Watch the complete film for visual drift, pronunciation and lip sync before you publish it elsewhere.",
+        text: "Confirm the separate animation cost. ETA generates scenes from character references or text descriptions, preserves audio when selected and joins them into an MP4. Follow progress in Jobs and return when it finishes. Watch the complete film for visual drift, pronunciation and lip sync before you publish it elsewhere.",
       },
     ],
     useCases: [
@@ -174,19 +174,19 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
     faqs: [
       {
         question: "How much does a cartoon cost in credits?",
-        answer: `Cast and story creation costs ${CARTOON_PLAN_CREDITS} credits. ${cartoonModels["kling-o3"].name} animation costs ${cartoonModels["kling-o3"].creditsPerSecond} credits per second, so a 15-second film uses ${klingShortCredits} animation credits, or ${CARTOON_PLAN_CREDITS + klingShortCredits} with a new cast and story. ${cartoonModels["seedance-2.5"].name}, when enabled, costs ${cartoonModels["seedance-2.5"].creditsPerSecond} animation credits per second.`,
+        answer: `Direct-prompt story planning costs 2 credits, with animation priced by model, duration, resolution and supported audio choice. The estimate appears before each stage. Reference-mode cast and story creation costs ${CARTOON_PLAN_CREDITS} credits. ${cartoonModels["kling-o3"].name} animation costs ${cartoonModels["kling-o3"].creditsPerSecond} credits per second, so a 15-second film uses ${klingShortCredits} animation credits, or ${CARTOON_PLAN_CREDITS + klingShortCredits} with a new cast and story. ${cartoonModels["seedance-2.5"].name}, when enabled, costs ${cartoonModels["seedance-2.5"].creditsPerSecond} animation credits per second.`,
       },
       {
         question: "Which images can I upload for a character?",
-        answer: "Upload up to three PNG, JPG or WebP images, no more than 8 MB each. Use one clear character per image and name it in the studio. Prompts and submitted reference images are sent to AI providers to create the film.",
+        answer: "With a character-reference model, upload up to three PNG, JPG or WebP images, no more than 8 MB each. Use one clear character per image and name it in the studio. Prompts and submitted reference images are sent to AI providers to create the film.",
       },
       {
         question: "Does the finished cartoon include speech and captions?",
-        answer: "Cartoon scenes use generated English dialogue and sound. Exact words, pronunciation, lip sync and voice continuity can vary. Automatic subtitles are not included in this workflow. Watch and listen to the result before sharing it.",
+        answer: "Audio-enabled cartoon scenes use generated English dialogue and sound. Kling V3 Pro also offers silent output. Exact words, pronunciation, lip sync and voice continuity can vary. Automatic subtitles are not included in this workflow. Watch and listen to the result before sharing it.",
       },
       {
         question: "Can I export a 3D character or regenerate one scene?",
-        answer: "No. The download is a finished 720p MP4, not an editable 3D model or animation rig. Individual-scene regeneration, voice cloning and a reusable cross-project character library are not included. Rendering the film again is another paid job.",
+        answer: "No. The download is a finished MP4 at the selected model-supported export resolution, not an editable 3D model or animation rig. Individual-scene regeneration, voice cloning and a reusable cross-project character library are not included. Rendering the film again is another paid job.",
       },
       {
         question: "What happens to credits if animation fails or I cancel?",
@@ -198,11 +198,11 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
 
 export const comparisonRows: { label: string; faceless: string; cartoons: string }[] = [
   { label: "Starting point", faceless: "A topic or your own narration script", cartoons: "A story prompt, optionally with up to three character images" },
-  { label: "Visual output", faceless: "Narrated scenes made from AI still images", cartoons: "Generated character animation guided by cast references" },
+  { label: "Visual output", faceless: "Narrated scenes made from AI still images", cartoons: "Character-reference or direct-prompt animation" },
   { label: "Length options", faceless: "Approximately 30 or 60 seconds", cartoons: "15, 30 or 60 seconds" },
   { label: "Language", faceless: "English, Spanish or French narration", cartoons: "English generated dialogue" },
   { label: "Captions", faceless: "Optional captions burned into the MP4", cartoons: "No automatic subtitles in this workflow" },
-  { label: "Review before rendering", faceless: "Editable narration and visual prompts", cartoons: "Cast portraits and editable actions, camera directions and dialogue" },
-  { label: "Generation credits", faceless: "20 to render; 2 more for AI script writing", cartoons: `${CARTOON_PLAN_CREDITS} for cast and story; animation from ${cartoonModels["kling-o3"].creditsPerSecond} credits per second` },
-  { label: "Download", faceless: "Private 720p MP4 in 9:16 or 16:9", cartoons: "Private 720p MP4 in 9:16 or 16:9" },
+  { label: "Review before rendering", faceless: "Editable narration and visual prompts", cartoons: "Editable scene plan; portraits in character-reference mode" },
+  { label: "Generation credits", faceless: "20 to render; 2 more for AI script writing", cartoons: "2 for direct-prompt story planning, or 40 for reference cast and story; animation varies by model and settings" },
+  { label: "Download", faceless: "Private 720p MP4 in 9:16 or 16:9", cartoons: "Private MP4 in 9:16 or 16:9; model-dependent resolution" },
 ];

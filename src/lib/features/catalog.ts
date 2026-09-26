@@ -67,12 +67,12 @@ export const featureCatalog: FeatureDefinition[] = [
     capabilities: [
       "Up to three AI-designed or image-guided characters using GPT Image 2.5 Sunburst on fal",
       "Editable scene actions, camera directions, sound and dialogue",
-      "Kling O3 Pro native-audio animation, with optional Seedance 2.5 access",
-      "15-, 30- and 60-second films in landscape or vertical 720p",
+      "Model menu: character-reference animation or direct-prompt MiniMax H3 Max Turbo, Kling V3 Pro and optional Seedance 2.5",
+      "15-, 30- and 60-second films in landscape or vertical; resolution options depend on the selected model",
       "Saved projects, background progress, cancellation and private downloads",
     ],
     limitations: [
-      "The first release exports finished video, not editable 3D models or rigs.",
+      "Exports finished video, not editable 3D models or rigs. Direct-prompt models skip portraits and do not accept character-image uploads.",
       "Character consistency is reviewed and improved, not guaranteed to be perfect.",
       "English dialogue and generated lip sync can vary; exact words and voice continuity are not guaranteed. Review before publishing.",
       "Live generation requires a migrated database, deployed cartoon worker, provider access and credits. No automatic captions, editable rigs or per-scene rerendering in this release.",
@@ -89,7 +89,7 @@ export const featureCatalog: FeatureDefinition[] = [
     relatedFeatures: ["faceless-video-generator"],
     status: "published",
     publishedAt: "2026-09-22T00:00:00.000Z",
-    modifiedAt: "2026-09-25T00:00:00.000Z",
+    modifiedAt: "2026-09-26T00:00:00.000Z",
     seo: {
       title: "AI Cartoon Video Generator from Prompts & Images",
       description:

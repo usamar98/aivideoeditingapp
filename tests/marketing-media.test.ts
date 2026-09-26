@@ -115,17 +115,18 @@ describe("AI marketing media", () => {
 
   it("shows a playable clone concept and four clearly unavailable social integrations", () => {
     const $ = load(renderToStaticMarkup(createElement(UpcomingFeatures)));
-    expect($("article").length).toBe(5);
-    expect($.text().match(/Coming soon/g)?.length).toBe(5);
+    expect($("article").length).toBe(2);
+    expect($.text().match(/Coming soon/g)?.length).toBe(4);
     expect($("video[controls]").length).toBe(1);
     expect($("video").attr("autoplay")).toBeUndefined();
     expect($("video").attr("preload")).toBe("none");
     expect($.text()).toContain("not an ETA clone or a speaking demo");
     for (const name of ["TikTok", "Instagram", "Facebook", "YouTube"]) {
-      expect($(`article[aria-label='${name} publishing — coming soon']`).length).toBe(1);
+      expect($(`a[aria-label^='Visit ${name} (external website']`).length).toBe(1);
     }
     expect($("a[href^='/studio'], button").length).toBe(0);
-    expect($.text()).toContain("aren’t available yet");
+    expect($.text()).toContain("Auto-post and schedule planned");
+    expect($.text()).not.toContain("Create here. Share everywhere");
     expect($.text()).toContain("No impersonation");
   });
 
@@ -150,6 +151,14 @@ describe("AI marketing media", () => {
     expect($.text()).not.toContain("Find your kind of quiet");
   });
 
+  it("lays out six cards in the requested two desktop rows", async () => {
+    mocks.published.mockResolvedValue([...slugs, "podcast-to-shorts"].map((slug) => ({ slug })));
+    const $ = load(renderToStaticMarkup(await Home()));
+    const grid = $('[data-testid="feature-grid"]');
+    expect(grid.attr("class")).toContain("lg:grid-cols-3");
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone", "social-publishing"]);
+    expect(grid.find('[class*="col-span"]').length).toBe(0);
+  });
   it("does not resurrect unpublished feature cards", async () => {
     mocks.published.mockResolvedValue([]);
     const $ = load(renderToStaticMarkup(await Home()));

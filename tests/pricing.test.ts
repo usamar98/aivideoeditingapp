@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { describe, expect, it, vi } from "vitest";
-import { creditBundleFromQuery, creditBundleOptions, isCreditBundle, planTerms, pricingAccountHref, pricingTiers } from "@/lib/billing/pricing";
+import { bundleDiscount, creditBundleFromQuery, creditBundleOptions, isCreditBundle, planTerms, pricingAccountHref, pricingTiers } from "@/lib/billing/pricing";
+import type { CreditBundle } from "@/lib/billing/pricing";
 import { toOfferedBillingPlan } from "@/lib/billing/catalog";
 import { catalogEntries, syncStripeCatalog } from "../scripts/setup-stripe-pricing.mjs";
 
@@ -15,12 +16,14 @@ function priceFor(entry: ReturnType<typeof catalogEntries>[number]) {
 }
 
 describe("three-tier monthly and annual pricing", () => {
-  it.each(creditBundleOptions)("keeps prices and credits proportional for the %i× bundle", (quantity) => {
+  it.each(creditBundleOptions)("applies the approved discount without reducing credits for the %i× bundle", (quantity) => {
     for (const tier of pricingTiers) for (const interval of ["month", "year"] as const) {
       const base = planTerms(tier, interval);
       const selected = planTerms(tier, interval, quantity);
-      for (const field of ["amount", "credits", "monthlyEquivalent", "monthlyCredits", "annualSavings"] as const) expect(selected[field]).toBe(base[field] * quantity);
-      expect(selected.lookupKey).toBe(base.lookupKey);
+      expect(selected.amount).toBe(Math.round(base.amount * quantity * (100 - bundleDiscount(quantity)) / 100));
+      expect(selected.credits).toBe(base.credits * quantity);
+      expect(selected.monthlyEquivalent).toBe(selected.amount / (interval === "year" ? 12 : 1));
+      expect(selected.lookupKey).toBe(quantity === 1 ? base.lookupKey : `framefoundry_${tier.id}_${interval}_bundle${quantity}_v1`);
     }
   });
   it("validates credit bundles and safely defaults untrusted query values", () => {
@@ -39,7 +42,7 @@ describe("three-tier monthly and annual pricing", () => {
   });
 
   it.each(catalogEntries())("accepts the exact $lookupKey Stripe price", (entry) => {
-    const terms = planTerms(pricingTiers.find((tier) => tier.id === entry.tier.id)!, entry.interval as "month" | "year");
+    const terms = planTerms(pricingTiers.find((tier) => tier.id === entry.tier.id)!, entry.interval as "month" | "year", entry.quantity as CreditBundle);
     expect(entry.amount).toBe(terms.amount);
     expect(entry.credits).toBe(terms.credits);
     expect(toOfferedBillingPlan(priceFor(entry))).toMatchObject({ tierId: entry.tier.id, amount: terms.amount, credits: terms.credits, interval: entry.interval });
@@ -77,11 +80,11 @@ describe("safe Stripe catalog setup", () => {
     };
   }
 
-  it("creates exactly three products and six prices with immutable allocations", async () => {
+  it("creates exactly three products and eighteen prices with immutable allocations", async () => {
     const stripe = provider();
-    expect(await syncStripeCatalog(stripe)).toHaveLength(6);
+    expect(await syncStripeCatalog(stripe)).toHaveLength(18);
     expect(stripe.products.create).toHaveBeenCalledTimes(3);
-    expect(stripe.prices.create).toHaveBeenCalledTimes(6);
+    expect(stripe.prices.create).toHaveBeenCalledTimes(18);
     expect(stripe.prices.create).toHaveBeenCalledWith(expect.objectContaining({ unit_amount: 95988, recurring: { interval: "year", interval_count: 1, usage_type: "licensed" }, metadata: { credits: "26400" } }), expect.objectContaining({ idempotencyKey: "catalog:price:framefoundry_studio_year_v1" }));
   });
 

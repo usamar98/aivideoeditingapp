@@ -41,7 +41,7 @@ export async function createCheckout(priceId: string, quantity: number = 1) {
     const account = await requireAccount();
     const stripe = getStripe();
     const price = await stripe.prices.retrieve(priceId, { expand: ["product"] });
-    if (!toOfferedBillingPlan(price)) throw new Error("This plan is not available. Refresh billing to see the current plans.");
+    if (toOfferedBillingPlan(price)?.creditBundle !== quantity) throw new Error("This plan is not available. Refresh billing to see the current plans.");
     const customer = await getBillingCustomer(account);
     const lockToken = randomUUID();
     const {data:lease,error:leaseError} = await account.admin.from("billing_customers").update({checkout_lock_token:lockToken,checkout_lock_until:new Date(Date.now()+300000).toISOString()}).eq("user_id",account.user.id).or(`checkout_lock_until.is.null,checkout_lock_until.lt.${new Date().toISOString()}`).select("user_id").maybeSingle();
@@ -61,7 +61,8 @@ export async function createCheckout(priceId: string, quantity: number = 1) {
     uncertain = true;
     const session = await stripe.checkout.sessions.create({
       customer, mode: "subscription", client_reference_id: account.user.id,
-      line_items: [{ price: priceId, quantity }],
+      // Each immutable price already includes the selected bundle and discount.
+      line_items: [{ price: priceId, quantity: 1 }],
       metadata: { app: "framefoundry", price_id: priceId, credit_bundle: String(quantity) },
       subscription_data: { metadata: { app: "framefoundry", workspace_id: account.workspaceId } },
       success_url: `${accountReturnUrl()}?checkout=success`, cancel_url: `${accountReturnUrl()}?checkout=cancelled`,

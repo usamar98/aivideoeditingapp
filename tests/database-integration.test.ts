@@ -8,7 +8,7 @@ const triggerMocks=vi.hoisted(()=>({list:vi.fn(),retrieve:vi.fn(),cancel:vi.fn()
 vi.mock("@trigger.dev/sdk",()=>({runs:triggerMocks}));
 import { cancelJob } from "@/lib/jobs/cancel";
 import { cartoonDemo } from "@/lib/cartoons/demo";
-import { CARTOON_PLAN_CREDITS, cartoonRenderCredits, type CartoonBrief } from "@/lib/cartoons/schema";
+import { CARTOON_PLAN_CREDITS, cartoonPlanCredits, cartoonModels, cartoonRenderCredits, type CartoonBrief } from "@/lib/cartoons/schema";
 import { ugcDemo } from "@/lib/ugc/demo";
 import { UGC_PLAN_CREDITS, ugcRenderCredits } from "@/lib/ugc/schema";
 import { shortsDemo } from "@/lib/shorts/demo";
@@ -37,6 +37,7 @@ beforeAll(async()=>{
   await db.exec(readFileSync("supabase/migrations/20260924135448_cartoon_studio.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20260925120544_ugc_product_ads.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20260925165638_podcast_shorts.sql","utf8"));
+  await db.exec(readFileSync("supabase/migrations/20260926100154_cartoon_direct_models.sql","utf8"));
   await db.exec("grant usage on schema storage to authenticated; grant select,insert,update,delete on storage.objects to authenticated;");
   await db.exec(`insert into auth.users values ('${userA}'),('${userB}'); insert into public.profiles(id) values ('${userA}'),('${userB}'); insert into public.workspaces(id,name,owner_id) values('${workspace}','Test studio','${userA}'); insert into public.workspace_members(workspace_id,user_id,role) values('${workspace}','${userA}','owner'); insert into public.credit_accounts(workspace_id,cached_balance) values('${workspace}',100); insert into public.faceless_projects(id,user_id,workspace_id,title,brief) values('${project}','${userA}','${workspace}','Test project','{}');`);
 },30000);
@@ -250,6 +251,32 @@ describe("cartoon database ownership, pricing and settlement", () => {
       await db.query("select public.start_cartoon_job($1,$2,$3,'render')",[projectId,userA,id]);
       expect(Number((await db.query<{cost:string}>("select estimated_credits as cost from public.generations where id=$1",[id])).rows[0].cost)).toBe(cartoonRenderCredits(brief));
       await db.query("select public.finish_cartoon_job($1,false)",[id]);
+    }
+  });
+  it("keeps direct-model reservations equal to the UI for every resolution and audio option", async () => {
+    for (const model of ["minimax-h3-turbo", "seedance-2.5-t2v", "kling-v3"] as const) {
+      for (const resolution of cartoonModels[model].resolutions) for (const audio of (model === "kling-v3" ? [true, false] : [true])) {
+        const brief: CartoonBrief = { ...cartoonDemo.brief, model, resolution, audio };
+        const { projectId, workspaceId } = await fixture(brief), plan = randomUUID();
+        await db.query("select public.start_cartoon_job($1,$2,$3,'plan')", [projectId,userA,plan]);
+        expect(Number((await db.query<{ cost: string }>("select estimated_credits as cost from public.generations where id=$1",[plan])).rows[0].cost)).toBe(cartoonPlanCredits(brief));
+        await db.query("select public.finish_cartoon_job($1,true,$2,'{}')",[plan,JSON.stringify(cartoonDemo.storyboard)]);
+        expect((await db.query("select status,cast_paths from public.cartoon_projects where id=$1",[projectId])).rows[0]).toMatchObject({ status: "ready", cast_paths: {} });
+        const render = randomUUID();
+        await db.query("select public.start_cartoon_job($1,$2,$3,'render')", [projectId,userA,render]);
+        expect(Number((await db.query<{ cost: string }>("select estimated_credits as cost from public.generations where id=$1",[render])).rows[0].cost)).toBe(cartoonRenderCredits(brief));
+        await db.query("select public.request_generation_cancellation($1,$2)",[render,userA]);
+        await db.query("select public.finish_cartoon_job($1,true,null,null,$2)",[render,`${workspaceId}/${userA}/cartoons/${render}/video.mp4`]);
+        await db.query("select public.confirm_generation_cancellation($1)",[render]);
+        expect(Number((await db.query<{ n: string }>("select cached_balance as n from public.credit_accounts where workspace_id=$1",[workspaceId])).rows[0].n)).toBe(9998);
+      }
+    }
+  });
+  it("rejects forged or unsupported model settings without taking credits", async () => {
+    for (const changes of [{ model: "external-model" }, { model: "minimax-h3-turbo", resolution: "720p" }, { model: "minimax-h3-turbo", audio: false }, { model: "kling-v3", resolution: "1080p" }, { model: "kling-v3", audio: "false" }, { model: "kling-v3", references: [{ assetId: randomUUID(), name: "Cast" }] }]) {
+      const { projectId, workspaceId } = await fixture({ ...cartoonDemo.brief, ...changes } as CartoonBrief);
+      await expect(db.query("select public.start_cartoon_job($1,$2,gen_random_uuid(),'plan')",[projectId,userA])).rejects.toThrow();
+      expect(Number((await db.query<{ n: string }>("select cached_balance as n from public.credit_accounts where workspace_id=$1",[workspaceId])).rows[0].n)).toBe(10000);
     }
   });
   it("settles successful renders once and rejects foreign output paths", async () => {

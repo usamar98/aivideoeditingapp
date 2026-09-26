@@ -1,15 +1,16 @@
 // A static import also bundles the catalog into the hosted Trigger worker.
 import tiers from "../../config/pricing.json" with { type: "json" };
+import discounts from "../../config/credit-bundles.json" with { type: "json" };
 
 export function catalogEntries() {
-  return tiers.flatMap((tier) => ["month", "year"].map((interval) => ({
+  return tiers.flatMap((tier) => ["month", "year"].flatMap((interval) => [1, 2, 3].map((quantity) => ({
     tier,
-    interval,
+    interval, quantity,
     productId: `framefoundry_${tier.id}_v1`,
-    lookupKey: `framefoundry_${tier.id}_${interval}_v1`,
-    amount: interval === "year" ? tier.annualMonthlyAmount * 12 : tier.monthlyAmount,
-    credits: tier.monthlyCredits * (interval === "year" ? 12 : 1),
-  })));
+    lookupKey: quantity === 1 ? `framefoundry_${tier.id}_${interval}_v1` : `framefoundry_${tier.id}_${interval}_bundle${quantity}_v1`,
+    amount: Math.round((interval === "year" ? tier.annualMonthlyAmount * 12 : tier.monthlyAmount) * quantity * (100 - discounts[quantity]) / 100),
+    credits: tier.monthlyCredits * (interval === "year" ? 12 : 1) * quantity,
+  }))));
 }
 
 export function matchesCatalogEntry(price, entry) {

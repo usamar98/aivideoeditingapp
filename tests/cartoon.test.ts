@@ -1,13 +1,51 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FalClient } from "@fal-ai/client";
 import { cartoonDemo } from "@/lib/cartoons/demo";
-import { cartoonBriefSchema, cartoonStorySchema, cartoonRenderCredits, validateCartoonStory } from "@/lib/cartoons/schema";
+import { cartoonBriefSchema, cartoonStorySchema, cartoonRenderCredits, cartoonPlanCredits, validateCartoonStory, type CartoonModel, type CartoonResolution } from "@/lib/cartoons/schema";
 import { cartoonVideoInput, characterImagePrompt } from "@/lib/cartoons/prompts";
 import { cartoonFalClient, runFalStage } from "../trigger/cartoon-fal";
 import { cartoonClipArgs, isCartoonMediaUrl } from "../trigger/cartoon-media";
 
 const story = cartoonDemo.storyboard!;
 describe("cartoon contracts", () => {
+  it.each([
+    ["minimax-h3-turbo", "480p", true, 30], ["minimax-h3-turbo", "768p", true, 45], ["minimax-h3-turbo", "1080p", true, 90],
+    ["seedance-2.5-t2v", "480p", true, 225], ["seedance-2.5-t2v", "720p", true, 465], ["seedance-2.5-t2v", "1080p", true, 1140],
+    ["kling-v3", "720p", true, 165], ["kling-v3", "720p", false, 120],
+  ] as [CartoonModel, CartoonResolution, boolean, number][])("quotes %s at %s (audio %s) without image-generation charges", (model, resolution, audio, credits) => {
+    const brief = cartoonBriefSchema.parse({ ...cartoonDemo.brief, model, resolution, audio });
+    expect(cartoonRenderCredits(brief)).toBe(credits);
+    expect(cartoonPlanCredits(brief)).toBe(2);
+    expect(cartoonRenderCredits({ ...brief, duration: 60 })).toBe(credits * 4);
+    const request = cartoonVideoInput(story.scenes[0], story, brief, "", [], "owner");
+    expect(request.input).not.toHaveProperty("image_urls");
+    expect(request.input).not.toHaveProperty("start_image_url");
+    expect(request.input).not.toHaveProperty("elements");
+    expect(request.input.prompt).toContain(story.characters[0].appearance);
+    if (model === "minimax-h3-turbo") expect(request.input).toMatchObject({ duration: 5, resolution: resolution.toUpperCase(), prompt_expansion_mode: "disabled" });
+    if (model === "seedance-2.5-t2v") expect(request.input).toMatchObject({ duration: "5", resolution, generate_audio: true, end_user_id: "owner" });
+    if (model === "kling-v3") {
+      expect(request.input).toMatchObject({ duration: "5", generate_audio: audio });
+      expect(request.input).not.toHaveProperty("resolution");
+    }
+  });
+  it("rejects incompatible model settings and image references rather than silently ignoring them", () => {
+    for (const changes of [
+      { model: "minimax-h3-turbo", resolution: "720p" }, { model: "seedance-2.5-t2v", resolution: "768p" },
+      { model: "kling-v3", resolution: "1080p" }, { model: "minimax-h3-turbo", audio: false },
+      { model: "kling-v3", references: [{ assetId: "10000000-0000-4000-8000-000000000001", name: "Fox" }] },
+    ]) expect(cartoonBriefSchema.safeParse({ ...cartoonDemo.brief, ...changes }).success).toBe(false);
+  });
+  it("preserves chosen export dimensions and gives silent films a compatible silent audio track", () => {
+    const args = cartoonClipArgs(0, 5, true, "1080p", false);
+    expect(args.join(" ")).toContain("scale=1080:1920");
+    expect(args).toContain("anullsrc=r=48000:cl=stereo");
+    expect(args).toContain("1:a:0");
+    expect(args).not.toContain("0:a:0");
+    const mini = cartoonVideoInput(story.scenes[0], story, { ...cartoonDemo.brief, model: "kling-v3", audio: false }, "", [], "owner");
+    expect(mini.input.prompt).toContain("Silent film");
+    expect(mini.input.prompt).not.toContain("says in English");
+  });
   it("validates the sample and charges the model-specific duration", () => {
     validateCartoonStory(cartoonStorySchema.parse(story), cartoonBriefSchema.parse(cartoonDemo.brief));
     expect(cartoonRenderCredits(cartoonDemo.brief)).toBe(120);
