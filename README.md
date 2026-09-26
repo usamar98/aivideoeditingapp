@@ -55,6 +55,10 @@ Trigger discovers tasks in `src/trigger/`: the connectivity check and re-exports
 
 Start from `.env.example`; it documents every required value. `MEDIA_FETCH_HOSTS` should contain a comma-separated allowlist of hosts that the render worker may download from.
 
+## YouTube publishing
+
+Studio → **Publish** opens `/studio/social` for channel connection, completed-video uploads, scheduling and cancellation. Apply `supabase/migrations/20260926191045_youtube_publishing.sql`, configure the separate YouTube OAuth client, and deploy the two publishing worker tasks before enabling it. Public publishing is approval-gated; existing Google sign-in is unchanged. See [YouTube setup and acceptance tests](docs/YOUTUBE_SETUP.md) for exact callback URLs, environment variables, Google reviews and operational limits. No real upload is performed by the automated tests.
+
 ## Architecture and trust boundaries
 
 - Public marketing and feature pages are statically rendered where possible. The editor is isolated as a client component, so its interaction code is not shipped with marketing pages.

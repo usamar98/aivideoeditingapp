@@ -24,7 +24,7 @@ describe("public legal pages", () => {
     expect($("main h1").length).toBe(1);
     expect($("main h1").text()).toBe(title);
     expect($("main section").length).toBeGreaterThanOrEqual(10);
-    expect($("time").attr("datetime")).toBe("2026-09-25");
+    expect($("time").attr("datetime")).toBe("2026-09-27");
     expect($("main a[href='mailto:support@editingapp.live']").length).toBeGreaterThan(0);
     expect(metadata.alternates?.canonical).toBe(`https://www.editingapp.live${path}`);
     expect(metadata.title).toEqual({ absolute: `${title} | ETA` });
