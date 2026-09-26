@@ -18,6 +18,7 @@ import Home from "@/app/page";
 import StudioLibraryPage from "@/app/studio/page";
 import { ExampleVisual, exampleVisuals } from "@/components/marketing/example-visual";
 import { HeroShowcase } from "@/components/marketing/hero-showcase";
+import { heroMediaRows, heroStockCredits } from "@/components/marketing/hero-media";
 import { UpcomingFeatures } from "@/components/marketing/upcoming-features";
 import { UgcPreview } from "@/components/studio/ugc-preview";
 
@@ -39,14 +40,39 @@ describe("AI marketing media", () => {
     expect($.text()).toContain("AI-generated concept");
   });
 
-  it("renders phone-format inspiration with paused server markup and accessible motion controls", () => {
+  it("renders two seamless, opposite-direction rows and removes the old floating layout", () => {
     const $ = load(renderToStaticMarkup(createElement(HeroShowcase)));
-    expect($(".hero-phone").length).toBe(4);
-    expect($(".hero-social").length).toBe(4);
+    expect($(".hero-reels[aria-hidden='true']").length).toBe(1);
+    expect($(".hero-reel-row").length).toBe(2);
+    expect($(".hero-reel-row").map((_, el) => $(el).attr("data-direction")).get()).toEqual(["left", "right"]);
+    $(".hero-reel-row").each((_, el) => {
+      const groups = $(el).find(".hero-reel-group");
+      expect(groups.length).toBe(2);
+      expect(groups.eq(0).html()).toBe(groups.eq(1).html());
+      expect(groups.eq(0).find(".hero-reel").length).toBe(6);
+    });
+    expect($(".hero-phone, .hero-orbit, .hero-social").length).toBe(0);
+    expect($(".hero-reel-footer svg").length).toBe(24);
+    const media = heroMediaRows.flat();
+    expect(new Set(media.map((item) => item.id)).size).toBe(12);
+    expect(media.filter((item) => item.kind === "video").map((item) => item.name)).toEqual(expect.arrayContaining(["fantasy-forest", "ai-portrait", "hero-space", "hero-cartoon", "hero-anime", "hero-ugc"]));
+    expect(media.filter((item) => item.kind === "image").map((item) => item.src)).toEqual(expect.arrayContaining(["/examples/faceless-space.webp", "/examples/cartoon-forest.webp", "/examples/presenter-product.webp"]));
+    expect($.text()).toContain("AI UGC");
+    expect($.text()).toContain("Digital clone · Soon");
+    expect($.text()).toContain("not cloning or speaking demos");
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    expect(css).toContain("aspect-ratio: 9/16");
+    expect(css).toContain('animation-direction: reverse');
+    expect(css).toContain('.hero-canvas[data-motion="on"][data-visible="true"] .hero-reel-track');
+    expect(css).toContain(".hero-reel-track { animation: none !important; }");
+  });
+
+  it("renders lightweight silent previews with paused server markup and accessible motion controls", () => {
+    const $ = load(renderToStaticMarkup(createElement(HeroShowcase)));
     expect($("section").attr("data-motion")).toBe("off");
     expect($("button").text()).toContain("Motion off");
     expect($("button").attr("aria-pressed")).toBe("false");
-    expect($("video").length).toBe(2);
+    expect($("video").length).toBe(12);
     $("video").each((_, element) => {
       const video = $(element);
       expect(video.attr("playsinline")).toBeDefined();
@@ -64,12 +90,27 @@ describe("AI marketing media", () => {
       expect(clip.length).toBeLessThan(2_000_000);
       expect(clip.includes(Buffer.from("soun"))).toBe(false);
     });
-    expect($("img").length).toBe(2);
+    expect($("img").length).toBe(12);
+    $("img").each((_, element) => {
+      expect($(element).attr("alt")).toBe("");
+      expect($(element).attr("loading")).toBe("lazy");
+      // A 16:9 source needs a wider rendition for a sharp 9:16 cover crop.
+      expect($(element).attr("sizes")).toContain("610px");
+    });
     expect($.text()).toContain("not ETA exports");
     const credit = $("a[href^='https://pixabay.com/videos/']");
+    expect(credit.length).toBe(6);
     expect(credit.text()).toContain("michellemorseu");
+    for (const { href } of heroStockCredits) expect($(`details a[href='${href}']`).length).toBe(1);
     expect(credit.attr("rel")).toContain("noopener");
     expect($("iframe").length).toBe(0);
+  });
+
+  it.each(["cartoon", "ugc", "space", "anime"])("keeps the new %s clip within the mobile media budget", (name) => {
+    for (const extension of ["mp4", "webm"]) {
+      expect(statSync(assetPath(`/examples/hero-${name}.${extension}`)).size).toBeLessThan(200_000);
+    }
+    expect(statSync(assetPath(`/examples/hero-${name}-poster.jpg`)).size).toBeLessThan(60_000);
   });
 
   it("shows a playable clone concept and four clearly unavailable social integrations", () => {
@@ -98,7 +139,7 @@ describe("AI marketing media", () => {
   it("keeps all published homepage feature links and replaces their artwork", async () => {
     const $ = load(renderToStaticMarkup(await Home()));
     expect($("h1").length).toBe(1);
-    expect($("video").length).toBe(3);
+    expect($("video").length).toBe(13);
     for (const slug of slugs) {
       const card = $(`#tools a[href='/features/${slug}']`);
       expect(card.length).toBe(1);

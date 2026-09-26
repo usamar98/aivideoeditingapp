@@ -64,6 +64,29 @@ Use case: ads-marketing. Asset type: AI-generated product-ad concept image for a
 ## Performance and accessibility
 
 - The digital-clone preview has native, keyboard-accessible controls and opt-in playback. All videos use WebM with MP4 fallback, inline playback, local posters and fixed aspect ratios.
-- The hero uses two silent looping background videos and gently moving phone/social wrappers. **Pause motion** stops both video and CSS animation. Motion begins only after hydration when reduced-motion and Save-Data preferences allow it; background video pauses when off-screen or the page is hidden. The server renders static posters. `preload="none"` avoids fetching video before playback.
-- Next Image provides responsive sources and lazy loading for the concept artwork. Decorative hero media is hidden from assistive technology, with descriptive text and disclosures in the hero. The studio's first above-the-fold image loads eagerly.
+- The hero uses **two opposite-direction sliding rows of 9:16 reels**, mixing six unique silent clips and the three existing concept images. Each row is duplicated for a seamless CSS loop. The previous individually positioned floating phones/social icons are removed; social badges now travel with the reels. Desktop rows sit behind a cream readability veil and the headline. On narrow phones, the same two rows flow below the copy within the hero so neither the text nor media is obscured.
+- **Pause motion** stops both video and CSS animation. Motion begins only after hydration when reduced-motion and Save-Data preferences allow it. One shared IntersectionObserver and visibility listener stop off-screen/hidden-page playback and pause the row animation when the hero leaves the viewport. Only intersecting clips play. The server renders static posters. `preload="none"` avoids fetching video before playback. Reduced-motion also disables CSS animation without relying on JavaScript.
+- Next Image provides responsive sources and lazy loading for the concept artwork. Hero image sizing accounts for the wider source needed when covering a 9:16 frame with 16:9 artwork, keeping cropped portraits sharp. Decorative hero media is hidden from assistive technology, with descriptive text and disclosures in the hero. The studio's first above-the-fold image loads eagerly.
 - Asset/link/provenance regression checks live in `tests/marketing-media.test.ts`.
+
+## New free AI stock for the two-row hero (2026-09-26)
+
+These are free-to-use stock assets under the **Pixabay Content License**, not public-domain/CC0 assets. License reviewed at https://pixabay.com/service/license-summary/. Commercial integration/adaptation is permitted subject to the license restrictions; no standalone stock downloads, endorsement claims, or resale are offered. Source pages identify the clips as AI-generated (the beauty clip uses the source's AI-generated tag). Models are not identified, so no model attribution is invented.
+
+| Local basename | Source / creator | Original format |
+| --- | --- | --- |
+| `hero-cartoon` | [Cartoon sloth — Zeprexa](https://pixabay.com/videos/ai-generated-sloth-lazy-funny-cute-230932/) | 1080 × 1920, 24 fps |
+| `hero-space` | [Space / galaxy — FREE24h](https://pixabay.com/videos/ai-generated-space-universe-galaxy-204371/) | 1080 × 1920, 30 fps |
+| `hero-anime` | [Anime girl in the rain — kalsstockmedia](https://pixabay.com/videos/ai-generated-girl-cartoon-character-264168/) | 1080 × 1920, 30 fps |
+| `hero-ugc` | [Beauty-ad concept — Mangkubil](https://pixabay.com/videos/beauty-beauty-product-cosmetics-339378/) | 3840 × 2160, 60 fps |
+
+Observed source downloads:
+
+- https://cdn.pixabay.com/video/2024/09/11/230932_large.mp4
+- https://cdn.pixabay.com/video/2024/03/16/204371-924209277_large.mp4
+- https://cdn.pixabay.com/video/2025/03/12/264168_large.mp4
+- https://cdn.pixabay.com/video/2026/03/10/339378_large.mp4
+
+Adaptations: first six seconds, cover-scaled and center-cropped to **360 × 640**, square pixels, 24 fps, audio removed. H.264 MP4 (CRF 27 / fast-start) plus VP9 WebM (CRF 36); JPEG poster extracted at 0.3 seconds. Each new video rendition is under 200 KB and each poster under 60 KB. Raw downloads stay in ignored `.seo-cache/`, not in Git. Existing forest and portrait files remain unchanged and are reused in the rows.
+
+The beauty close-up is labeled **AI ad inspiration**, not a real UGC testimonial. The original fictional presenter/product artwork supplies the UGC and product concepts. No clearly licensed actual digital-clone demo was selected: the existing AI portrait stands in as explicitly labeled inspiration with **Digital clone · Soon**. The coming-soon feature card retains its own opt-in preview and disclosure. The hero's expandable **Media credits · Pixabay** lists every stock creator/source and the license; the "not ETA exports" notice stays visible when credits are collapsed.
