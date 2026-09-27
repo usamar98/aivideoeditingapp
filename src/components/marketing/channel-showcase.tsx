@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, CalendarDays, Check, ChevronDown, CircleHelp, Clapperboard, LayoutGrid, LockKeyhole, Sparkles } from "lucide-react";
 import { SocialPlatformIcon } from "./social-platform-icon";
+import { PreviewVideo } from "./preview-video";
 import styles from "./channel-showcase.module.css";
 
 const channels = ["YouTube", "TikTok"] as const;
@@ -70,15 +71,14 @@ export function ChannelShowcase() {
             <div className={styles.chartLabels}><span>Create</span><span>Refine</span><span>Share</span><span>Repeat</span></div>
           </figure>
 
-          <div className={styles.libraryHeading}><h3>Small screen. Endless possibilities.</h3><span>AI inspiration · Tap to play</span></div>
+          <div className={styles.libraryHeading}><h3>Small screen. Endless possibilities.</h3><span>AI inspiration · Silent looping previews</span></div>
           <div className={styles.videoGrid}>
             {previews.map((preview) => <figure key={preview.name} className={styles.videoCard}>
               <div className={styles.videoFrame}>
-                <video controls playsInline muted preload="none" poster={`/examples/${preview.name}-poster.jpg`} width={360} height={640} aria-label={preview.description} aria-describedby="channel-media-note">
-                  <source src={`/examples/${preview.name}.webm`} type="video/webm" />
-                  <source src={`/examples/${preview.name}.mp4`} type="video/mp4" />
-                  Your browser does not support this video preview.
-                </video>
+                <PreviewVideo className="h-full w-full" poster={`/examples/${preview.name}-poster.jpg`} width={360} height={640} label={preview.description} describedBy="channel-media-note" sources={[
+                  { src: `/examples/${preview.name}.webm`, type: "video/webm" },
+                  { src: `/examples/${preview.name}.mp4`, type: "video/mp4" },
+                ]} />
                 <div className={styles.videoOverlay} aria-hidden="true"><SocialPlatformIcon platform={channel} className="size-7 rounded-lg" /><span>{preview.title}</span></div>
               </div>
               <figcaption><strong>{preview.tag}</strong><span>{preview.label}</span></figcaption>

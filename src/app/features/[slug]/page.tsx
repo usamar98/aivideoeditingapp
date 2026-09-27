@@ -16,6 +16,7 @@ import { publicMetadata } from "@/lib/seo/metadata";
 import { absoluteUrl, breadcrumbSchema, organizationId, pageSchema } from "@/lib/seo/structured-data";
 import { UgcPreview } from "@/components/studio/ugc-preview";
 import { ShortsPreview } from "@/components/studio/shorts-preview";
+import { PreviewVideo } from "@/components/marketing/preview-video";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
         {slug === "ai-ugc-product-ads" && <div className="overflow-hidden rounded-3xl border border-border"><UgcPreview /><div className="bg-card p-5 text-center"><Link href="/studio/ugc/demo" className="text-sm text-primary underline underline-offset-4">Explore the sample hook editor →</Link></div></div>}
         {slug === "podcast-to-shorts" && <div><ShortsPreview /><Link href="/studio/shorts/demo" className="mt-4 block text-center text-sm text-primary underline">Try the sample clip editor →</Link></div>}
         {media.length > 0 && <div className="space-y-5">{media.map((item, index) => <Card key={item.url} className="overflow-hidden p-2">
-          {item.type === "image" ? <div className="relative aspect-video overflow-hidden rounded-lg"><Image src={item.url} alt={item.description} fill loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" /></div> : <video className="aspect-video w-full rounded-lg" controls preload="none" poster={item.thumbnailUrl} aria-label={item.title} src={item.url}>Your browser does not support video. <a href={item.url}>Download {item.title}</a></video>}
+          {item.type === "image" ? <div className="relative aspect-video overflow-hidden rounded-lg"><Image src={item.url} alt={item.description} fill loading={index === 0 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" /></div> : <PreviewVideo className="aspect-video w-full overflow-hidden rounded-lg" poster={item.thumbnailUrl} label={item.title} src={item.url} />}
           <div className="p-3"><p className="text-sm font-semibold">{item.title}</p><p className="mt-1 text-xs leading-6 text-muted-foreground">{item.description}</p>{item.type === "video" && item.transcript && <details className="mt-3 text-sm"><summary className="cursor-pointer">Read video transcript</summary><p className="mt-3 whitespace-pre-line leading-7">{item.transcript}</p></details>}</div>
         </Card>)}</div>}
       </section>

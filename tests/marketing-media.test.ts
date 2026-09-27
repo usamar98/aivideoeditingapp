@@ -127,12 +127,14 @@ describe("AI marketing media", () => {
     const $ = load(renderToStaticMarkup(createElement(UpcomingFeatures)));
     expect($("article").length).toBe(1);
     expect($.text().match(/Coming soon/g)?.length).toBe(2);
-    expect($("video[controls]").length).toBe(1);
+    expect($("video[controls]").length).toBe(0);
+    expect($("video[loop][muted][playsinline]").length).toBe(1);
     expect($("video").attr("autoplay")).toBeUndefined();
     expect($("video").attr("preload")).toBe("none");
     expect($.text()).toContain("not an ETA clone or a speaking demo");
     expect($("[data-feature='social-publishing']").length).toBe(0);
-    expect($("a[href^='/studio'], button").length).toBe(0);
+    expect($("a[href^='/studio']").length).toBe(0);
+    expect($("button[aria-label^='Play preview:']").length).toBe(1);
     expect($.text()).not.toContain("Auto-post and schedule planned");
     expect($.text()).not.toContain("Create here. Share everywhere");
     expect($.text()).toContain("No impersonation");
@@ -183,7 +185,8 @@ describe("AI marketing media", () => {
     expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...published, "digital-clone"]);
     expect(grid.find("h2").length).toBe(5);
     expect(grid.find("img").length).toBe(3);
-    expect(grid.find("video[controls]").length).toBe(1);
+    expect(grid.find("video[controls]").length).toBe(0);
+    expect(grid.find("video[loop][muted][playsinline]").length).toBe(1);
     expect(grid.find('[class*="col-span"]').length).toBe(0);
     expect(grid.find("a[href^='/studio']").length).toBe(0);
     for (const slug of published) expect(grid.find(`a[href='/features/${slug}']`).length).toBe(1);
@@ -231,7 +234,8 @@ describe("AI marketing media", () => {
     for (const feature of ["digital-clone"]) {
       const card = grid.find(`[data-feature='${feature}']`);
       expect(card.text()).toContain("Coming soon");
-      expect(card.find("a[href^='/studio'], button").length).toBe(0);
+      expect(card.find("a[href^='/studio']").length).toBe(0);
+      expect(card.find("button[aria-label^='Play preview:']").length).toBe(1);
     }
   });
 
@@ -267,7 +271,10 @@ describe("AI marketing media", () => {
     expect($.text()).toContain("Illustrative activity · Not live analytics");
     expect($.text()).toContain("not ETA exports");
     expect($("iframe").length).toBe(0);
-    expect($("video[controls]").length).toBe(3);
+    expect($("video[controls]").length).toBe(0);
+    expect($("video[loop][muted][playsinline]").length).toBe(3);
+    expect($("button[aria-label^='Play preview:']").length).toBe(3);
+    expect($.text()).not.toContain("Tap to play");
     $("video").each((_, element) => {
       const video = $(element);
       expect(video.attr("preload")).toBe("none");

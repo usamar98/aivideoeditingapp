@@ -1,6 +1,12 @@
 # Marketing media
 
-Updated: 2026-09-27.
+Updated: 2026-09-28.
+
+## Silent looping previews (September 28)
+
+- Marketing dashboard clips, the digital-clone concept card and public feature example videos now use a shared silent looping preview. The native player toolbar is removed. Generated output, source-editing and upload-review players retain their normal controls.
+- Previews start automatically while visible, loop without sound, and pause when off-screen or the tab is hidden. Reduced-motion and data-saver preferences suppress automatic playback. Posters remain visible when playback is blocked.
+- A compact pause/play action appears on hover or keyboard focus, without a seek bar, volume control or overflow menu. A deliberate play action can override reduced-motion/data-saver preferences for that one preview. No new media or provider calls were added.
 
 ## Current presentation update (September 27)
 
@@ -9,7 +15,7 @@ Updated: 2026-09-27.
 - The three dashboard videos reuse `hero-ugc`, `ai-portrait` and `hero-cartoon`, with their existing local posters, WebM/MP4 alternatives and provenance below. They are silent stock inspiration, not ETA exports. Playback is user-initiated with native controls and `preload="none"`.
 - Shared homepage, feature-directory and studio cards use the existing original WebP images for "Viral faceless Video" and "Viral Cartoon videos". The titles are creative labels, not performance guarantees. Existing tool URLs and entry points are unchanged.
 
-The sections below retain the original asset provenance and implementation history; where older presentation descriptions differ, this update describes the current UI.
+The sections below retain the original asset provenance and implementation history; the newest dated update takes precedence where presentation descriptions differ.
 
 ## Presentation and provenance
 

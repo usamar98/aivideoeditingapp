@@ -1,4 +1,5 @@
 import { ScanFace } from "lucide-react";
+import { PreviewVideo } from "./preview-video";
 
 /** Grid items, not a separate full-width section. Planned tools have no fake launch buttons. */
 export function UpcomingFeatures({ headingLevel: Heading = "h3" }: { headingLevel?: "h2" | "h3" } = {}) {
@@ -6,9 +7,10 @@ export function UpcomingFeatures({ headingLevel: Heading = "h3" }: { headingLeve
     <article data-feature="digital-clone" className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card" aria-labelledby="digital-clone-title">
       <div className="relative flex aspect-video shrink-0 items-center justify-center overflow-hidden bg-[#dce5f5]">
         <div className="absolute size-64 rounded-full border border-primary/15" />
-        <video controls controlsList="nodownload" playsInline muted preload="none" poster="/examples/ai-portrait-poster.jpg" width={540} height={968} className="absolute inset-0 h-full w-full object-contain" aria-label="Play AI-generated portrait inspiration" aria-describedby="clone-video-credit">
-          <source src="/examples/ai-portrait.webm" type="video/webm" /><source src="/examples/ai-portrait.mp4" type="video/mp4" />
-        </video>
+        <PreviewVideo className="absolute inset-0 h-full w-full" videoClassName="object-contain" poster="/examples/ai-portrait-poster.jpg" width={540} height={968} label="AI-generated portrait inspiration" describedBy="clone-video-credit" sources={[
+          { src: "/examples/ai-portrait.webm", type: "video/webm" },
+          { src: "/examples/ai-portrait.mp4", type: "video/mp4" },
+        ]} />
         <span className="pointer-events-none absolute left-4 top-4 rounded-full bg-background/95 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-primary">Coming soon</span>
         <ScanFace aria-hidden className="pointer-events-none absolute right-4 top-4 size-6 text-white" />
       </div>
