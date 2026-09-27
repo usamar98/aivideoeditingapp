@@ -107,14 +107,7 @@ button, a, input, textarea, [role="button"] { -webkit-tap-highlight-color: trans
 .hero-copy { position: relative; z-index: 1; margin: auto; width: min(100%, 690px); text-align: center; }
 .hero-copy::before { content: ""; position: absolute; z-index: -1; inset: -100px -130px; background: radial-gradient(ellipse, #faf7ef 30%, #faf7effa 49%, #faf7efdd 61%, #faf7ef00 75%); pointer-events: none; }
 .hero-canvas[data-motion="on"][data-visible="true"] .hero-reel-track { animation-play-state: running; }
-.hero-caption { position: relative; z-index: 2; display: flex; align-items: flex-start; justify-content: center; flex-wrap: wrap; gap: 12px 20px; margin: 80px auto 0; padding: 12px 18px; border-radius: 18px; background: #faf7eff5; max-width: 750px; text-align: center; }
-.hero-caption p { max-width: 500px; font-size: 11px; line-height: 1.7; color: var(--muted-foreground); }
-.hero-caption a { text-decoration: underline; text-underline-offset: 3px; }
-.hero-credits { margin-top: 4px; font-size: 11px; line-height: 1.8; color: var(--muted-foreground); }
-.hero-credits summary { cursor: pointer; width: fit-content; margin-inline: auto; text-decoration: underline; text-underline-offset: 3px; }
-.hero-credits summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 3px; }
-.hero-credits ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 16px; margin-block: 12px; text-align: left; list-style: none; }
-.hero-credits p { margin-top: 10px; }
+.hero-motion-control { position: absolute; z-index: 2; right: 24px; bottom: 20px; }
 @keyframes hero-reel-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @media (max-width: 1023px) {
   .hero-canvas { min-height: 760px; }
@@ -133,8 +126,7 @@ button, a, input, textarea, [role="button"] { -webkit-tap-highlight-color: trans
   .hero-reel-tag { top: 8px; left: 6px; right: 6px; max-width: calc(100% - 12px); padding: 5px 7px; font-size: 8px; }
   .hero-reel-footer { padding: 35px 9px 10px; font-size: 9px; gap: 4px; }
   .hero-reel-footer > span:last-child { width: 23px; height: 23px; }
-  .hero-caption { order: 2; margin-top: 14px; padding: 8px 0; }
-  .hero-caption button { min-height: 44px; }
+  .hero-motion-control { right: 14px; bottom: 28px; }
 }
 
 @media (prefers-reduced-motion: reduce) { .hero-reel-track { animation: none !important; } }

@@ -1,0 +1,113 @@
+.section { max-width: 1280px; margin: 0 auto; padding: 56px 40px 0; }
+.frame { overflow: hidden; border: 1px solid #dfe4eb; border-radius: 20px; background: #fff; color: #172747; box-shadow: 0 24px 65px -35px #22396945, 0 2px 6px #22396906; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px 25px; border-bottom: 1px solid #e8ecf2; }
+.heading { display: flex; align-items: center; gap: 13px; }
+.heading h2 { font-size: 17px; line-height: 1.5; letter-spacing: -.025em; font-weight: 600; }
+.brandIcon { display: grid; place-items: center; flex-shrink: 0; width: 35px; height: 35px; border-radius: 11px; color: #2457d6; background: #edf2ff; }
+.platforms { display: flex; gap: 8px; }
+.workspace { display: grid; grid-template-columns: 225px minmax(0, 1fr); }
+.sidebar { display: flex; flex-direction: column; padding: 28px 16px 20px; border-right: 1px solid #e8ecf2; background: #f6f8fb; }
+.workspaceName { display: flex; gap: 10px; align-items: center; margin-bottom: 32px; }
+.workspaceName > div { flex: 1; }
+.workspaceName strong { display: block; font-size: 12px; }
+.workspaceName span:not(.workspaceAvatar) { display: block; font-size: 10px; color: #68738a; margin-top: 3px; }
+.workspaceAvatar { display: grid; place-items: center; width: 35px; height: 35px; border: 1px solid #d8e3fa; border-radius: 10px; background: #e4edff; font-size: 22px; font-weight: 700; color: #2457d6; }
+.sidebarLabel { display: flex; justify-content: space-between; margin: 0 5px 12px; font-size: 10px; color: #68738a; }
+.sidebarLabel span { padding: 0 5px; border-radius: 3px; background: #e9edf4; }
+.channelOptions { display: grid; gap: 9px; }
+.channelButton { display: flex; align-items: center; gap: 9px; width: 100%; padding: 12px 10px; text-align: left; border: 1px solid transparent; border-radius: 12px; cursor: pointer; }
+.channelButton:hover { background: #edf1f8; }
+.channelButton[aria-pressed="true"] { background: white; border-color: #dee5ef; box-shadow: 0 2px 4px #17274705; }
+.channelButton:focus-visible, .cta:focus-visible { outline: 2px solid #2457d6; outline-offset: 4px; }
+.channelButton > span:nth-child(2) { flex: 1; }
+.channelButton strong { display: block; font-size: 12px; }
+.channelButton small { display: block; margin-top: 4px; font-size: 9px; color: #68738a; }
+.channelButton > svg { color: #2457d6; }
+.sidebarNav { display: grid; gap: 20px; padding: 27px 10px; font-size: 11px; color: #68738a; }
+.sidebarNav p { display: flex; align-items: center; gap: 10px; }
+.sidebarNote { margin: auto 6px 32px; padding-top: 50px; color: #627087; }
+.sidebarNote > svg { color: #6685d7; margin-bottom: 12px; }
+.sidebarNote p { font-size: 11px; line-height: 1.8; }
+.sidebarNote strong { color: #263d66; font-weight: 500; }
+.previewBadge { display: inline-flex; align-items: center; gap: 7px; width: fit-content; padding: 6px 9px; border: 1px solid #dee5ef; border-radius: 20px; font-size: 9px; color: #627087; }
+.previewBadge > span { width: 5px; height: 5px; border-radius: 50%; background: #8197c9; }
+.content { min-width: 0; padding: 29px 30px 24px; }
+.accountHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.accountIdentity { display: flex; align-items: center; gap: 12px; }
+.accountIdentity h3 { font-size: 15px; font-weight: 650; letter-spacing: -.02em; }
+.accountIdentity p { margin-top: 5px; font-size: 10px; color: #68738a; }
+.accountIdentity p span { margin-inline: 5px; }
+.status { border: 1px solid #dee7f7; border-radius: 20px; background: #f6f9ff; padding: 6px 9px; font-size: 9px; color: #486297; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 29px; }
+.metrics > div { padding-left: 23px; border-left: 1px solid #e9edf4; }
+.metrics > div:first-child { padding-left: 0; border: 0; }
+.metrics dt { font-size: 11px; color: #627087; }
+.metrics dd { font-size: 41px; line-height: 1.3; font-weight: 500; color: #253755; }
+.metrics span { font-size: 9px; color: #7a8598; }
+.chart { margin-top: 26px; }
+.chart figcaption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 7px; margin-bottom: 15px; }
+.chart figcaption strong { font-weight: 500; font-size: 11px; }
+.chart figcaption > span { font-size: 9px; color: #68738a; }
+.chart svg { display: block; width: 100%; height: 100px; overflow: visible; }
+.chartLabels { display: flex; justify-content: space-between; font-size: 9px; color: #78849a; margin-top: 10px; }
+.libraryHeading { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 7px; margin: 28px 0 14px; }
+.libraryHeading h3 { font-size: 13px; font-weight: 600; }
+.libraryHeading > span { font-size: 10px; color: #68738a; }
+.videoGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; }
+.videoFrame { position: relative; isolation: isolate; aspect-ratio: 9/14; overflow: hidden; border-radius: 10px; background: #e3e8f0; }
+.videoFrame video { width: 100%; height: 100%; object-fit: cover; }
+.videoFrame video:focus-visible { outline: 3px solid #2457d6; outline-offset: -3px; }
+.videoOverlay { position: absolute; inset: 0 0 auto; pointer-events: none; padding: 12px; color: white; background: linear-gradient(#11213b75, transparent); }
+.videoOverlay > span:last-child { display: block; max-width: 165px; margin-top: 15px; font-size: 15px; font-weight: 650; line-height: 1.3; text-shadow: 0 1px 9px #10213c80; }
+.videoCard figcaption { padding-top: 10px; }
+.videoCard figcaption strong { display: block; font-size: 11px; font-weight: 550; }
+.videoCard figcaption > span { display: block; font-size: 9px; margin-top: 4px; color: #748097; }
+.actionRow { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 24px; border-top: 1px solid #edf0f5; padding-top: 20px; }
+.actionRow > div { max-width: 390px; }
+.actionRow p { font-size: 10px; line-height: 1.7; color: #68738a; }
+.actionRow .actionTitle { font-size: 12px; font-weight: 600; color: #263d66; margin-bottom: 4px; }
+.cta { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 10px 14px; border-radius: 10px; background: #2457d6; color: #fff; font-size: 11px; font-weight: 550; transition: background .15s; }
+.cta:hover { background: #1948b7; }
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid #e8ecf2; padding: 13px 20px; font-size: 9px; line-height: 1.7; color: #718099; }
+.footer p, .footer > span { display: flex; align-items: center; gap: 7px; }
+.footer svg { flex-shrink: 0; }
+.footer > span { white-space: nowrap; }
+@media (max-width: 1023px) {
+  .section { padding: 36px 24px 0; }
+  .workspace { grid-template-columns: 185px minmax(0, 1fr); }
+  .sidebar { padding-inline: 10px; }
+  .workspaceName { gap: 7px; }
+  .workspaceName > svg { display: none; }
+  .content { padding: 24px 20px; }
+  .actionRow { flex-wrap: wrap; gap: 12px; }
+  .videoOverlay > span:last-child { font-size: 12px; }
+  .videoGrid { gap: 10px; }
+  .metrics > div { padding-left: 14px; }
+  .metrics span { font-size: 8px; }
+}
+@media (max-width: 767px) {
+  .section { padding: 28px 16px 0; }
+  .topbar { align-items: flex-start; padding: 18px; gap: 12px; }
+  .heading { align-items: flex-start; gap: 9px; }
+  .heading h2 { font-size: 15px; }
+  .brandIcon { display: none; }
+  .platforms { gap: 5px; }
+  .workspace { display: block; }
+  .sidebar { display: block; padding: 14px; border-right: 0; border-bottom: 1px solid #e8ecf2; }
+  .workspaceName, .sidebarLabel, .sidebarNav, .sidebarNote, .previewBadge { display: none; }
+  .channelOptions { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .channelButton { min-height: 60px; padding: 8px; }
+  .content { padding: 22px 16px; }
+  .accountIdentity h3 { font-size: 13px; }
+  .accountIdentity p { font-size: 9px; }
+  .metrics { margin-top: 24px; }
+  .metrics > div { padding-left: 10px; }
+  .metrics dd { font-size: 32px; }
+  .metrics span { display: none; }
+  .chart svg { height: 85px; }
+  .videoGrid { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 12px; }
+  .videoCard { flex: 0 0 65%; scroll-snap-align: start; }
+  .videoFrame { aspect-ratio: 9/14; }
+  .videoOverlay > span:last-child { font-size: 15px; }
+  .footer { flex-wrap: wrap; gap: 8px; padding: 12px 16px; }
+}

@@ -19,6 +19,8 @@ import StudioLibraryPage from "@/app/studio/page";
 import FeaturesPage from "@/app/features/page";
 import { ExampleVisual, exampleVisuals } from "@/components/marketing/example-visual";
 import { HeroShowcase } from "@/components/marketing/hero-showcase";
+import { ChannelShowcase } from "@/components/marketing/channel-showcase";
+import { SiteFooter } from "@/components/marketing/site-chrome";
 import { heroMediaRows, heroStockCredits } from "@/components/marketing/hero-media";
 import { UpcomingFeatures } from "@/components/marketing/upcoming-features";
 import { UgcPreview } from "@/components/studio/ugc-preview";
@@ -60,7 +62,8 @@ describe("AI marketing media", () => {
     expect(media.filter((item) => item.kind === "image").map((item) => item.src)).toEqual(expect.arrayContaining(["/examples/faceless-space.webp", "/examples/cartoon-forest.webp", "/examples/presenter-product.webp"]));
     expect($.text()).toContain("AI UGC");
     expect($.text()).toContain("Digital clone · Soon");
-    expect($.text()).toContain("not cloning or speaking demos");
+    expect($.text()).toContain("AI concept");
+    expect($(".hero-caption, .hero-credits").length).toBe(0);
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
     expect(css).toContain("aspect-ratio: 9/16");
     expect(css).toContain('animation-direction: reverse');
@@ -71,7 +74,7 @@ describe("AI marketing media", () => {
   it("renders lightweight silent previews with paused server markup and accessible motion controls", () => {
     const $ = load(renderToStaticMarkup(createElement(HeroShowcase)));
     expect($("section").attr("data-motion")).toBe("off");
-    expect($("button").text()).toContain("Motion off");
+    expect($("button").attr("aria-label")).toBe("Background animation disabled by your preferences");
     expect($("button").attr("aria-pressed")).toBe("false");
     expect($("video").length).toBe(12);
     $("video").each((_, element) => {
@@ -98,7 +101,13 @@ describe("AI marketing media", () => {
       // A 16:9 source needs a wider rendition for a sharp 9:16 cover crop.
       expect($(element).attr("sizes")).toContain("610px");
     });
+    expect($("iframe").length).toBe(0);
+  });
+
+  it("keeps source credits in the footer instead of the removed hero caption box", () => {
+    const $ = load(renderToStaticMarkup(createElement(SiteFooter)));
     expect($.text()).toContain("not ETA exports");
+    expect($.text()).toContain("not cloning or speaking demos");
     const credit = $("a[href^='https://pixabay.com/videos/']");
     expect(credit.length).toBe(6);
     expect(credit.text()).toContain("michellemorseu");
@@ -114,19 +123,17 @@ describe("AI marketing media", () => {
     expect(statSync(assetPath(`/examples/hero-${name}-poster.jpg`)).size).toBeLessThan(60_000);
   });
 
-  it("shows a playable clone concept and four clearly unavailable social integrations", () => {
+  it("keeps the clone concept but removes the old social publishing card", () => {
     const $ = load(renderToStaticMarkup(createElement(UpcomingFeatures)));
-    expect($("article").length).toBe(2);
-    expect($.text().match(/Coming soon/g)?.length).toBe(4);
+    expect($("article").length).toBe(1);
+    expect($.text().match(/Coming soon/g)?.length).toBe(2);
     expect($("video[controls]").length).toBe(1);
     expect($("video").attr("autoplay")).toBeUndefined();
     expect($("video").attr("preload")).toBe("none");
     expect($.text()).toContain("not an ETA clone or a speaking demo");
-    for (const name of ["TikTok", "Instagram", "Facebook", "YouTube"]) {
-      expect($(`a[aria-label^='Visit ${name} (external website']`).length).toBe(1);
-    }
+    expect($("[data-feature='social-publishing']").length).toBe(0);
     expect($("a[href^='/studio'], button").length).toBe(0);
-    expect($.text()).toContain("Auto-post and schedule planned");
+    expect($.text()).not.toContain("Auto-post and schedule planned");
     expect($.text()).not.toContain("Create here. Share everywhere");
     expect($.text()).toContain("No impersonation");
   });
@@ -141,7 +148,7 @@ describe("AI marketing media", () => {
   it("keeps all published homepage feature links and replaces their artwork", async () => {
     const $ = load(renderToStaticMarkup(await Home()));
     expect($("h1").length).toBe(1);
-    expect($("video").length).toBe(13);
+    expect($("video").length).toBe(16);
     for (const slug of slugs) {
       const card = $(`#tools a[href='/features/${slug}']`);
       expect(card.length).toBe(1);
@@ -152,12 +159,12 @@ describe("AI marketing media", () => {
     expect($.text()).not.toContain("Find your kind of quiet");
   });
 
-  it("lays out six cards in the requested two desktop rows", async () => {
+  it("keeps three desktop columns and removes only the social card", async () => {
     mocks.published.mockResolvedValue([...slugs, "podcast-to-shorts"].map((slug) => ({ slug })));
     const $ = load(renderToStaticMarkup(await Home()));
     const grid = $('[data-testid="feature-grid"]');
     expect(grid.attr("class")).toContain("lg:grid-cols-3");
-    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone", "social-publishing"]);
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone"]);
     expect(grid.find('[class*="col-span"]').length).toBe(0);
   });
   it("does not resurrect unpublished feature cards", async () => {
@@ -166,21 +173,21 @@ describe("AI marketing media", () => {
     expect($("#tools a[href^='/features/']").length).toBe(0);
   });
 
-  it("uses the studio's six-card design and order on the public feature directory", async () => {
+  it("uses the studio's shared card design and order on the public feature directory", async () => {
     const published = [...slugs, "podcast-to-shorts"];
     mocks.published.mockResolvedValue([...published].reverse().map((slug) => ({ slug, name: slug, description: "Published tool" })));
     const $ = load(renderToStaticMarkup(await FeaturesPage()));
     const grid = $('[data-testid="feature-grid"]');
     expect(grid.attr("class")).toContain("sm:grid-cols-2");
     expect(grid.attr("class")).toContain("lg:grid-cols-3");
-    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...published, "digital-clone", "social-publishing"]);
-    expect(grid.find("h2").length).toBe(6);
-    expect(grid.find("img").length).toBe(4);
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...published, "digital-clone"]);
+    expect(grid.find("h2").length).toBe(5);
+    expect(grid.find("img").length).toBe(3);
     expect(grid.find("video[controls]").length).toBe(1);
     expect(grid.find('[class*="col-span"]').length).toBe(0);
     expect(grid.find("a[href^='/studio']").length).toBe(0);
     for (const slug of published) expect(grid.find(`a[href='/features/${slug}']`).length).toBe(1);
-    for (const slug of ["digital-clone", "social-publishing"]) {
+    for (const slug of ["digital-clone"]) {
       expect($(`[data-feature='${slug}']`).length).toBe(1);
       expect(grid.find(`[data-feature='${slug}']`).text()).toContain("Coming soon");
     }
@@ -193,14 +200,14 @@ describe("AI marketing media", () => {
     mocks.published.mockResolvedValue([{ slug: "custom-video-tool", name: "Custom video tool", description: "A published custom workflow." }]);
     const $ = load(renderToStaticMarkup(await FeaturesPage()));
     const grid = $('[data-testid="feature-grid"]');
-    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual(["digital-clone", "social-publishing", "custom-video-tool"]);
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual(["digital-clone", "custom-video-tool"]);
     expect(grid.find("a[href^='/features/']").length).toBe(1);
     expect(grid.find("a[href='/features/custom-video-tool']").text()).toContain("A published custom workflow.");
   });
 
   it("updates the actual studio cards without changing generation entry points", async () => {
     const $ = load(renderToStaticMarkup(await StudioLibraryPage()));
-    expect($("main img").length).toBe(4);
+    expect($("main img").length).toBe(3);
     expect($("main img[loading='eager']").length).toBe(1);
     for (const path of ["/studio/faceless", "/studio/cartoons", "/studio/ugc", "/studio/shorts"]) {
       expect($(`main a[href='${path}']`).length).toBe(1);
@@ -210,21 +217,69 @@ describe("AI marketing media", () => {
     expect($.text().match(/AI-generated concept/g)?.length).toBe(3);
   });
 
-  it("matches the homepage's six-card order in a responsive studio grid", async () => {
+  it("matches the homepage's card order in a responsive studio grid", async () => {
     const $ = load(renderToStaticMarkup(await StudioLibraryPage()));
     const grid = $('[data-testid="feature-grid"]');
     expect(grid.parent().attr("class")).toContain("@container");
     expect(grid.attr("class")).toContain("@xl:grid-cols-2");
     expect(grid.attr("class")).toContain("@4xl:grid-cols-3");
-    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone", "social-publishing"]);
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone"]);
     expect(grid.find('[class*="col-span"]').length).toBe(0);
-    expect(grid.find("h2").length).toBe(6);
+    expect(grid.find("h2").length).toBe(5);
     expect(grid.find("h3").length).toBe(0);
     expect(grid.find("a[href^='/features/']").length).toBe(0);
-    for (const feature of ["digital-clone", "social-publishing"]) {
+    for (const feature of ["digital-clone"]) {
       const card = grid.find(`[data-feature='${feature}']`);
       expect(card.text()).toContain("Coming soon");
       expect(card.find("a[href^='/studio'], button").length).toBe(0);
     }
+  });
+
+  it.each([Home, FeaturesPage, StudioLibraryPage])("uses still images and the requested viral titles in each shared grid", async (Page) => {
+    const $ = load(renderToStaticMarkup(await Page()));
+    for (const [slug, title] of [["faceless-video-generator", "Viral faceless Video"], ["ai-cartoon-series", "Viral Cartoon videos"]]) {
+      const card = $(`[data-feature='${slug}']`);
+      expect(card.find("h2, h3").text()).toBe(title);
+      expect(card.find("img").length).toBe(1);
+      expect(card.find("video").length).toBe(0);
+    }
+    expect($("[data-feature='social-publishing']").length).toBe(0);
+  });
+
+  it("inserts the channel preview between hero and tools without the old benefit strip", async () => {
+    const $ = load(renderToStaticMarkup(await Home()));
+    expect($(".hero-canvas").next().attr("id")).toBe("channel-preview");
+    expect($("#channel-preview").next().attr("id")).toBe("tools");
+    for (const copy of ["Start with an idea", "Make every scene yours", "Give your story a voice", "Ready for the small screen", "app.tokportal.com", "33 accounts"]) {
+      expect($.text()).not.toContain(copy);
+    }
+    expect($("#channel-showcase-title").text()).toBe("Connect and Grow your channel on automation");
+  });
+
+  it("shows an honest interactive platform preview with playable local clips and no invented metrics", () => {
+    const $ = load(renderToStaticMarkup(createElement(ChannelShowcase)));
+    const buttons = $("button[aria-controls='channel-preview-panel']");
+    expect(buttons.length).toBe(2);
+    expect(buttons.eq(0).attr("aria-pressed")).toBe("true");
+    expect(buttons.eq(1).text()).toContain("TikTokComing soon");
+    expect($("a[href='/studio/social']").text()).toContain("Open YouTube publishing");
+    expect($("dl dd").map((_, el) => $(el).text()).get()).toEqual(["—", "—", "—"]);
+    expect($.text()).toContain("Illustrative activity · Not live analytics");
+    expect($.text()).toContain("not ETA exports");
+    expect($("iframe").length).toBe(0);
+    expect($("video[controls]").length).toBe(3);
+    $("video").each((_, element) => {
+      const video = $(element);
+      expect(video.attr("preload")).toBe("none");
+      expect(video.attr("autoplay")).toBeUndefined();
+      expect(video.attr("playsinline")).toBeDefined();
+      expect(video.attr("aria-label")).toContain("AI-generated");
+      expect(statSync(assetPath(video.attr("poster")!)).size).toBeGreaterThan(1000);
+      for (const source of video.find("source").toArray()) {
+        const bytes = readFileSync(assetPath($(source).attr("src")!));
+        expect(bytes.length).toBeLessThan(2_000_000);
+        expect(bytes.includes(Buffer.from("soun"))).toBe(false);
+      }
+    });
   });
 });

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Pause, Play } from "lucide-react";
 import { SocialPlatformIcon } from "./social-platform-icon";
-import { heroMediaRows, heroStockCredits } from "./hero-media";
+import { heroMediaRows } from "./hero-media";
 
 type DataConnection = EventTarget & { saveData?: boolean };
 const dataConnection = () => (navigator as Navigator & { connection?: DataConnection }).connection;
@@ -72,7 +72,7 @@ export function HeroShowcase({ children }: { children?: ReactNode }) {
               {media.kind === "video" ? <video muted loop playsInline preload="none" tabIndex={-1} poster={`/examples/${media.name}-poster.jpg`} className="size-full object-cover" aria-hidden="true">
                 <source src={`/examples/${media.name}.webm`} type="video/webm" /><source src={`/examples/${media.name}.mp4`} type="video/mp4" />
               </video> : <Image src={media.src} alt="" fill sizes="(max-width: 639px) 420px, (max-width: 1023px) 510px, 610px" className="object-cover" style={{ objectPosition: media.position }} />}
-              <span className="hero-reel-tag">{media.label}</span>
+              <span className="hero-reel-tag"><span className="block text-[8px] uppercase tracking-wider opacity-70">AI concept</span>{media.label}</span>
               <div className="hero-reel-footer"><span>{media.detail}</span><SocialPlatformIcon platform={media.platform} className="size-7 rounded-lg shadow-sm" /></div>
             </div>)}
           </div>)}
@@ -80,14 +80,8 @@ export function HeroShowcase({ children }: { children?: ReactNode }) {
       </div>)}
     </div>
     <div className="hero-copy">{children}</div>
-    <div className="hero-caption">
-      <div>
-        <p>AI stock & concept inspiration, not ETA exports. Digital clone is coming soon.</p>
-        <details className="hero-credits"><summary>Media credits · Pixabay</summary><ul>{heroStockCredits.map((credit) => <li key={credit.href}><a href={credit.href} target="_blank" rel="noopener noreferrer">{credit.name}</a></li>)}</ul><a href="https://pixabay.com/service/license-summary/" target="_blank" rel="noopener noreferrer">Pixabay Content License</a><p>Original AI concept images by ETA. Portraits are not cloning or speaking demos. Social icons are inspiration, not connected accounts.</p></details>
-      </div>
-      <button type="button" onClick={() => setPaused((value) => !value)} disabled={!allowed} aria-pressed={active} className="inline-flex shrink-0 items-center gap-2 rounded-full border border-primary/20 bg-background/90 px-3 py-2 text-xs font-medium text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60">
-        {active ? <Pause className="size-3" /> : <Play className="size-3" />}{!allowed ? "Motion off" : active ? "Pause motion" : "Play motion"}
-      </button>
-    </div>
+    <button type="button" onClick={() => setPaused((value) => !value)} disabled={!allowed} aria-pressed={active} aria-label={!allowed ? "Background animation disabled by your preferences" : active ? "Pause background animation" : "Play background animation"} title={!allowed ? "Motion off" : active ? "Pause background animation" : "Play background animation"} className="hero-motion-control inline-flex size-11 items-center justify-center rounded-full border border-primary/20 bg-background/95 text-primary shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60">
+      {active ? <Pause aria-hidden className="size-4" /> : <Play aria-hidden className="size-4" />}
+    </button>
   </section>;
 }

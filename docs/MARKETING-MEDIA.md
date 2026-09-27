@@ -1,6 +1,15 @@
 # Marketing media
 
-Updated: 2026-09-26.
+Updated: 2026-09-27.
+
+## Current presentation update (September 27)
+
+- Removed the hero caption panel, four-benefit strip and shared social-publishing coming-soon card. Detailed source credits now live in the public footer's "About the example media" disclosure. Individual hero reels remain labeled AI concepts; a compact, accessible icon button still pauses all background motion.
+- Added a responsive channel-dashboard concept between the hero and feature grid with the requested "Connect and Grow your channel on automation" title. YouTube and TikTok selectors change the preview and CTA. YouTube links to the existing publishing workspace; TikTok remains explicitly coming soon. The dashboard is illustrative, uses empty analytics placeholders and does not invent views, followers, account connections or growth promises.
+- The three dashboard videos reuse `hero-ugc`, `ai-portrait` and `hero-cartoon`, with their existing local posters, WebM/MP4 alternatives and provenance below. They are silent stock inspiration, not ETA exports. Playback is user-initiated with native controls and `preload="none"`.
+- Shared homepage, feature-directory and studio cards use the existing original WebP images for "Viral faceless Video" and "Viral Cartoon videos". The titles are creative labels, not performance guarantees. Existing tool URLs and entry points are unchanged.
+
+The sections below retain the original asset provenance and implementation history; where older presentation descriptions differ, this update describes the current UI.
 
 ## Presentation and provenance
 

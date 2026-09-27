@@ -4,8 +4,8 @@ import { ExampleVisual } from "./example-visual";
 import { UpcomingFeatures } from "./upcoming-features";
 
 const liveCards = [
-  { slug: "faceless-video-generator", title: "Faceless video generation", variant: "faceless", label: "Narrated stories", description: "Turn an idea or script into a narrated short with AI visuals and captions.", detail: "Explainers · Stories · Educational shorts", studioHref: "/studio/faceless", studioAction: "Create faceless video" },
-  { slug: "ai-cartoon-series", title: "AI Cartoon Studio", variant: "cartoon", label: "Character-led stories", description: "Turn a prompt or character artwork into an animated story with action and dialogue.", detail: "Characters · Animation · Storytelling", studioHref: "/studio/cartoons", studioAction: "Create a cartoon" },
+  { slug: "faceless-video-generator", title: "Viral faceless Video", variant: "faceless", label: "Narrated stories", description: "Turn an idea or script into a narrated short with AI visuals and captions.", detail: "Explainers · Stories · Educational shorts", studioHref: "/studio/faceless", studioAction: "Create faceless video" },
+  { slug: "ai-cartoon-series", title: "Viral Cartoon videos", variant: "cartoon", label: "Character-led stories", description: "Turn a prompt or character artwork into an animated story with action and dialogue.", detail: "Characters · Animation · Storytelling", studioHref: "/studio/cartoons", studioAction: "Create a cartoon" },
   { slug: "ai-ugc-product-ads", title: "AI UGC and product-ad studio", variant: "ugc", label: "AI presenter ads", description: "Turn product photos or a link into presenter-led ads with three opening hooks and captions.", detail: "AI presenters · Product visuals · Hooks", studioHref: "/studio/ugc", studioAction: "Create product ads" },
 ] as const;
 

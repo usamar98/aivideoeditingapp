@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ArrowRight, AudioLines, Captions, Clapperboard, Film, Layers3, WandSparkles } from "lucide-react";
+import { ArrowRight, Clapperboard, Film } from "lucide-react";
 import { BrandMark } from "@/components/studio/brand-mark";
 import { Button } from "@/components/ui/button";
 import { FeatureGrid } from "@/components/marketing/feature-grid";
 import { HeroShowcase } from "@/components/marketing/hero-showcase";
+import { ChannelShowcase } from "@/components/marketing/channel-showcase";
 import { PricingCards } from "@/components/billing/pricing-cards";
 import { brand } from "@/config/brand";
 import { AnswerSection } from "@/components/marketing/answer-section";
@@ -34,7 +35,7 @@ export default async function Home() {
       <div className="mt-8 flex flex-wrap justify-center gap-3"><Button asChild size="lg" className="rounded-full px-7"><Link href="/studio">Start creating <ArrowRight /></Link></Button><Button asChild variant="outline" size="lg" className="rounded-full"><a href="#tools">Explore the tools</a></Button></div>
       <p className="mt-5 text-xs text-muted-foreground">Your script. Your style. Your next story.</p>
     </HeroShowcase>
-    <div className="border-y border-border"><div className="mx-auto flex max-w-7xl flex-wrap justify-between gap-5 px-6 py-6 text-xs font-medium text-muted-foreground lg:px-10">{[{icon:WandSparkles,label:"Start with an idea"},{icon:Layers3,label:"Make every scene yours"},{icon:AudioLines,label:"Give your story a voice"},{icon:Captions,label:"Ready for the small screen"}].map(({icon:Icon,label}) => <span key={label} className="flex items-center gap-3"><Icon className="size-4 text-primary" />{label}</span>)}</div></div>
+    <ChannelShowcase />
     <section id="tools" className="mx-auto max-w-7xl px-6 py-20 lg:px-10"><div className="flex flex-wrap items-end justify-between gap-5"><div><p className="eyebrow text-primary">One studio. More ways to create.</p><h2 className="editorial mt-4 text-4xl tracking-tight sm:text-5xl">What will you make today?</h2></div><p className="max-w-xs text-sm leading-6 text-muted-foreground">Create something new, or turn an existing recording into captioned Shorts.</p></div>
       <FeatureGrid published={[...published]} />
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-primary/25 p-6"><div className="flex items-center gap-4"><Film className="size-6 text-primary" /><div><h3 className="font-semibold">One account. A growing creative toolkit.</h3><p className="mt-1 text-sm text-muted-foreground">Use the same workspace and credits across the available tools. Planned features are not available yet.</p></div></div><Link href="/features" className="text-sm text-primary underline underline-offset-4">Compare all tools →</Link></div>

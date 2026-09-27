@@ -46,7 +46,7 @@ export const homeFaqs: Answer[] = [
   { question: "Can I cancel a running generation?", answer: cancellationAnswer },
   {
     question: "Does ETA post videos to my social accounts?",
-    answer: "No. Download and review the finished MP4, then upload it to your chosen platform yourself. ETA does not currently schedule posts or publish to social accounts. AI output can contain errors; check facts, character details, dialogue and usage permissions before publishing.",
+    answer: "ETA has a YouTube publishing workspace where eligible users can connect their channel, review a completed video and upload or schedule it. Public posting depends on Google approval and account configuration. TikTok publishing is coming soon. The homepage dashboard is a design preview, not live analytics or a growth guarantee. You can also download your MP4 and post it yourself. Always review AI output before publishing.",
   },
 ];
 
