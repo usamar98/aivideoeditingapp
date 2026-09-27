@@ -27,7 +27,22 @@ describe("YouTube dashboard and disclosures", () => {
     for (const value of ["private", "public", "unlisted", "schedule"]) expect($(`option[value=${value}]`).attr("disabled")).toBeUndefined();
     expect($.text()).toContain("Is this video made for kids?"); expect($.text()).toContain("realistic altered or synthetic");
     expect($("textarea").attr("maxlength")).toBe("5000");
-    expect($("button[type=submit]").attr("disabled")).toBeDefined(); // No video or consent selected.
+    // Keep submit available for native required-field validation instead of silently disabling it.
+    expect($("fieldset button[type=submit]").attr("disabled")).toBeUndefined();
+    expect($("#youtube-upload-checklist").text()).toContain("Choose Yes or No for realistic altered / AI-generated content.");
+    for (const id of ["youtube-video", "youtube-title", "youtube-kids", "youtube-synthetic", "youtube-consent"]) {
+      expect($(`#${id}`).attr("required")).toBeDefined();
+    }
+    expect($("#youtube-synthetic option[value='']").attr("selected")).toBeDefined();
+    expect($("#youtube-consent").attr("checked")).toBeUndefined();
+    expect($("fieldset button[type=submit]").attr("aria-describedby")).toBe("youtube-upload-checklist");
+  });
+  it("keeps public publishing and scheduling disabled during private-only testing", () => {
+    const connected = { ...initial, demo: false, configured: true, connection: { channel_id: "UCtest", channel_title: "My channel", status: "connected" as const } };
+    const $ = load(renderToStaticMarkup(createElement(YouTubeDashboard, { initial: connected, notice: null })));
+    for (const value of ["public", "unlisted", "schedule"]) expect($(`option[value=${value}]`).attr("disabled")).toBeDefined();
+    expect($("option[value=private]").attr("disabled")).toBeUndefined();
+    expect($("fieldset button[type=submit]").text()).toContain("Upload privately to YouTube");
   });
   it("explains API data, revocation, Limited Use and native schedules", () => {
     const privacy = load(renderToStaticMarkup(createElement(Privacy))), terms = load(renderToStaticMarkup(createElement(Terms)));
