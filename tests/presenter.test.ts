@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { presenterBriefSchema, presenterCredits, presenterSchema, portraitUploadSchema, type PresenterBrief } from "@/lib/presenter/schema";
-import { presenterRenderArgs } from "../trigger/presenter-render";
+import { presenterRenderArgs, PRESENTER_DISCLOSURE_SRT } from "../trigger/presenter-render";
 
 const brief: PresenterBrief = { title: "Introduction", script: "Hello, welcome to my studio. Let us make something wonderful together today.", duration: 15, resolution: "480p", aspectRatio: "9:16", captions: true, model: "fabric-1.0" };
 describe("photo presenter validation and export", () => {
@@ -29,10 +29,12 @@ describe("photo presenter validation and export", () => {
     const args=presenterRenderArgs(brief,10);
     expect(args).toContain("0:v:0"); expect(args).toContain("1:a:0");
     expect(args.join(" ")).toContain("pad=480:854");
-    expect(args.join(" ")).toContain("AI presenter");
+    expect(args.join(" ")).toContain("subtitles=disclosure.srt");
+    expect(PRESENTER_DISCLOSURE_SRT).toContain("AI presenter");
+    expect(args.join(" ")).not.toContain("drawtext");
     expect(args.join(" ")).toContain("subtitles=captions.srt");
     const landscape=presenterRenderArgs({...brief,aspectRatio:"16:9",resolution:"720p",captions:false},10).join(" ");
-    expect(landscape).toContain("pad=1280:720"); expect(landscape).not.toContain("subtitles="); expect(landscape).toContain("AI presenter");
+    expect(landscape).toContain("pad=1280:720"); expect(landscape).not.toContain("subtitles=captions.srt"); expect(landscape).toContain("subtitles=disclosure.srt");
     expect(()=>presenterRenderArgs(brief,20)).toThrow();
   });
 });

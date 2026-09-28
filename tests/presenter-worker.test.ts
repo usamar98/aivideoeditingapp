@@ -36,7 +36,7 @@ describe("presenter worker orchestration without paid calls", () => {
     expect(await run()).toEqual({ seconds: 10 });
     expect(mocks.provider).toHaveBeenCalledWith(expect.objectContaining({ endpoint: "veed/fabric-1.0", input: { image_url: "https://test.supabase.co/private-media", audio_url: "https://test.supabase.co/private-media", resolution: "480p" } }));
     expect(mocks.consent).toHaveBeenCalled(); expect(mocks.active).toHaveBeenCalled();
-    expect(mocks.exec.mock.calls.some(([, args]) => args.join(" ").includes("AI presenter"))).toBe(true);
+    expect(mocks.exec.mock.calls.some(([, args]) => args.join(" ").includes("subtitles=disclosure.srt"))).toBe(true);
     expect(mocks.saveFile.mock.calls.some(([name]) => name === "presenter.mp4")).toBe(true);
   });
   it("refuses revoked consent before touching a provider", async () => {

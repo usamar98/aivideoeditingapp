@@ -14,7 +14,7 @@ import { artifactStore, MEDIA_LIMITS, readBoundedBody } from "./media-io";
 import { cartoonFalClient, runFalStage } from "./cartoon-fal";
 import { downloadCartoonVideo } from "./cartoon-media";
 import { withRequestDeadline } from "./request-deadline";
-import { presenterRenderArgs } from "./presenter-render";
+import { presenterRenderArgs, PRESENTER_DISCLOSURE_SRT } from "./presenter-render";
 
 const exec = promisify(execFile);
 const resultSchema = z.object({ seconds: z.number().min(2).max(30) });
@@ -113,6 +113,7 @@ export const presenterPipeline = schemaTask({
       const rawInfo = await probe("avatar.mp4"), rawSeconds = Number(rawInfo.format.duration);
       if (!Number.isFinite(rawSeconds) || rawSeconds < seconds - .25 || rawSeconds > brief.duration + 3 || !rawInfo.streams.some(s => s.codec_type === "video")) throw new Error("Provider returned an incomplete presenter video");
       await phase("Preparing captions and your private MP4");
+      await writeFile(path.join(work, "disclosure.srt"), PRESENTER_DISCLOSURE_SRT);
       await exec(ffmpeg, presenterRenderArgs(brief, seconds), { cwd: work, timeout: 240_000, signal, maxBuffer: 256 * 1024 });
       const final = await probe("presenter.mp4");
       if (Math.abs(Number(final.format.duration) - seconds) > .25 || !final.streams.some(s => s.codec_type === "audio")) throw new Error("Presenter export validation failed");

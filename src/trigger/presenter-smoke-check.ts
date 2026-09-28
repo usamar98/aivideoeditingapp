@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { task } from "@trigger.dev/sdk";
-import { presenterRenderArgs } from "../../trigger/presenter-render";
+import { presenterRenderArgs, PRESENTER_DISCLOSURE_SRT } from "../../trigger/presenter-render";
 
 const exec = promisify(execFile);
 // Synthetic media only: checks the deployed renderer without portraits, provider
@@ -22,6 +22,7 @@ export const presenterSmokeCheck = task({
       await exec(ffmpeg, ["-y", "-v", "error", "-f", "lavfi", "-i", "color=c=blue:s=640x640:r=25", "-t", "2", "-c:v", "libx264", "-threads", "2", "-pix_fmt", "yuv420p", "avatar.mp4"], options);
       await exec(ffmpeg, ["-y", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=48000", "-t", "2", "voice.mp3"], options);
       await writeFile(path.join(work, "captions.srt"), "1\n00:00:00,000 --> 00:00:02,000\nSynthetic renderer verification\n");
+      await writeFile(path.join(work, "disclosure.srt"), PRESENTER_DISCLOSURE_SRT);
       const outputs = [];
       for (const [resolution, aspectRatio, width, height] of [["480p", "9:16", 480, 854], ["720p", "16:9", 1280, 720]] as const) {
         await exec(ffmpeg, presenterRenderArgs({ title: "Smoke test", script: "Synthetic verification", model: "fabric-1.0", captions: true, duration: 15, resolution, aspectRatio }, 2), options);
