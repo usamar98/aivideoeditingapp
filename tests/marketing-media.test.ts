@@ -28,7 +28,7 @@ import { UgcPreview } from "@/components/studio/ugc-preview";
 const slugs = ["faceless-video-generator", "ai-cartoon-series", "ai-ugc-product-ads"];
 const assetPath = (src: string) => join(process.cwd(), "public", src);
 
-beforeEach(() => mocks.published.mockResolvedValue(slugs.map((slug) => ({ slug }))));
+beforeEach(() => mocks.published.mockResolvedValue([...slugs, "ai-digital-clone-presenter"].map((slug) => ({ slug }))));
 
 describe("AI marketing media", () => {
   it.each(Object.keys(exampleVisuals) as (keyof typeof exampleVisuals)[])("uses an optimized, accessible local image for %s", (variant) => {
@@ -61,7 +61,7 @@ describe("AI marketing media", () => {
     expect(media.filter((item) => item.kind === "video").map((item) => item.name)).toEqual(expect.arrayContaining(["fantasy-forest", "ai-portrait", "hero-space", "hero-cartoon", "hero-anime", "hero-ugc"]));
     expect(media.filter((item) => item.kind === "image").map((item) => item.src)).toEqual(expect.arrayContaining(["/examples/faceless-space.webp", "/examples/cartoon-forest.webp", "/examples/presenter-product.webp"]));
     expect($.text()).toContain("AI UGC");
-    expect($.text()).toContain("Digital clone · Soon");
+    expect($.text()).toContain("Photo-based presenter");
     expect($.text()).toContain("AI concept");
     expect($(".hero-caption, .hero-credits").length).toBe(0);
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
@@ -126,7 +126,8 @@ describe("AI marketing media", () => {
   it("keeps the clone concept but removes the old social publishing card", () => {
     const $ = load(renderToStaticMarkup(createElement(UpcomingFeatures)));
     expect($("article").length).toBe(1);
-    expect($.text().match(/Coming soon/g)?.length).toBe(2);
+    expect($.text()).not.toContain("Coming soon");
+    expect($("a[href='/features/ai-digital-clone-presenter']").length).toBe(1);
     expect($("video[controls]").length).toBe(0);
     expect($("video[loop][muted][playsinline]").length).toBe(1);
     expect($("video").attr("autoplay")).toBeUndefined();
@@ -137,7 +138,8 @@ describe("AI marketing media", () => {
     expect($("button[aria-label^='Play preview:']").length).toBe(1);
     expect($.text()).not.toContain("Auto-post and schedule planned");
     expect($.text()).not.toContain("Create here. Share everywhere");
-    expect($.text()).toContain("No impersonation");
+    expect($.text()).toContain("authorized portrait");
+    expect($.text()).toContain("No voice cloning");
   });
 
   it.each([true, false])("labels the UGC visual as a concept (compact=%s)", (compact) => {
@@ -162,7 +164,7 @@ describe("AI marketing media", () => {
   });
 
   it("keeps three desktop columns and removes only the social card", async () => {
-    mocks.published.mockResolvedValue([...slugs, "podcast-to-shorts"].map((slug) => ({ slug })));
+    mocks.published.mockResolvedValue([...slugs, "podcast-to-shorts", "ai-digital-clone-presenter"].map((slug) => ({ slug })));
     const $ = load(renderToStaticMarkup(await Home()));
     const grid = $('[data-testid="feature-grid"]');
     expect(grid.attr("class")).toContain("lg:grid-cols-3");
@@ -176,13 +178,13 @@ describe("AI marketing media", () => {
   });
 
   it("uses the studio's shared card design and order on the public feature directory", async () => {
-    const published = [...slugs, "podcast-to-shorts"];
+    const published = [...slugs, "podcast-to-shorts", "ai-digital-clone-presenter"];
     mocks.published.mockResolvedValue([...published].reverse().map((slug) => ({ slug, name: slug, description: "Published tool" })));
     const $ = load(renderToStaticMarkup(await FeaturesPage()));
     const grid = $('[data-testid="feature-grid"]');
     expect(grid.attr("class")).toContain("sm:grid-cols-2");
     expect(grid.attr("class")).toContain("lg:grid-cols-3");
-    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...published, "digital-clone"]);
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone"]);
     expect(grid.find("h2").length).toBe(5);
     expect(grid.find("img").length).toBe(3);
     expect(grid.find("video[controls]").length).toBe(0);
@@ -192,7 +194,7 @@ describe("AI marketing media", () => {
     for (const slug of published) expect(grid.find(`a[href='/features/${slug}']`).length).toBe(1);
     for (const slug of ["digital-clone"]) {
       expect($(`[data-feature='${slug}']`).length).toBe(1);
-      expect(grid.find(`[data-feature='${slug}']`).text()).toContain("Coming soon");
+      expect(grid.find(`[data-feature='${slug}']`).text()).toContain("Explore the presenter studio");
     }
     const schema = JSON.parse($("script[type='application/ld+json']").first().text());
     const items = schema["@graph"].find((item: { "@type": string }) => item["@type"] === "ItemList").itemListElement;
@@ -203,7 +205,7 @@ describe("AI marketing media", () => {
     mocks.published.mockResolvedValue([{ slug: "custom-video-tool", name: "Custom video tool", description: "A published custom workflow." }]);
     const $ = load(renderToStaticMarkup(await FeaturesPage()));
     const grid = $('[data-testid="feature-grid"]');
-    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual(["digital-clone", "custom-video-tool"]);
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual(["custom-video-tool"]);
     expect(grid.find("a[href^='/features/']").length).toBe(1);
     expect(grid.find("a[href='/features/custom-video-tool']").text()).toContain("A published custom workflow.");
   });
@@ -233,8 +235,8 @@ describe("AI marketing media", () => {
     expect(grid.find("a[href^='/features/']").length).toBe(0);
     for (const feature of ["digital-clone"]) {
       const card = grid.find(`[data-feature='${feature}']`);
-      expect(card.text()).toContain("Coming soon");
-      expect(card.find("a[href^='/studio']").length).toBe(0);
+      expect(card.text()).toContain("Create a presenter video");
+      expect(card.find("a[href='/studio/presenter']").length).toBe(1);
       expect(card.find("button[aria-label^='Play preview:']").length).toBe(1);
     }
   });

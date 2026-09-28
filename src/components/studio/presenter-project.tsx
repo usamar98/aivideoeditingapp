@@ -1,0 +1,24 @@
+"use client";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { CancelJobButton } from "./cancel-job-button";
+import { startPresenterJob } from "@/app/studio/presenter/actions";
+import { presenterCredits, type PresenterProject as Project } from "@/lib/presenter/schema";
+
+export function PresenterProject({ project }: { project: Project }) {
+  const router = useRouter(), [pending, startTransition] = useTransition(), [error, setError] = useState<string | null>(null);
+  const active = project.status === "rendering";
+  useEffect(() => { if (!active) return; const timer = setInterval(() => { if (!document.hidden) router.refresh(); }, 6000); return () => clearInterval(timer); }, [active, router]);
+  return <div className="mx-auto max-w-5xl px-4 py-10 sm:px-8"><Link href="/studio/presenter" className="text-sm text-primary">← Your presenters</Link><p className="eyebrow mt-8 text-primary">AI digital-clone presenter / Review & render</p><h1 className="editorial mt-3 break-words text-4xl">{project.title}</h1><div className="mt-8 grid gap-7 md:grid-cols-[1fr_1.1fr]">
+    <div className="overflow-hidden rounded-3xl border border-border bg-[#101e36]">{project.videoUrl ? <video controls playsInline preload="metadata" src={project.videoUrl} className="max-h-[650px] w-full" aria-label="Your generated AI presenter video" /> : <div className="relative flex min-h-96 items-center justify-center">{project.presenter.portraitUrl ? <Image src={project.presenter.portraitUrl} alt={`Portrait of ${project.presenter.name}; not yet animated`} fill unoptimized className="object-contain" /> : <p className="p-8 text-sm text-white">Portrait removed or unavailable.</p>}<span className="absolute bottom-4 rounded-full bg-black/60 px-4 py-2 text-xs text-white">Portrait preview · not a generated video</span></div>}</div>
+    <div className="space-y-5"><section className="rounded-2xl border border-border bg-card p-6"><h2 className="font-semibold">Your approved script</h2><p className="mt-4 whitespace-pre-wrap text-sm leading-7">{project.brief.script}</p><p className="mt-5 text-xs text-muted-foreground">{project.presenter.name} · Studio voice · {project.brief.resolution} · {project.brief.aspectRatio} · {project.brief.duration}s maximum</p><p className="mt-2 text-xs text-muted-foreground">{project.brief.captions ? "Captions on" : "Captions off"} · AI disclosure included</p></section>
+      {(error || project.error) && <p role="alert" className="rounded-xl border border-destructive/30 p-4 text-sm text-destructive">{error || project.error}</p>}
+      {active && <div role="status" className="rounded-xl bg-accent p-5"><p className="font-semibold">{project.job?.cancelRequested ? "Cancelling…" : project.job?.phase || "Waiting for worker…"}</p><p className="mt-2 text-xs leading-6">You can leave and return. Credits remain reserved until the worker confirms the result.</p></div>}
+      {project.videoUrl ? <><p className="text-sm font-semibold">Complete · {project.job?.used ?? 0} credits used</p><Button asChild><a href={project.videoUrl} download="presenter.mp4" target="_blank" rel="noopener noreferrer">Open / download MP4</a></Button>{project.captionsUrl && <a href={project.captionsUrl} download="captions.srt" className="ml-4 text-sm text-primary underline">Download captions</a>}<p className="text-xs leading-6 text-muted-foreground">Review likeness, speech and captions before posting. Preview links expire; refresh this page to renew them.</p></> : <><p className="text-sm">Reserve up to <strong>{presenterCredits(project.brief.duration, project.brief.resolution)} credits</strong>. Only generated speech duration is billed, rounded up, plus 15 preparation credits.</p><Button disabled={pending || project.presenter.revoked || (active && Boolean(project.job?.cancelRequested)) || (active && project.job?.status !== "reserved")} className="w-full" onClick={() => startTransition(async () => { setError(null); try { const result = await startPresenterJob(project.id); if (result.error) setError(result.error); router.refresh(); } catch { setError("Could not connect. Refresh before retrying; your saved job is preserved."); } })}>{pending ? "Connecting…" : active ? "Reconnect saved job" : "Confirm & generate presenter"}</Button></>}
+      {active && project.job && <CancelJobButton jobId={project.job.id} title={project.title} requested={project.job.cancelRequested} onUpdate={() => router.refresh()} />}
+      {project.presenter.revoked && <p className="text-sm text-muted-foreground">Presenter consent was revoked. New renders are disabled.</p>}<Button asChild variant="outline"><Link href="/studio/presenter">Write another script</Link></Button>
+    </div></div></div>;
+}

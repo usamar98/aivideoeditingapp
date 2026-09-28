@@ -19,7 +19,7 @@ export function SiteFooter() {
     <a className="break-all text-muted-foreground" href={`mailto:${brand.supportEmail}`}>{brand.supportEmail}</a>
     <details className="w-full text-xs leading-6 text-muted-foreground" data-testid="media-credits">
       <summary className="w-fit cursor-pointer underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-primary">About the example media</summary>
-      <p className="mt-3 max-w-3xl">AI-generated stock and original concept artwork, not ETA exports, customer results or live account data. Portraits are not cloning or speaking demos. Digital clone and TikTok publishing are coming soon. Platform icons do not imply endorsement.</p>
+      <p className="mt-3 max-w-3xl">AI-generated stock and original concept artwork, not ETA exports, customer results or live account data. Stock portraits are not cloning or speaking demos. The digital-clone tool animates authorized photos; it does not clone voices. TikTok publishing is coming soon. Platform icons do not imply endorsement.</p>
       <ul className="my-2 flex flex-wrap gap-x-5 gap-y-1">{heroStockCredits.map((credit) => <li key={credit.href}><a href={credit.href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{credit.name}</a></li>)}</ul>
       <a href="https://pixabay.com/service/license-summary/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Pixabay Content License</a>
     </details>

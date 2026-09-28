@@ -9,7 +9,7 @@ const liveCards = [
   { slug: "ai-ugc-product-ads", title: "AI UGC and product-ad studio", variant: "ugc", label: "AI presenter ads", description: "Turn product photos or a link into presenter-led ads with three opening hooks and captions.", detail: "AI presenters · Product visuals · Hooks", studioHref: "/studio/ugc", studioAction: "Create product ads" },
 ] as const;
 
-export const featuredToolSlugs: readonly string[] = [...liveCards.map((card) => card.slug), "podcast-to-shorts"];
+export const featuredToolSlugs: readonly string[] = [...liveCards.map((card) => card.slug), "podcast-to-shorts", "ai-digital-clone-presenter"];
 
 export function FeatureGrid({ published, mode = "marketing", additionalFeatures = [] }: {
   published: string[];
@@ -35,7 +35,7 @@ export function FeatureGrid({ published, mode = "marketing", additionalFeatures 
         <div className="flex flex-1 flex-col p-6"><p className="eyebrow text-primary">New / Podcast & video Shorts</p><Heading className="mt-2 text-xl font-semibold">Podcast & video to Shorts</Heading><p className="mt-3 text-sm leading-6 text-muted-foreground">Find useful moments in your recordings, refine speaker framing and add animated captions for vertical clips.</p><p className="mt-4 text-xs leading-5 text-muted-foreground">Highlights · Framing · Animated captions</p><span className="mt-auto flex items-center gap-2 pt-5 text-sm font-semibold text-primary">{studio ? "Create Shorts" : "Explore the video clipper"} <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span></div>
       </Link>
     </article>}
-    <UpcomingFeatures headingLevel={Heading} />
+    {published.includes("ai-digital-clone-presenter") && <UpcomingFeatures headingLevel={Heading} studio={studio} />}
     {additionalFeatures.filter((feature) => published.includes(feature.slug) && !featuredToolSlugs.includes(feature.slug)).map((feature) => <article key={feature.slug} data-feature={feature.slug} className="overflow-hidden rounded-2xl border border-border bg-card">
       <Link href={`/features/${feature.slug}`} className="group flex h-full flex-col p-6">
         <Heading className="text-xl font-semibold">{feature.name}</Heading>

@@ -14,7 +14,7 @@ export const heroMediaRows: readonly (readonly HeroMedia[])[] = [
     { id: "presenter", kind: "image", src: "/examples/presenter-product.webp", position: "22% center", label: "AI UGC", detail: "A fresh face for your ideas", platform: "Instagram" },
     { id: "sloth", kind: "video", name: "hero-cartoon", label: "Cartoon clips", detail: "Little characters. Big stories.", platform: "TikTok" },
     { id: "astronaut", kind: "image", src: "/examples/faceless-space.webp", label: "AI images", detail: "Beyond the everyday", platform: "Facebook" },
-    { id: "portrait", kind: "video", name: "ai-portrait", label: "Digital clone · Soon", detail: "AI portrait inspiration only", platform: "Instagram" },
+    { id: "portrait", kind: "video", name: "ai-portrait", label: "Photo-based presenter", detail: "AI portrait inspiration only", platform: "Instagram" },
     { id: "characters", kind: "image", src: "/examples/cartoon-forest.webp", label: "Character worlds", detail: "Meet your next story", platform: "YouTube" },
   ],
   [

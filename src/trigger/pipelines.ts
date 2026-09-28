@@ -5,3 +5,4 @@ export { facelessPipeline } from "../../trigger/faceless-pipeline";
 export { cartoonPipeline } from "../../trigger/cartoon-pipeline";
 export { ugcPipeline } from "../../trigger/ugc-pipeline";
 export { shortsPipeline } from "../../trigger/shorts-pipeline";
+export { presenterPipeline } from "../../trigger/presenter-pipeline";

@@ -160,6 +160,18 @@ export function getFeature(slug: string) {
   return featureCatalog.find((feature) => feature.slug === slug);
 }
 
+featureCatalog.push(featureDefinitionSchema.parse({
+  slug: "ai-digital-clone-presenter", name: "AI digital-clone presenter",
+  description: "Create talking presenter videos from an authorized portrait and a short script. Save your presenter once, reuse it with new scripts, and export private videos with a studio voice and captions.",
+  audience: ["Creators", "Educators", "Small businesses"], searchIntent: "Create an AI talking avatar video from my photo and script",
+  benefits: ["Reuse your authorized portrait without filming every take", "Review your script and credit reservation before rendering", "Download private presenter videos and separate captions"],
+  capabilities: ["Reusable JPG, PNG and WebP portraits with recorded adult-likeness consent", "Fabric 1.0 photo animation through fal with a configured English studio voice", "Scripts up to 28 words for 15 seconds or 62 words for 30 seconds", "480p or 720p exports in vertical or landscape format with optional burned-in captions", "Private MP4 and SRT downloads, background progress, cancellation and consent revocation"],
+  limitations: ["This is photo-based animation, not a trained personal avatar, identity verification or voice cloning. Appearance and lip sync may vary.", "Only use your own adult likeness or an adult presenter who has explicitly authorized the photo and exact script. No impersonation or fabricated endorsements.", "Uploads must be 8 MB or smaller, at least 256 pixels per side and at most 20 megapixels. Use one clear, front-facing person.", "Rendering reserves 15 preparation credits plus 6 credits/second at 480p or 10 at 720p. Actual speech duration is rounded up; unused credits are returned. Failed/cancelled jobs are refunded.", "Exports include an AI presenter disclosure. Revoking consent stops new renders and removes the source portrait; existing exports and processing records require a separate deletion request.", "Live generation requires the presenter migration, deployed background worker, fal and studio-voice credentials. No automatic social publishing."],
+  exampleMedia: [], relatedFeatures: ["ai-ugc-product-ads", "faceless-video-generator"], status: "published", developmentOnly: false,
+  publishedAt: "2026-09-28T00:00:00.000Z", modifiedAt: "2026-09-28T00:00:00.000Z",
+  seo: { title: "AI Digital-Clone Presenter — Photo to Talking Video", description: "Turn your authorized portrait and script into a talking AI presenter. Reuse portraits, add a studio voice and captions, then download private MP4 videos.", heading: "Your portrait, turned into an AI presenter video", canonicalPath: "/features/ai-digital-clone-presenter", editorialOverride: true },
+}));
+
 export function canIndexFeature(feature: FeatureDefinition) {
   return feature.status === "published" && !feature.developmentOnly;
 }

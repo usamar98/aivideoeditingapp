@@ -38,6 +38,7 @@ beforeAll(async()=>{
   await db.exec(readFileSync("supabase/migrations/20260925120544_ugc_product_ads.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20260925165638_podcast_shorts.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20260926100154_cartoon_direct_models.sql","utf8"));
+  await db.exec(readFileSync("supabase/migrations/20260928174504_digital_clone_presenter.sql","utf8"));
   await db.exec("grant usage on schema storage to authenticated; grant select,insert,update,delete on storage.objects to authenticated;");
   await db.exec(`insert into auth.users values ('${userA}'),('${userB}'); insert into public.profiles(id) values ('${userA}'),('${userB}'); insert into public.workspaces(id,name,owner_id) values('${workspace}','Test studio','${userA}'); insert into public.workspace_members(workspace_id,user_id,role) values('${workspace}','${userA}','owner'); insert into public.credit_accounts(workspace_id,cached_balance) values('${workspace}',100); insert into public.faceless_projects(id,user_id,workspace_id,title,brief) values('${project}','${userA}','${workspace}','Test project','{}');`);
 },30000);
@@ -45,6 +46,75 @@ afterAll(async()=>{await db?.close();});
 
 async function asUser(id:string){await db.exec(`reset role; set role authenticated; select set_config('request.jwt.claim.sub','${id}',false); select set_config('request.jwt.claim.role','authenticated',false);`);}
 async function asService(){await db.exec("reset role; set role service_role; select set_config('request.jwt.claim.role','service_role',false);");}
+
+describe("Presenter consent, ownership and exactly-once credits", () => {
+  const brief = { title: "My introduction", script: "Hello and welcome to my studio. Here is a little inspiration for your next creative project.", duration: 15, resolution: "480p", aspectRatio: "9:16", captions: true, model: "fabric-1.0" };
+  async function fixture() {
+    await asService(); const workspaceId = randomUUID(), presenterId = randomUUID(), assetId = randomUUID(), projectId = randomUUID();
+    await db.query("insert into public.workspaces(id,name,owner_id) values($1,'Presenter test',$2)",[workspaceId,userA]);
+    await db.query("insert into public.workspace_members(workspace_id,user_id,role) values($1,$2,'owner')",[workspaceId,userA]);
+    await db.query("insert into public.credit_accounts(workspace_id,cached_balance) values($1,10000)",[workspaceId]);
+    await db.query("insert into public.assets(id,workspace_id,owner_id,kind,storage_path,mime_type,byte_size) values($1,$2,$3,'reference',$4,'image/png',1000)",[assetId,workspaceId,userA,`${workspaceId}/${userA}/presenter-inputs/${assetId}.png`]);
+    await db.query("select public.create_presenter($1,$2,$3,$4,'My portrait','photo-presenter-v1')",[presenterId,userA,workspaceId,assetId]);
+    await db.query("select public.create_presenter_project($1,$2,$3,$4,$5)",[projectId,userA,workspaceId,presenterId,JSON.stringify(brief)]);
+    return { workspaceId, presenterId, assetId, projectId };
+  }
+  async function balance(id: string) { return Number((await db.query<{n:string}>("select cached_balance n from public.credit_accounts where workspace_id=$1",[id])).rows[0].n); }
+  it("isolates presenters and denies browser writes and direct billing", async () => {
+    const f = await fixture(); await asUser(userB);
+    expect((await db.query("select id from public.presenters where id=$1",[f.presenterId])).rows).toHaveLength(0);
+    expect((await db.query("select id from public.presenter_projects where id=$1",[f.projectId])).rows).toHaveLength(0);
+    await asUser(userA);
+    expect((await db.query("select id from public.presenters where id=$1",[f.presenterId])).rows).toHaveLength(1);
+    await expect(db.query("update public.presenters set revoked_at=null where id=$1",[f.presenterId])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public.start_presenter_job($1,$2,gen_random_uuid())",[f.projectId,userA])).rejects.toThrow(/permission denied/);
+    await asService(); await expect(db.query("select public.start_presenter_job($1,$2,gen_random_uuid())",[f.projectId,userB])).rejects.toThrow(/consent/);
+  });
+  it("reserves once, charges actual rounded duration and settles once", async () => {
+    const f = await fixture(), id = randomUUID();
+    await db.query("select public.start_presenter_job($1,$2,$3)",[f.projectId,userA,id]);
+    expect(await balance(f.workspaceId)).toBe(9895);
+    expect((await db.query<{id:string}>("select public.start_presenter_job($1,$2,gen_random_uuid()) id",[f.projectId,userA])).rows[0].id).toBe(id);
+    await db.query("select public.finish_presenter_job($1,true,10.1)",[id]);
+    await db.query("select public.finish_presenter_job($1,true,10.1)",[id]);
+    expect(await balance(f.workspaceId)).toBe(9919);
+    expect((await db.query("select status,output_path from public.presenter_projects where id=$1",[f.projectId])).rows[0]).toEqual({status:"complete",output_path:`${f.workspaceId}/${userA}/presenter/${id}/presenter.mp4`});
+    await expect(db.query("select public.start_presenter_job($1,$2,gen_random_uuid())",[f.projectId,userA])).rejects.toThrow(/complete/);
+  });
+  it("refunds cancellation, fences late workers and prevents reuse after revocation", async () => {
+    const f = await fixture(), id = randomUUID();
+    await db.query("select public.start_presenter_job($1,$2,$3)",[f.projectId,userA,id]);
+    await expect(db.query("select public.revoke_presenter($1,$2)",[f.presenterId,userA])).rejects.toThrow(/Cancel/);
+    await db.query("select public.request_generation_cancellation($1,$2)",[id,userA]);
+    await db.query("select public.finish_presenter_job($1,true,10)",[id]);
+    await db.query("select public.confirm_generation_cancellation($1)",[id]);
+    expect(await balance(f.workspaceId)).toBe(10000);
+    expect((await db.query<{ok:boolean}>("select public.claim_generation_job($1,'late',1) ok",[id])).rows[0].ok).toBe(false);
+    await db.query("select public.revoke_presenter($1,$2)",[f.presenterId,userA]);
+    await expect(db.query("select public.start_presenter_job($1,$2,gen_random_uuid())",[f.projectId,userA])).rejects.toThrow(/revoked/);
+    await expect(db.query("select public.create_presenter_project(gen_random_uuid(),$1,$2,$3,$4)",[userA,f.workspaceId,f.presenterId,JSON.stringify(brief)])).rejects.toThrow(/revoked/);
+  });
+  it("rejects invalid output durations and refunds provider failure", async () => {
+    const f = await fixture(), id = randomUUID();
+    await db.query("select public.start_presenter_job($1,$2,$3)",[f.projectId,userA,id]);
+    await expect(db.query("select public.finish_presenter_job($1,true,16)",[id])).rejects.toThrow(/duration/);
+    await db.query("select public.finish_presenter_job($1,false)",[id]);
+    await db.query("select public.finish_presenter_job($1,false)",[id]);
+    expect(await balance(f.workspaceId)).toBe(10000);
+  });
+  it("prevents portrait/result replacement by the authenticated owner", async () => {
+    const f=await fixture(); await db.exec("reset role"); const id=randomUUID();
+    await db.query("insert into storage.objects(id,name,bucket_id) values($1,$2,'private-media')",[id,`${f.workspaceId}/${userA}/presenter-inputs/${f.assetId}.png`]);
+    await db.query("insert into public.workspace_members(workspace_id,user_id,role) values($1,$2,'editor')",[f.workspaceId,userB]);
+    await asUser(userB);
+    expect((await db.query("select id from storage.objects where id=$1",[id])).rows).toHaveLength(0);
+    await asUser(userA);
+    expect((await db.query("select id from storage.objects where id=$1",[id])).rows).toHaveLength(1);
+    expect((await db.query("update storage.objects set name=name where id=$1 returning id",[id])).rows).toHaveLength(0);
+    expect((await db.query("delete from storage.objects where id=$1 returning id",[id])).rows).toHaveLength(0);
+    await expect(db.query("insert into storage.objects(id,name,bucket_id) values(gen_random_uuid(),$1,'private-media')",[`${f.workspaceId}/${userA}/presenter/fake/result.json`])).rejects.toThrow(/row-level security/);
+  });
+});
 
 describe("Shorts database permissions, credit settlement and cancellation", () => {
   async function fixture(ready = false) {
