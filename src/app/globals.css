@@ -94,7 +94,7 @@ button, a, input, textarea, [role="button"] { -webkit-tap-highlight-color: trans
   100% { transform: translateX(100%); }
 }
 
-.hero-canvas { position: relative; isolation: isolate; overflow: hidden; min-height: 830px; display: flex; flex-direction: column; justify-content: center; padding: 64px 24px 28px; background: #f0f0ed; }
+.hero-canvas { position: relative; isolation: isolate; overflow: hidden; min-height: 760px; display: flex; flex-direction: column; justify-content: center; padding: 64px 24px 28px; background: #f0f0ed; }
 .hero-reels { position: absolute; inset: 24px 0 auto; display: grid; gap: 18px; pointer-events: none; z-index: -1; mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); }
 .hero-reel-row { overflow: hidden; }
 .hero-reel-track { display: flex; width: max-content; animation: hero-reel-scroll 72s linear infinite; animation-delay: -8s; animation-play-state: paused; }
@@ -104,7 +104,7 @@ button, a, input, textarea, [role="button"] { -webkit-tap-highlight-color: trans
 .hero-reel-tag { position: absolute; top: 12px; left: 10px; right: 10px; width: fit-content; max-width: calc(100% - 20px); border: 1px solid #ffffff60; border-radius: 30px; padding: 6px 9px; background: #fffdf8eb; color: #182d4e; font-size: 10px; line-height: 1.3; font-weight: 600; }
 .hero-reel-footer { position: absolute; inset: auto 0 0; display: flex; align-items: end; gap: 8px; padding: 45px 12px 14px; background: linear-gradient(transparent, #10213cd9); color: white; font-size: 11px; line-height: 1.5; font-weight: 500; }
 .hero-reel-footer > span:first-child { flex: 1; }
-.hero-copy { position: relative; z-index: 1; margin: auto; width: min(100%, 690px); text-align: center; }
+.hero-copy { position: relative; z-index: 1; margin: auto; width: min(100%, 820px); text-align: center; }
 .hero-copy::before { content: ""; position: absolute; z-index: -1; inset: -100px -130px; background: radial-gradient(ellipse, #faf7ef 30%, #faf7effa 49%, #faf7efdd 61%, #faf7ef00 75%); pointer-events: none; }
 .hero-canvas[data-motion="on"][data-visible="true"] .hero-reel-track { animation-play-state: running; }
 .hero-motion-control { position: absolute; z-index: 2; right: 24px; bottom: 20px; }

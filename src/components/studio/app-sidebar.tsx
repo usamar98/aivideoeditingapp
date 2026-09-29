@@ -19,7 +19,7 @@ const items = [
 export function AppSidebar({ active = "Episode editor" }: { active?: string }) {
   return (
     <aside className="hidden w-[4.5rem] shrink-0 flex-col items-center border-r border-border bg-card/70 py-4 backdrop-blur-xl md:flex">
-      <Link href="/" aria-label="Home"><BrandMark compact /></Link>
+      <BrandMark compact />
       <nav className="mt-10 flex flex-1 flex-col gap-2" aria-label="Workspace">
         {items.map((item) => {
           const Icon = item.icon;

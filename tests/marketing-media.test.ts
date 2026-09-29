@@ -129,17 +129,15 @@ describe("AI marketing media", () => {
     expect($.text()).not.toContain("Coming soon");
     expect($("a[href='/features/ai-digital-clone-presenter']").length).toBe(1);
     expect($("video[controls]").length).toBe(0);
-    expect($("video[loop][muted][playsinline]").length).toBe(1);
-    expect($("video").attr("autoplay")).toBeUndefined();
-    expect($("video").attr("preload")).toBe("none");
-    expect($.text()).toContain("not an ETA clone or a speaking demo");
+    expect($("video").length).toBe(0);
+    expect($("img").attr("alt")).toContain("not an ETA clone or speaking demo");
     expect($("[data-feature='social-publishing']").length).toBe(0);
     expect($("a[href^='/studio']").length).toBe(0);
-    expect($("button[aria-label^='Play preview:']").length).toBe(1);
+    expect($("button, article p").length).toBe(0);
     expect($.text()).not.toContain("Auto-post and schedule planned");
     expect($.text()).not.toContain("Create here. Share everywhere");
-    expect($.text()).toContain("authorized portrait");
-    expect($.text()).toContain("No voice cloning");
+    expect($("article > a > h3").text()).toBe("AI digital-clone presenter");
+    expect($("article > a img").length).toBe(1);
   });
 
   it.each([true, false])("labels the UGC visual as a concept (compact=%s)", (compact) => {
@@ -152,7 +150,7 @@ describe("AI marketing media", () => {
   it("keeps all published homepage feature links and replaces their artwork", async () => {
     const $ = load(renderToStaticMarkup(await Home()));
     expect($("h1").length).toBe(1);
-    expect($("video").length).toBe(16);
+    expect($("video").length).toBe(15);
     for (const slug of slugs) {
       const card = $(`#tools a[href='/features/${slug}']`);
       expect(card.length).toBe(1);
@@ -186,15 +184,15 @@ describe("AI marketing media", () => {
     expect(grid.attr("class")).toContain("lg:grid-cols-3");
     expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone"]);
     expect(grid.find("h2").length).toBe(5);
-    expect(grid.find("img").length).toBe(3);
+    expect(grid.find("img").length).toBe(4);
     expect(grid.find("video[controls]").length).toBe(0);
-    expect(grid.find("video[loop][muted][playsinline]").length).toBe(1);
+    expect(grid.find("video").length).toBe(0);
     expect(grid.find('[class*="col-span"]').length).toBe(0);
     expect(grid.find("a[href^='/studio']").length).toBe(0);
     for (const slug of published) expect(grid.find(`a[href='/features/${slug}']`).length).toBe(1);
     for (const slug of ["digital-clone"]) {
       expect($(`[data-feature='${slug}']`).length).toBe(1);
-      expect(grid.find(`[data-feature='${slug}']`).text()).toContain("Explore the presenter studio");
+      expect(grid.find(`[data-feature='${slug}'] h2`).text()).toBe("AI digital-clone presenter");
     }
     const schema = JSON.parse($("script[type='application/ld+json']").first().text());
     const items = schema["@graph"].find((item: { "@type": string }) => item["@type"] === "ItemList").itemListElement;
@@ -207,12 +205,13 @@ describe("AI marketing media", () => {
     const grid = $('[data-testid="feature-grid"]');
     expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual(["custom-video-tool"]);
     expect(grid.find("a[href^='/features/']").length).toBe(1);
-    expect(grid.find("a[href='/features/custom-video-tool']").text()).toContain("A published custom workflow.");
+    expect(grid.find("a[href='/features/custom-video-tool'] h2").text()).toBe("Custom video tool");
+    expect(grid.find("p").length).toBe(0);
   });
 
   it("updates the actual studio cards without changing generation entry points", async () => {
     const $ = load(renderToStaticMarkup(await StudioLibraryPage()));
-    expect($("main img").length).toBe(3);
+    expect($("main img").length).toBe(4);
     expect($("main img[loading='eager']").length).toBe(1);
     for (const path of ["/studio/faceless", "/studio/cartoons", "/studio/ugc", "/studio/shorts"]) {
       expect($(`main a[href='${path}']`).length).toBe(1);
@@ -235,9 +234,9 @@ describe("AI marketing media", () => {
     expect(grid.find("a[href^='/features/']").length).toBe(0);
     for (const feature of ["digital-clone"]) {
       const card = grid.find(`[data-feature='${feature}']`);
-      expect(card.text()).toContain("Create a presenter video");
+      expect(card.find("h2").text()).toBe("AI digital-clone presenter");
       expect(card.find("a[href='/studio/presenter']").length).toBe(1);
-      expect(card.find("button[aria-label^='Play preview:']").length).toBe(1);
+      expect(card.find("button").length).toBe(0);
     }
   });
 
@@ -250,6 +249,39 @@ describe("AI marketing media", () => {
       expect(card.find("video").length).toBe(0);
     }
     expect($("[data-feature='social-publishing']").length).toBe(0);
+  });
+
+  it("replaces the old hero copy with a fixed, preview-only white prompt and four feature anchors", async () => {
+    const $ = load(renderToStaticMarkup(await Home()));
+    const hero = $(".hero-copy");
+    const prompt = hero.find("[data-testid='hero-prompt']");
+    expect(prompt.length).toBe(1);
+    expect(prompt.children("div").attr("class")).toContain("h-44");
+    expect(prompt.children("div").attr("class")).toContain("bg-white");
+    expect(prompt.find("textarea").attr("readonly")).toBeDefined();
+    expect(prompt.find("textarea").attr("class")).toContain("resize-none");
+    expect(prompt.find("form, button, input[type='file']").length).toBe(0);
+    expect(prompt.find("nav a").map((_, el) => $(el).text()).get()).toEqual(["Create a viral faceless video", "Create a viral cartoon", "Create UGC", "Explore"]);
+    expect(prompt.find("nav a[href='#tools']").length).toBe(4);
+    expect($("#tools").length).toBe(1);
+    for (const oldCopy of ["An idea is all it takes.", "Bring the idea. Make every frame yours.", "Start creating", "Explore the tools", "Your script. Your style. Your next story."]) {
+      expect(hero.text()).not.toContain(oldCopy);
+    }
+  });
+
+  it.each([Home, FeaturesPage, StudioLibraryPage])("makes each compact feature card one whole-card link with no descriptions or nested controls", async (Page) => {
+    const $ = load(renderToStaticMarkup(await Page()));
+    $('[data-testid="feature-grid"] > article').each((_, el) => {
+      const card = $(el);
+      expect(card.children("a").length).toBe(1);
+      expect(card.find("a").length).toBe(1);
+      expect(card.find("h2, h3").length).toBe(1);
+      expect(card.find("p, button").length).toBe(0);
+      expect(card.children("a").attr("aria-label")).toBe(card.find("h2, h3").text());
+      expect(card.children("a").attr("class")).toContain("h-full");
+      expect(card.children("a").attr("class")).toContain("focus-visible:outline");
+      expect(card.text()).not.toContain("Explore the tool");
+    });
   });
 
   it("inserts the channel preview between hero and tools without the old benefit strip", async () => {
