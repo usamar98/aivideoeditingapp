@@ -68,6 +68,24 @@ describe("YouTube publishing worker", () => {
     expect(uploadPart).toHaveBeenCalledWith("fake-access", session, 100, 0);
     expect(startUpload).not.toHaveBeenCalled(); expect(storageCalls).toBe(0); expect(post.status).toBe("private");
   });
+  it("resumes an incomplete saved session from the remote offset, not the stale local zero", async () => {
+    post.upload_session = seal(session, `upload:${post.id}`); post.total_bytes = 100;
+    vi.mocked(uploadPart).mockResolvedValueOnce({ offset: 40, videoId: null }).mockResolvedValueOnce({ offset: 100, videoId });
+    await runYouTubePost(database(), post.id);
+    expect(startUpload).not.toHaveBeenCalled(); expect(storageCalls).toBe(1);
+    expect(uploadPart).toHaveBeenNthCalledWith(2, "fake-access", session, 100, 40, expect.any(Uint8Array));
+    expect(vi.mocked(uploadPart).mock.calls[1][4]?.byteLength).toBe(60);
+    expect(post).toMatchObject({ status: "private", uploaded_bytes: 100, youtube_video_id: videoId, lease_token: null });
+  });
+  it("confirms cancellation of an incomplete saved session without uploading any further bytes", async () => {
+    post.upload_session = seal(session, `upload:${post.id}`); post.total_bytes = 100;
+    post.cancel_requested = true; post.status = "cancelling";
+    vi.mocked(uploadPart).mockResolvedValueOnce({ offset: 40, videoId: null });
+    await runYouTubePost(database(), post.id);
+    expect(uploadPart).toHaveBeenCalledExactlyOnceWith("fake-access", session, 100, 0);
+    expect(startUpload).not.toHaveBeenCalled(); expect(storageCalls).toBe(0); expect(setVisibility).not.toHaveBeenCalled();
+    expect(post).toMatchObject({ status: "cancelled", uploaded_bytes: 40, upload_session: null, error_message: null, lease_token: null });
+  });
   it("stops before any provider call when a never-started upload was cancelled", async () => {
     post.cancel_requested = true; await runYouTubePost(database(), post.id);
     expect(post.status).toBe("cancelled"); expect(refreshAccess).not.toHaveBeenCalled(); expect(startUpload).not.toHaveBeenCalled();

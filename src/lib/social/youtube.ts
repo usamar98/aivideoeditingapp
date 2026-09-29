@@ -3,9 +3,13 @@ import { youtubeConfig, YOUTUBE_SCOPE } from "./config";
 export class YouTubeError extends Error {
   constructor(public readonly code: "reconnect" | "quota" | "rejected" | "unavailable" | "missing" | "session", message: string) { super(message); }
 }
-async function request(url: string, options: RequestInit = {}) {
+async function request(url: string, options: RequestInit = {}, resumableUpload = false) {
   const deadline = AbortSignal.timeout(60_000);
-  try { return await fetch(url, { ...options, redirect: "error", cache: "no-store", signal: deadline }); }
+  // YouTube uses HTTP 308 as "Resume Incomplete", including for empty status
+  // probes. Fetch's "error" policy rejects it before uploadPart can read Range.
+  // "manual" exposes that response but never follows Location or forwards
+  // credentials. Keep all non-upload requests on the strict redirect policy.
+  try { return await fetch(url, { ...options, redirect: resumableUpload ? "manual" : "error", cache: "no-store", signal: deadline }); }
   catch { throw new YouTubeError("unavailable", "YouTube could not be reached. Retry safely from this upload."); }
 }
 async function check(response: Response) {
@@ -81,7 +85,7 @@ export async function startUpload(token: string, size: number, metadata: { title
 }
 export async function uploadPart(token: string, session: string, total: number, offset: number, bytes?: Uint8Array): Promise<{ offset: number; videoId: string | null }> {
   const result = await request(validateSession(session), { method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "video/mp4", "Content-Length": String(bytes?.byteLength || 0),
-    "Content-Range": bytes ? `bytes ${offset}-${offset + bytes.byteLength - 1}/${total}` : `bytes */${total}` }, body: bytes ? new Uint8Array(bytes).buffer : undefined });
+    "Content-Range": bytes ? `bytes ${offset}-${offset + bytes.byteLength - 1}/${total}` : `bytes */${total}` }, body: bytes ? new Uint8Array(bytes).buffer : undefined }, true);
   if (result.status === 308) {
     const range = result.headers.get("range"), match = range?.match(/^bytes=0-(\d+)$/);
     await result.body?.cancel();
