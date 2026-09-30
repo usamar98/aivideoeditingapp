@@ -3,6 +3,7 @@ import { ArrowRight, Clapperboard, Film } from "lucide-react";
 import { BrandMark } from "@/components/studio/brand-mark";
 import { Button } from "@/components/ui/button";
 import { FeatureGrid } from "@/components/marketing/feature-grid";
+import { PlannedFeatureCards } from "@/components/marketing/planned-feature-cards";
 import { HeroShowcase } from "@/components/marketing/hero-showcase";
 import { HeroPrompt } from "@/components/marketing/hero-prompt";
 import { ChannelShowcase } from "@/components/marketing/channel-showcase";
@@ -33,11 +34,11 @@ export default async function Home() {
       <h1 className="text-5xl leading-[1.02] tracking-[-.055em] sm:text-7xl xl:text-[5.25rem]">Your imagination.<br /><span className="editorial italic text-primary">Made to move.</span></h1>
       <HeroPrompt />
     </HeroShowcase>
-    <ChannelShowcase />
     <section id="tools" className="mx-auto max-w-7xl scroll-mt-6 px-6 py-20 lg:px-10"><div className="flex flex-wrap items-end justify-between gap-5"><div><p className="eyebrow text-primary">One studio. More ways to create.</p><h2 className="editorial mt-4 text-4xl tracking-tight sm:text-5xl">What will you make today?</h2></div><p className="max-w-xs text-sm leading-6 text-muted-foreground">Create something new, or turn an existing recording into captioned Shorts.</p></div>
-      <FeatureGrid published={[...published]} />
+      <FeatureGrid published={[...published]} desktopColumns={4}><PlannedFeatureCards /></FeatureGrid>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-primary/25 p-6"><div className="flex items-center gap-4"><Film className="size-6 text-primary" /><div><h3 className="font-semibold">One account. A growing creative toolkit.</h3><p className="mt-1 text-sm text-muted-foreground">Use the same workspace and credits across the available tools. Planned features are not available yet.</p></div></div><Link href="/features" className="text-sm text-primary underline underline-offset-4">Compare all tools →</Link></div>
     </section>
+    <ChannelShowcase />
     <section id="how-it-works" className="bg-[#e9eef9] px-6 py-20"><div className="mx-auto max-w-6xl"><p className="eyebrow text-primary">Less setup. More storytelling.</p><h2 className="editorial mt-4 text-4xl">From a blank page to a finished story.</h2><div className="mt-10 grid gap-10 md:grid-cols-3">{[["01","Bring an idea","A topic, a rough script, a little curiosity. That’s all you need to get started."],["02","Make it your own","Review the narration, edit visual prompts, choose your format, and approve your scenes."],["03","Let it come together","Render voiceover, visuals, and timed captions into a video you can download."]].map(([n,title,copy]) => <div key={n}><span className="font-mono text-xs text-primary">{n} —</span><h3 className="mt-5 text-lg font-semibold">{title}</h3><p className="mt-3 text-sm leading-7 text-muted-foreground">{copy}</p></div>)}</div></div></section>
     <section id="pricing" aria-labelledby="pricing-heading" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-20">
       <div className="mb-10 text-center"><p className="eyebrow text-primary">A plan for your next chapter</p><h2 id="pricing-heading" className="editorial mt-4 text-4xl tracking-tight sm:text-5xl">Small beginnings. Bigger possibilities.</h2><p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-muted-foreground">Three credit budgets. The same creative freedom. Choose monthly flexibility or a full year of credits at a lower price.</p></div>

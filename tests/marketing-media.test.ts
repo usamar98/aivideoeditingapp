@@ -26,6 +26,11 @@ import { UpcomingFeatures } from "@/components/marketing/upcoming-features";
 import { UgcPreview } from "@/components/studio/ugc-preview";
 
 const slugs = ["faceless-video-generator", "ai-cartoon-series", "ai-ugc-product-ads"];
+const plannedCards = [
+  ["short-film", "Short Film"], ["real-estate", "Real Estate"], ["ad-remake", "Ad Remake"],
+  ["social-content", "Social Content"], ["micro-drama", "Micro Drama"], ["brand-film", "Brand Film"],
+  ["explainer", "Explainer"], ["film-trailer", "Film Trailer"], ["promo-video", "Promo video"],
+];
 const assetPath = (src: string) => join(process.cwd(), "public", src);
 
 beforeEach(() => mocks.published.mockResolvedValue([...slugs, "ai-digital-clone-presenter"].map((slug) => ({ slug }))));
@@ -161,18 +166,34 @@ describe("AI marketing media", () => {
     expect($.text()).not.toContain("Find your kind of quiet");
   });
 
-  it("keeps three desktop columns and removes only the social card", async () => {
+  it("uses four desktop columns and appends the nine planned tools after the live homepage cards", async () => {
     mocks.published.mockResolvedValue([...slugs, "podcast-to-shorts", "ai-digital-clone-presenter"].map((slug) => ({ slug })));
     const $ = load(renderToStaticMarkup(await Home()));
     const grid = $('[data-testid="feature-grid"]');
-    expect(grid.attr("class")).toContain("lg:grid-cols-3");
-    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone"]);
+    expect(grid.attr("class")).toContain("sm:grid-cols-2");
+    expect(grid.attr("class")).toContain("lg:grid-cols-4");
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone", ...plannedCards.map(([slug]) => slug)]);
     expect(grid.find('[class*="col-span"]').length).toBe(0);
+    expect(grid.find("img").map((_, el) => $(el).attr("sizes")).get().every((sizes) => sizes?.endsWith("300px"))).toBe(true);
+  });
+
+  it("labels every planned homepage card without exposing unavailable links or generation controls", async () => {
+    const $ = load(renderToStaticMarkup(await Home()));
+    const cards = $("#tools article[data-availability='coming-soon']");
+    expect(cards.length).toBe(9);
+    for (const [slug, title] of plannedCards) {
+      const card = cards.filter(`[data-feature='${slug}']`);
+      expect(card.find("h3").text()).toBe(title);
+      expect(card.text()).toContain("Coming soon");
+      expect(card.find("a, button, input, [tabindex], [role='button']").length).toBe(0);
+    }
+    expect($("script[type='application/ld+json']").text()).not.toContain("short-film");
   });
   it("does not resurrect unpublished feature cards", async () => {
     mocks.published.mockResolvedValue([]);
     const $ = load(renderToStaticMarkup(await Home()));
     expect($("#tools a[href^='/features/']").length).toBe(0);
+    expect($("#tools article").length).toBe(9);
   });
 
   it("uses the studio's shared card design and order on the public feature directory", async () => {
@@ -221,7 +242,7 @@ describe("AI marketing media", () => {
     expect($.text().match(/AI-generated concept/g)?.length).toBe(3);
   });
 
-  it("matches the homepage's card order in a responsive studio grid", async () => {
+  it("preserves the live card order and three-column layout in the studio", async () => {
     const $ = load(renderToStaticMarkup(await StudioLibraryPage()));
     const grid = $('[data-testid="feature-grid"]');
     expect(grid.parent().attr("class")).toContain("@container");
@@ -271,7 +292,7 @@ describe("AI marketing media", () => {
 
   it.each([Home, FeaturesPage, StudioLibraryPage])("makes each compact feature card one whole-card link with no descriptions or nested controls", async (Page) => {
     const $ = load(renderToStaticMarkup(await Page()));
-    $('[data-testid="feature-grid"] > article').each((_, el) => {
+    $('[data-testid="feature-grid"] > article:not([data-availability="coming-soon"])').each((_, el) => {
       const card = $(el);
       expect(card.children("a").length).toBe(1);
       expect(card.find("a").length).toBe(1);
@@ -284,10 +305,11 @@ describe("AI marketing media", () => {
     });
   });
 
-  it("inserts the channel preview between hero and tools without the old benefit strip", async () => {
+  it("places tools directly after the hero and the channel preview after tools", async () => {
     const $ = load(renderToStaticMarkup(await Home()));
-    expect($(".hero-canvas").next().attr("id")).toBe("channel-preview");
-    expect($("#channel-preview").next().attr("id")).toBe("tools");
+    expect($(".hero-canvas").next().attr("id")).toBe("tools");
+    expect($("#tools").next().attr("id")).toBe("channel-preview");
+    expect($("#channel-preview").next().attr("id")).toBe("how-it-works");
     for (const copy of ["Start with an idea", "Make every scene yours", "Give your story a voice", "Ready for the small screen", "app.tokportal.com", "33 accounts"]) {
       expect($.text()).not.toContain(copy);
     }
