@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { Clapperboard, FolderKanban, UserRound, WandSparkles, Video, ListChecks, Megaphone, Scissors, ScanFace } from "lucide-react";
-import { Youtube } from "./youtube-icon";
+import { CalendarClock, Clapperboard, FolderKanban, UserRound, WandSparkles, Video, ListChecks, Megaphone, Scissors, ScanFace } from "lucide-react";
 
 import { BrandMark } from "./brand-mark";
 
@@ -12,7 +11,7 @@ const items = [
   { href: "/studio/ugc", label: "UGC & product ads", icon: Megaphone },
   { href: "/studio/shorts", label: "Podcast Shorts", icon: Scissors },
   { href: "/studio/presenter", label: "Digital-clone presenter", icon: ScanFace },
-  { href: "/studio/social", label: "YouTube publishing", icon: Youtube },
+  { href: "/studio/social", label: "Publish & schedule", icon: CalendarClock },
   { href: "/features", label: "Explore features", icon: WandSparkles },
 ];
 

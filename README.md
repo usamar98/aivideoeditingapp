@@ -57,6 +57,8 @@ Start from `.env.example`; it documents every required value. `MEDIA_FETCH_HOSTS
 
 ## YouTube publishing
 
+Facebook Page Reels are available in the separate Facebook tab at `/studio/social/facebook` once configured. See [Facebook setup](docs/FACEBOOK_SETUP.md) for the Meta app, permissions, migration, worker and live-test checklist. It is not activated by adding Google/YouTube credentials.
+
 Studio → **Publish** opens `/studio/social` for channel connection, completed-video uploads, scheduling and cancellation. Apply `supabase/migrations/20260926191045_youtube_publishing.sql`, configure the separate YouTube OAuth client, and deploy the two publishing worker tasks before enabling it. Public publishing is approval-gated; existing Google sign-in is unchanged. See [YouTube setup and acceptance tests](docs/YOUTUBE_SETUP.md) for exact callback URLs, environment variables, Google reviews and operational limits. No real upload is performed by the automated tests.
 
 ## Architecture and trust boundaries

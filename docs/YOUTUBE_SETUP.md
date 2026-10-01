@@ -1,6 +1,6 @@
 # YouTube publishing setup
 
-The implementation is at `/studio/social` (Studio → **Publish**). It connects one YouTube channel per ETA account, uploads completed ETA exports, and supports private, unlisted, public and scheduled publication. Instagram, Facebook, TikTok and X are **not implemented** in this release.
+The implementation is at `/studio/social` (Studio → **Publish**). It connects one YouTube channel per ETA account, uploads completed ETA exports, and supports private, unlisted, public and scheduled publication. Facebook Pages have a separate setup in [FACEBOOK_SETUP.md](FACEBOOK_SETUP.md). Instagram, TikTok and X are not implemented.
 
 ## 1. Google Cloud
 

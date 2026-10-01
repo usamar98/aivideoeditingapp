@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { WorkspaceShell } from "@/components/studio/workspace-shell";
 import { YouTubeDashboard } from "@/components/studio/youtube-dashboard";
+import { SocialPlatformTabs } from "@/components/studio/social-platform-tabs";
 import { getViewer } from "@/lib/supabase/server";
 import { getSocialDashboard } from "@/lib/social/dashboard";
 import type { SocialDashboard } from "@/lib/social/types";
@@ -16,5 +17,5 @@ export default async function SocialPage({ searchParams }: { searchParams: Promi
   const params = await searchParams;
   let initial: SocialDashboard = { configured: false, publicPublishing: false, demo: viewer.fixture, error: null, connection: null, videos: [], posts: [] };
   if (!viewer.fixture) { try { initial = await getSocialDashboard(); } catch { initial.error = "YouTube storage is not ready. Apply the publishing migration and check your server configuration."; } }
-  return <WorkspaceShell title="Publish & schedule" active="YouTube publishing"><YouTubeDashboard initial={initial} notice={notices[params.youtube || ""] || null} /></WorkspaceShell>;
+  return <WorkspaceShell title="Publish & schedule" active="Publish & schedule"><SocialPlatformTabs active="youtube" /><YouTubeDashboard initial={initial} notice={notices[params.youtube || ""] || null} /></WorkspaceShell>;
 }
