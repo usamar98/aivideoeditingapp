@@ -6,6 +6,7 @@ import { withRequestDeadline } from "./request-deadline";
 import { UGC_AVATAR_MODEL } from "../src/lib/ugc/schema";
 import { SHORTS_TRANSCRIPTION_MODEL } from "../src/lib/shorts/schema";
 import { PRESENTER_MODEL } from "../src/lib/presenter/schema";
+import { AbortTaskRunError } from "@trigger.dev/sdk";
 
 // Verified against fal's OpenRouter catalog on 2026-09-24. Server-owned, never user supplied.
 export const CARTOON_PLANNER_MODEL = "google/gemini-3.8-flash";
@@ -51,12 +52,15 @@ export async function runFalStage(options: {
   if (cached) return JSON.parse(cached.toString()) as unknown;
   const saved = await store.load(`${name}-request.json`);
   let requestId: string | undefined;
+  let requestSaved = false;
+  let timedOut = false;
   try {
     if (saved) {
       const record = requestRecordSchema.parse(JSON.parse(saved.toString()));
       if (record.endpoint !== endpoint) throw new Error("Saved provider model does not match");
       if (model && record.model !== model) throw new Error("Saved planner model does not match");
       requestId = record.requestId;
+      requestSaved = true;
     } else {
       if (await store.load(`${name}-intent.json`)) throw new Error("Provider submission was uncertain. Contact support; it will not be submitted again automatically.");
       await store.save(`${name}-intent.json`, { endpoint, ...(model ? { model } : {}), submittedAt: new Date().toISOString() });
@@ -64,6 +68,7 @@ export async function runFalStage(options: {
       const submitted = await withRequestDeadline(signal, 60_000, (submitSignal) => client.queue.submit(endpoint, { input, startTimeout: 300, abortSignal: submitSignal }));
       requestId = submitted.request_id;
       await store.save(`${name}-request.json`, { endpoint, requestId, ...(model ? { model } : {}) });
+      requestSaved = true;
     }
     const pollingRequestId = requestId;
     for (let poll = 0; poll < 120; poll++) {
@@ -77,11 +82,14 @@ export async function runFalStage(options: {
       }
       await pause();
     }
+    timedOut = true;
     throw new Error("Provider generation timed out");
   } catch (error) {
-    if (requestId) await client.queue.cancel(endpoint, { requestId, abortSignal: AbortSignal.timeout(10_000) }).catch(() => undefined);
+    // A transient status/result/storage failure must not cancel the saved request
+    // that the next worker attempt will resume. Explicit stops still cancel it.
+    if (requestId && (!requestSaved || signal.aborted || error instanceof AbortTaskRunError || timedOut)) await client.queue.cancel(endpoint, { requestId, abortSignal: AbortSignal.timeout(10_000) }).catch(() => undefined);
     // Never leak provider response bodies, signed URLs or credentials to logs.
-    if (signal.aborted) throw error;
+    if (signal.aborted || error instanceof AbortTaskRunError) throw error;
     const http = z.object({ status: z.number().int().min(400).max(599) }).safeParse(error);
     throw new CartoonProviderError(name, endpoint, requestId, http.success ? http.data.status : undefined);
   }

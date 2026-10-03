@@ -1,5 +1,6 @@
 import { cartoonModels, cartoonResolution, isDirectCartoonModel, storyStyles as cartoonStyles, type CartoonBrief, type CartoonScene, type CartoonStory } from "./schema";
 import { filmLook, filmPlannerPrompt, filmVideoInput } from "../films/prompts";
+import { filmContinuityPrompt } from "../films/continuity";
 
 export function cartoonPlannerPrompt(brief: CartoonBrief) {
   if (brief.kind === "short-film") return filmPlannerPrompt(brief);
@@ -9,9 +10,9 @@ export function characterImagePrompt(character: CartoonStory["characters"][numbe
   if (brief.kind === "short-film") return `Production cast reference. ${filmLook(brief)}. One character, full-body three-quarter view, simple neutral background, fixed wardrobe, clear face. ${character.name}: ${character.appearance}. ${character.referenceSlot ? "The uploaded image is authoritative: preserve the exact identity, face, proportions and wardrobe. Do not replace this person." : "Original fictional character."} No text, panels or watermark.`;
   return `Create a production character reference portrait in ${cartoonStyles[brief.style]} style. One character, full body, front three-quarter view, neutral cream studio background, readable silhouette, hands visible. No text, no collage, no watermark. ${character.name}: ${character.appearance}. Personality: ${character.personality}. ${character.referenceSlot ? "The uploaded image defines this character: preserve face, species, proportions, distinctive colors and clothing while polishing it into a coherent animation character. Ignore conflicting written appearance details." : "Original character design."}`;
 }
-export function sceneImagePrompt(scene: CartoonScene, story: CartoonStory, brief: CartoonBrief) {
+export function sceneImagePrompt(scene: CartoonScene, story: CartoonStory, brief: CartoonBrief, index = story.scenes.indexOf(scene)) {
   const cast = scene.characterIds.map((id, i) => `Image ${i + 1} is ${story.characters.find((c) => c.id === id)!.name}`).join(". ");
-  if (brief.kind === "short-film") return `${filmLook(brief)}. Opening frame of one shot in the same film. ${cast}. Preserve the EXACT reference identities, clothing and proportions. Story context: ${story.synopsis}. Location and lighting: ${scene.setting}. Stage the BEGINNING of this action: ${scene.action}. Framing: ${scene.camera}. Compose for ${brief.aspectRatio}, no letterboxing. Keep important faces inside the safe area. No text, collage, subtitles or watermark.`;
+  if (brief.kind === "short-film") return `${filmLook(brief)}. Opening frame of one shot in the same film. ${cast}. Preserve the EXACT reference identities, clothing and proportions. Story context: ${story.synopsis}. ${filmContinuityPrompt(story, index)} Location and lighting: ${scene.setting}. Stage the BEGINNING of this action: ${scene.action}. Framing: ${scene.camera}. Compose for ${brief.aspectRatio}, no letterboxing. Keep important faces inside the safe area. No text, collage, subtitles or watermark.`;
   return `${cartoonStyles[brief.style]} animated film establishing frame. ${cast}. Preserve the exact character identities, clothing and proportions from the references. Setting: ${scene.setting}. Set up this action: ${scene.action}. Camera: ${scene.camera}. One cohesive cinematic composition; no panels, lettering, subtitles or watermark.`;
 }
 export function cartoonVideoInput(scene: CartoonScene, story: CartoonStory, brief: CartoonBrief, frameUrl: string, castUrls: string[], userId: string) {

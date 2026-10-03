@@ -7,6 +7,7 @@ vi.mock("@/lib/account", () => ({ requireAccount: mocks.account, publicError: (e
 import { startCartoonJob, saveCartoonStory } from "@/app/studio/cartoons/actions";
 import { cartoonDemo } from "@/lib/cartoons/demo";
 import { filmDemo } from "@/lib/films/demo";
+import { longFilmStory } from "./fixtures/long-film";
 const projectId = "10000000-0000-4000-8000-000000000001", jobId = "20000000-0000-4000-8000-000000000001";
 
 beforeEach(() => {
@@ -25,6 +26,16 @@ beforeEach(() => {
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 describe("cartoon server actions", () => {
+  it("locks the long-film bible and rejects a broken state chain before reserving credits", async () => {
+    const story = longFilmStory(), brief = { ...filmDemo.brief, duration: 180 };
+    mocks.project.mockResolvedValue({ data: { brief, storyboard: story } });
+    const edited = structuredClone(story); edited.filmBible!.ending = "A totally different ending replaces the plan.";
+    expect((await saveCartoonStory(projectId, edited)).error).toContain("world bible is locked");
+    expect(mocks.update).not.toHaveBeenCalled();
+    story.scenes[1].continuity!.stateIn = "A different state breaks the chain.";
+    expect((await startCartoonJob(projectId, "render")).error).toContain("preceding shot");
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
   it("reserves short films through the film-only rate card and dispatches the shared durable worker", async () => {
     mocks.project.mockResolvedValue({data:{brief:filmDemo.brief,storyboard:filmDemo.storyboard}});
     expect(await startCartoonJob(projectId,"render")).toEqual({ok:true});

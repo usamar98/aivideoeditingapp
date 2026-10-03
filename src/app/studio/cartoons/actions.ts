@@ -57,6 +57,7 @@ export async function saveCartoonStory(id: string, input: unknown) {
     validateCartoonStory(story, cartoonBriefSchema.parse(project.brief));
     const previous = cartoonStorySchema.parse(project.storyboard);
     if (JSON.stringify(story.characters) !== JSON.stringify(previous.characters)) throw new Error("The approved cast is locked for visual consistency. Start a new project to redesign characters.");
+    if (JSON.stringify(story.filmBible) !== JSON.stringify(previous.filmBible)) throw new Error("The approved story and world bible is locked. Start a new project to change its world or ending.");
     const saved = await admin.from("cartoon_projects").update({ storyboard: story, title: story.title, status: "ready", output_path: null, error_message: null }).eq("id", id).eq("user_id", user.id).in("status", ["ready", "complete", "failed"]).select("id").maybeSingle();
     if (saved.error || !saved.data) throw new Error("Wait for the current job to finish before editing.");
     revalidatePath(`/studio/cartoons/${id}`); revalidatePath(`/studio/films/${id}`); return { ok: true };

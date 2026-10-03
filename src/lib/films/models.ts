@@ -35,7 +35,15 @@ export const filmLookPrompts = {
 } as const;
 export const FILM_PLAN_CREDITS = 40;
 export const FILM_FRAME_CREDITS = 10;
+export const filmDurations = [24, 48, 60, 120, 180] as const;
+export type FilmDuration = typeof filmDurations[number];
+// Six and eight seconds are supported by every film adapter, including Veo/LTX.
+// Replace a remainder of four with two six-second shots, never pad a short clip.
+export function filmShotDurations(duration: number): number[] {
+  if (!(filmDurations as readonly number[]).includes(duration)) throw new Error("Choose a 24, 48, 60, 120 or 180 second film.");
+  const shortEnding = duration % 8 === 4;
+  return [...Array<number>(Math.floor(duration / 8) - (shortEnding ? 1 : 0)).fill(8), ...(shortEnding ? [6, 6] : [])];
+}
 export function filmRenderCredits(model: FilmModel, duration: number) {
-  if (![24, 48].includes(duration)) throw new Error("Choose a 24 or 48 second film.");
-  return duration * filmModels[model].creditsPerSecond + duration / 8 * FILM_FRAME_CREDITS;
+  return duration * filmModels[model].creditsPerSecond + filmShotDurations(duration).length * FILM_FRAME_CREDITS;
 }

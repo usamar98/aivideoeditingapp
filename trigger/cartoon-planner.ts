@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { FalClient } from "@fal-ai/client";
-import { cartoonStorySchema } from "../src/lib/cartoons/schema";
+import { cartoonStorySchema, cartoonSceneSchema, filmStorySchema } from "../src/lib/cartoons/schema";
 import { MEDIA_LIMITS } from "./media-io";
 import { CARTOON_PLANNER_ENDPOINT, CARTOON_PLANNER_MODEL, runFalStage } from "./cartoon-fal";
 
@@ -15,7 +15,8 @@ export class CartoonPlannerError extends Error {
   }
 }
 
-export function cartoonPlannerRequest(input: PlannerInput) {
+export function cartoonPlannerRequest(input: PlannerInput, film = false) {
+  const schema = film ? filmStorySchema : cartoonStorySchema.omit({ filmBible: true }).extend({ scenes: z.array(cartoonSceneSchema.omit({ continuity: true })).min(1).max(6) });
   return {
     model: CARTOON_PLANNER_MODEL, stream: false, max_tokens: 16_384,
     // Require schema-capable providers; never silently switch to a different model.
@@ -24,7 +25,7 @@ export function cartoonPlannerRequest(input: PlannerInput) {
       type: "image_url", image_url: { url: `data:${part.mime_type};base64,${part.data}` },
     }) }],
     response_format: { type: "json_schema", json_schema: {
-      name: "cartoon_story", strict: true, schema: z.toJSONSchema(cartoonStorySchema, { target: "draft-7" }),
+      name: film ? "film_story" : "cartoon_story", strict: true, schema: z.toJSONSchema(schema, { target: "draft-7" }),
     } },
   };
 }
@@ -86,10 +87,11 @@ function legacyPlannerOutputText(raw: unknown) {
 export async function runCartoonPlanner(options: {
   input: PlannerInput; client: FalClient; signal: AbortSignal; store: Store;
   checkpoint: () => Promise<void>; pause: () => Promise<unknown>;
+  film?: boolean; repair?: boolean;
 }) {
   const { input, client, signal, store, checkpoint, pause } = options;
   await checkpoint();
-  const cached = await store.load("planner-response.json");
+  const cached = options.repair ? null : await store.load("planner-response.json");
   if (cached) {
     let parsed: unknown;
     try { parsed = JSON.parse(cached.toString()); } catch { throw new CartoonPlannerError("invalid_response"); }
@@ -99,8 +101,8 @@ export async function runCartoonPlanner(options: {
   // provider is not permission to repeat an ambiguous request in the same job.
   if (await store.load("planner-intent.json")) throw new CartoonPlannerError("uncertain_submission");
   const raw = await runFalStage({
-    client, store, signal, checkpoint, pause, name: "planner-fal",
-    endpoint: CARTOON_PLANNER_ENDPOINT, model: CARTOON_PLANNER_MODEL, input: cartoonPlannerRequest(input),
+    client, store, signal, checkpoint, pause, name: options.repair ? "planner-continuity-repair" : "planner-fal",
+    endpoint: CARTOON_PLANNER_ENDPOINT, model: CARTOON_PLANNER_MODEL, input: cartoonPlannerRequest(input, options.film),
   });
   // runFalStage saves the complete response (including model/usage) before any
   // validation and resumes existing request IDs without another paid POST.

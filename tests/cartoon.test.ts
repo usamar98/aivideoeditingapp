@@ -120,7 +120,15 @@ describe("durable fal submission", () => {
   it("does not submit after cancellation; cancels an already submitted provider request", async () => {
     const { client, options } = harness(); options.checkpoint.mockRejectedValue(new Error("cancelled"));
     await expect(runFalStage(options)).rejects.toThrow(); expect(client.queue.submit).not.toHaveBeenCalled();
-    const running = harness(); running.client.queue.status.mockRejectedValue(new Error("secret provider response"));
+    const running = harness(); const controller = new AbortController(); running.options.signal = controller.signal;
+    running.client.queue.status.mockImplementation(async () => { controller.abort(); throw new Error("cancelled"); });
     await expect(runFalStage(running.options)).rejects.not.toThrow(/secret provider/); expect(running.client.queue.cancel).toHaveBeenCalledTimes(1);
+  });
+  it("keeps a paid request alive after transient status failures and resumes the same ID", async () => {
+    const running = harness(); running.client.queue.status.mockRejectedValueOnce(new Error("private provider details"));
+    await expect(runFalStage(running.options)).rejects.not.toThrow(/private provider/);
+    expect(running.client.queue.cancel).not.toHaveBeenCalled();
+    await expect(runFalStage(running.options)).resolves.toBeDefined();
+    expect(running.client.queue.submit).toHaveBeenCalledTimes(1);
   });
 });

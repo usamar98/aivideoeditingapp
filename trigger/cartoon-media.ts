@@ -1,4 +1,7 @@
 import { MEDIA_LIMITS, streamToFile } from "./media-io";
+// Scoped to assembled long films; individual downloads retain the 100 MB limit.
+// Fits the existing private-media bucket's 500 MB per-object limit.
+export const FILM_EXPORT_LIMIT = 400 * 1024 * 1024;
 
 export function isCartoonMediaUrl(raw: string) {
   try {
@@ -26,4 +29,8 @@ export function cartoonClipArgs(index: number, seconds: number, vertical: boolea
     "-map", "0:v:0", "-map", audio ? "0:a:0" : "1:a:0", "-vf", `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=24,tpad=stop_mode=clone:stop_duration=1`,
     "-af", "apad", "-t", String(seconds), "-c:v", "libx264", "-threads", "2", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
     "-c:a", "aac", "-ar", "48000", "-ac", "2", "-b:a", "160k", "-movflags", "+faststart", `clip-${index}.mp4`];
+}
+
+export function filmTailArgs(index: number, seconds: number) {
+  return ["-y", "-hide_banner", "-loglevel", "error", "-ss", String(seconds - 1 / 24), "-i", `clip-${index}.mp4`, "-frames:v", "1", "-update", "1", `tail-${index}.png`];
 }

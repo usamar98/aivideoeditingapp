@@ -34,13 +34,14 @@ function accepts(schema:Schema,value:unknown,definitions:Record<string,Schema>):
 
 describe("short film contracts",()=>{
   it.each(filmModelIds)("validates %s against fal's captured public input contract",model=>{
-    for (const audio of [true,false]) for (const aspectRatio of ["16:9","9:16"] as const) {
+    for (const duration of [6,8]) for (const audio of [true,false]) for (const aspectRatio of ["16:9","9:16"] as const) {
       const brief = cartoonBriefSchema.parse({...filmDemo.brief,model,resolution:filmModels[model].defaultResolution,audio,aspectRatio});
-      const request = filmVideoInput(filmDemo.storyboard!.scenes[0],filmDemo.storyboard!,brief,"https://fal.media/frame.png",["https://fal.media/cast.png"],"owner");
+      const scene = { ...filmDemo.storyboard!.scenes[0], duration };
+      const request = filmVideoInput(scene,filmDemo.storyboard!,brief,"https://fal.media/frame.png",["https://fal.media/cast.png"],"owner");
       const contract = snapshot.contracts[request.endpoint];
       expect(contract).toBeDefined();
       expect(accepts(contract.input,request.input,contract.schemas),JSON.stringify(request)).toBe(true);
-      expect(cartoonVideoInput(filmDemo.storyboard!.scenes[0],filmDemo.storyboard!,brief,"https://fal.media/frame.png",["https://fal.media/cast.png"],"owner")).toEqual(request);
+      expect(cartoonVideoInput(scene,filmDemo.storyboard!,brief,"https://fal.media/frame.png",["https://fal.media/cast.png"],"owner")).toEqual(request);
       expect(cartoonPlanCredits(brief)).toBe(40);
       expect(cartoonRenderCredits(brief)).toBe(filmRenderCredits(model,24));
       expect(cartoonRenderCredits({...brief,duration:48})).toBe(filmRenderCredits(model,24)*2);
@@ -72,7 +73,7 @@ describe("short film contracts",()=>{
   it("keeps maximal valid scene prompts within every provider's length bounds",()=>{
     const story=structuredClone(filmDemo.storyboard!);
     story.characters=[1,2,3].map(n=>({...story.characters[0],id:`c${n}`,name:"n".repeat(40),voice:"v".repeat(150)}));
-    const scene={...story.scenes[0],characterIds:["c1","c2","c3"],setting:"s".repeat(500),action:"a".repeat(700),camera:"c".repeat(200),sound:"s".repeat(200),dialogue:[{characterId:"c1",text:"a".repeat(180)},{characterId:"c2",text:"b".repeat(180)}]};
+    const scene={...story.scenes[0],continuity:{beat:"setup" as const,locationId:"l1",transition:"cut" as const,stateIn:"s".repeat(240),stateOut:"e".repeat(240),propIds:[]},characterIds:["c1","c2","c3"],setting:"s".repeat(500),action:"a".repeat(700),camera:"c".repeat(200),sound:"s".repeat(200),dialogue:[{characterId:"c1",text:"a".repeat(180)},{characterId:"c2",text:"b".repeat(180)}]};
     for(const model of filmModelIds) {
       const request=filmVideoInput(scene,story,{...filmDemo.brief,model},"https://fal.media/frame.png",Array(3).fill("https://fal.media/cast.png"),"owner");
       const contract=snapshot.contracts[request.endpoint];

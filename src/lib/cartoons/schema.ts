@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { filmModels, filmModelIds, isFilmModel, filmRenderCredits, filmLooks } from "../films/models";
+import { filmModels, filmModelIds, isFilmModel, filmRenderCredits, filmLooks, filmDurations, filmShotDurations } from "../films/models";
+import { filmBibleSchema, filmContinuitySchema, validateFilmContinuity } from "../films/continuity";
 
 export const cartoonStyles = { "3d": "Cinematic 3D", "2d": "Hand-drawn 2D", anime: "Anime", clay: "Clay animation" } as const;
 export const storyStyles = { ...cartoonStyles, ...filmLooks } as const;
@@ -26,7 +27,7 @@ export const cartoonBriefSchema = z.object({
   prompt: z.string().trim().min(20).max(2500),
   style: z.enum(["3d", "2d", "anime", "clay", "cinematic", "noir", "scifi", "fantasy"]),
   aspectRatio: z.enum(["16:9", "9:16"]),
-  duration: z.union([z.literal(15), z.literal(30), z.literal(60), z.literal(24), z.literal(48)]),
+  duration: z.union([z.literal(15), z.literal(30), z.literal(60), z.literal(24), z.literal(48), z.literal(120), z.literal(180)]),
   model: z.enum(["kling-o3", "seedance-2.5", "minimax-h3-turbo", "seedance-2.5-t2v", "kling-v3", ...filmModelIds]),
   resolution: z.enum(["480p", "720p", "768p", "1080p"]).optional(),
   audio: z.boolean().optional(),
@@ -34,7 +35,7 @@ export const cartoonBriefSchema = z.object({
   rightsConfirmed: z.literal(true),
 }).superRefine((brief, ctx) => {
   const film = brief.kind === "short-film";
-  if (film !== isFilmModel(brief.model) || !(film ? [24,48] : [15,30,60]).includes(brief.duration) || !(film ? ["cinematic","noir","scifi","fantasy","anime","3d"] : ["3d","2d","anime","clay"]).includes(brief.style)) ctx.addIssue({ code: "custom", message: "Choose settings for the selected studio." });
+  if (film !== isFilmModel(brief.model) || !(film ? [...filmDurations] as number[] : [15,30,60]).includes(brief.duration) || !(film ? ["cinematic","noir","scifi","fantasy","anime","3d"] : ["3d","2d","anime","clay"]).includes(brief.style)) ctx.addIssue({ code: "custom", message: "Choose settings for the selected studio." });
   const resolutions: readonly string[] = cartoonModels[brief.model].resolutions;
   if (!resolutions.includes(cartoonResolution(brief))) ctx.addIssue({ code: "custom", path: ["resolution"], message: "Choose a supported resolution for this model." });
   if (isDirectCartoonModel(brief.model) && brief.references.length) ctx.addIssue({ code: "custom", path: ["references"], message: "Direct-prompt models do not accept character images. Remove them or choose a character-reference model." });
@@ -51,11 +52,18 @@ export const cartoonSceneSchema = z.object({
   setting: z.string().min(5).max(500), action: z.string().min(5).max(700),
   camera: z.string().min(3).max(200), sound: z.string().max(200),
   dialogue: z.array(z.object({ characterId: z.string().regex(/^c[1-3]$/), text: z.string().min(1).max(180) })).max(2),
+  continuity: filmContinuitySchema.optional(),
 });
 // Keep structural schema JSON-serializable for the planner; enforce cross-field rules below.
 export const cartoonStorySchema = z.object({
   title: z.string().min(1).max(100), synopsis: z.string().min(10).max(500),
-  characters: z.array(cartoonCharacterSchema).min(1).max(3), scenes: z.array(cartoonSceneSchema).min(1).max(6),
+  characters: z.array(cartoonCharacterSchema).min(1).max(3), scenes: z.array(cartoonSceneSchema).min(1).max(23),
+  filmBible: filmBibleSchema.optional(),
+});
+// New film plans require continuity; the shared reader still accepts legacy plans.
+export const filmStorySchema = cartoonStorySchema.extend({
+  filmBible: filmBibleSchema,
+  scenes: z.array(cartoonSceneSchema.extend({ continuity: filmContinuitySchema, action: z.string().min(5).max(420) })).min(3).max(23),
 });
 export type CartoonBrief = z.infer<typeof cartoonBriefSchema>;
 export type CartoonStory = z.infer<typeof cartoonStorySchema>;
@@ -64,6 +72,11 @@ export function validateCartoonStory(story: CartoonStory, brief: CartoonBrief) {
   const ids = story.characters.map((character) => character.id);
   if (new Set(ids).size !== ids.length) throw new Error("Character IDs must be unique.");
   if (story.scenes.reduce((sum, scene) => sum + scene.duration, 0) !== brief.duration) throw new Error(`Scene durations must total ${brief.duration} seconds.`);
+  if (brief.kind === "short-film") {
+    const durations = filmShotDurations(brief.duration);
+    if (story.scenes.length !== durations.length || story.scenes.some((s, i) => s.duration !== durations[i])) throw new Error(`Film shots must follow this six/eight-second schedule: ${durations.join(", ")}.`);
+    validateFilmContinuity(story, brief.duration >= 60);
+  } else if (story.scenes.length > 6 || story.filmBible || story.scenes.some(s => s.continuity)) throw new Error("Choose a cartoon storyboard with up to six scenes.");
   for (const character of story.characters) {
     if (character.referenceSlot > brief.references.length) throw new Error("Character reference is missing.");
   }
@@ -71,7 +84,7 @@ export function validateCartoonStory(story: CartoonStory, brief: CartoonBrief) {
     if (story.characters.filter((character) => character.referenceSlot === slot).length !== 1) throw new Error("Each uploaded character must appear exactly once in the cast.");
   }
   for (const scene of story.scenes) {
-    if (brief.kind === "short-film" && scene.duration !== 8) throw new Error("Short films use eight-second shots. Keep each shot at 8 seconds.");
+    if (scene.continuity && scene.action.length > 420) throw new Error("Keep continuity-guided shot actions within 420 characters so the entire action reaches the video model.");
     if (brief.kind === "short-film" && brief.audio === false && scene.dialogue.length) throw new Error("Remove spoken lines for a silent film.");
     if (new Set(scene.characterIds).size !== scene.characterIds.length || scene.characterIds.some((id) => !ids.includes(id))) throw new Error("Scene contains an unknown or repeated character.");
     if (scene.dialogue.some((line) => !scene.characterIds.includes(line.characterId))) throw new Error("A speaker must be present in the scene.");
