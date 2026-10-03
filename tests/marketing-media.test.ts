@@ -27,7 +27,7 @@ import { UgcPreview } from "@/components/studio/ugc-preview";
 
 const slugs = ["faceless-video-generator", "ai-cartoon-series", "ai-ugc-product-ads"];
 const plannedCards = [
-  ["short-film", "Short Film"], ["real-estate", "Real Estate"], ["ad-remake", "Ad Remake"],
+  ["real-estate", "Real Estate"], ["ad-remake", "Ad Remake"],
   ["social-content", "Social Content"], ["micro-drama", "Micro Drama"], ["brand-film", "Brand Film"],
   ["explainer", "Explainer"], ["film-trailer", "Film Trailer"], ["promo-video", "Promo video"],
 ];
@@ -180,7 +180,7 @@ describe("AI marketing media", () => {
   it("labels every planned homepage card without exposing unavailable links or generation controls", async () => {
     const $ = load(renderToStaticMarkup(await Home()));
     const cards = $("#tools article[data-availability='coming-soon']");
-    expect(cards.length).toBe(9);
+    expect(cards.length).toBe(plannedCards.length);
     for (const [slug, title] of plannedCards) {
       const card = cards.filter(`[data-feature='${slug}']`);
       expect(card.find("h3").text()).toBe(title);
@@ -193,7 +193,7 @@ describe("AI marketing media", () => {
     mocks.published.mockResolvedValue([]);
     const $ = load(renderToStaticMarkup(await Home()));
     expect($("#tools a[href^='/features/']").length).toBe(0);
-    expect($("#tools article").length).toBe(9);
+    expect($("#tools article").length).toBe(plannedCards.length);
   });
 
   it("uses the studio's shared card design and order on the public feature directory", async () => {
@@ -234,7 +234,7 @@ describe("AI marketing media", () => {
     const $ = load(renderToStaticMarkup(await StudioLibraryPage()));
     expect($("main img").length).toBe(4);
     expect($("main img[loading='eager']").length).toBe(1);
-    for (const path of ["/studio/faceless", "/studio/cartoons", "/studio/ugc", "/studio/shorts"]) {
+    for (const path of ["/studio/faceless", "/studio/cartoons", "/studio/ugc", "/studio/shorts", "/studio/films"]) {
       expect($(`main a[href='${path}']`).length).toBe(1);
     }
     expect($.text()).toContain("Demo workspace");
@@ -248,9 +248,9 @@ describe("AI marketing media", () => {
     expect(grid.parent().attr("class")).toContain("@container");
     expect(grid.attr("class")).toContain("@xl:grid-cols-2");
     expect(grid.attr("class")).toContain("@4xl:grid-cols-3");
-    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone"]);
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "ai-short-film-generator", "podcast-to-shorts", "digital-clone"]);
     expect(grid.find('[class*="col-span"]').length).toBe(0);
-    expect(grid.find("h2").length).toBe(5);
+    expect(grid.find("h2").length).toBe(6);
     expect(grid.find("h3").length).toBe(0);
     expect(grid.find("a[href^='/features/']").length).toBe(0);
     for (const feature of ["digital-clone"]) {

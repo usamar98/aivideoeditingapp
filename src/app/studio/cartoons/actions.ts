@@ -43,7 +43,7 @@ export async function createCartoonProject(input: unknown) {
     const id = randomUUID();
     const saved = await admin.from("cartoon_projects").insert({ id, workspace_id: workspaceId, user_id: user.id, title: brief.prompt.slice(0, 80), brief });
     if (saved.error) throw new Error("Could not save your cartoon project.");
-    revalidatePath("/studio/cartoons"); return { id };
+    revalidatePath("/studio/cartoons"); revalidatePath("/studio/films"); return { id };
   } catch (error) { return { error: message(error) }; }
 }
 
@@ -59,7 +59,7 @@ export async function saveCartoonStory(id: string, input: unknown) {
     if (JSON.stringify(story.characters) !== JSON.stringify(previous.characters)) throw new Error("The approved cast is locked for visual consistency. Start a new project to redesign characters.");
     const saved = await admin.from("cartoon_projects").update({ storyboard: story, title: story.title, status: "ready", output_path: null, error_message: null }).eq("id", id).eq("user_id", user.id).in("status", ["ready", "complete", "failed"]).select("id").maybeSingle();
     if (saved.error || !saved.data) throw new Error("Wait for the current job to finish before editing.");
-    revalidatePath(`/studio/cartoons/${id}`); return { ok: true };
+    revalidatePath(`/studio/cartoons/${id}`); revalidatePath(`/studio/films/${id}`); return { ok: true };
   } catch (error) { return { error: message(error) }; }
 }
 
@@ -73,7 +73,7 @@ export async function startCartoonJob(id: string, kind: "plan" | "render") {
     const brief = cartoonBriefSchema.parse(project.brief);
     if (isSeedanceModel(brief.model) && process.env.CARTOON_SEEDANCE_ENABLED !== "true") throw new Error("Seedance access must be enabled by the owner first.");
     if (kind === "render") validateCartoonStory(cartoonStorySchema.parse(project.storyboard), brief);
-    const reserved = await admin.rpc("start_cartoon_job", { project_id: id, owner_id: user.id, job_id: randomUUID(), job_kind: kind });
+    const reserved = await admin.rpc(brief.kind === "short-film" ? "start_short_film_job" : "start_cartoon_job", { project_id: id, owner_id: user.id, job_id: randomUUID(), job_kind: kind });
     if (reserved.error || !reserved.data) throw new Error(reserved.error?.message || "Could not reserve credits.");
     const generationId = String(reserved.data);
     let stage: JobStage = "read_saved_job";
@@ -93,6 +93,6 @@ export async function startCartoonJob(id: string, kind: "plan" | "render") {
       const diagnostic = await recordDispatchFailure(admin, generationId, stage, error);
       return { error: `${diagnostic} Job saved; credits remain reserved. Reconnect this job without another charge, or cancel in Jobs.` };
     }
-    revalidatePath(`/studio/cartoons/${id}`); return { ok: true };
+    revalidatePath(`/studio/cartoons/${id}`); revalidatePath(`/studio/films/${id}`); return { ok: true };
   } catch (error) { return { error: message(error) }; }
 }

@@ -10,7 +10,7 @@ const liveCards = [
   { slug: "ai-ugc-product-ads", title: "AI UGC and product-ad studio", variant: "ugc", studioHref: "/studio/ugc" },
 ] as const;
 
-export const featuredToolSlugs: readonly string[] = [...liveCards.map((card) => card.slug), "podcast-to-shorts", "ai-digital-clone-presenter"];
+export const featuredToolSlugs: readonly string[] = [...liveCards.map((card) => card.slug), "podcast-to-shorts", "ai-digital-clone-presenter", "ai-short-film-generator"];
 
 export function FeatureGrid({ published, mode = "marketing", additionalFeatures = [], desktopColumns = 3, children }: {
   published: string[];
@@ -31,6 +31,7 @@ export function FeatureGrid({ published, mode = "marketing", additionalFeatures 
         <Heading className="p-6 text-xl font-semibold transition-colors group-hover:text-primary">{card.title}</Heading>
       </Link>
     </article>)}
+    {published.includes("ai-short-film-generator") && <article data-feature="ai-short-film-generator" className="overflow-hidden rounded-2xl border border-border bg-card"><Link href={studio ? "/studio/films" : "/features/ai-short-film-generator"} aria-label="AI Short Film" className="group flex h-full flex-col hover:bg-accent/40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"><div className="relative flex aspect-video items-center justify-center gap-3 bg-[#12202b] px-6 text-[#f4dfb8]" aria-label="Illustration of a three-shot film plan">{["SETUP","TURN","RESOLVE"].map((label,i)=><div key={label} className="flex h-24 flex-1 flex-col justify-end rounded-lg border border-white/20 bg-white/5 p-3"><Film className="mb-auto size-5 opacity-70"/><span className="text-[9px] tracking-widest">0{i+1} / {label}</span></div>)}<span className="absolute bottom-2 text-[9px] uppercase tracking-wider text-white/60">Workflow illustration · Not generated footage</span></div><Heading className="p-6 text-xl font-semibold group-hover:text-primary">AI Short Film</Heading></Link></article>}
     {published.includes("podcast-to-shorts") && <article data-feature="podcast-to-shorts" className="overflow-hidden rounded-2xl border border-border bg-card">
       <Link href={studio ? "/studio/shorts" : "/features/podcast-to-shorts"} aria-label="Podcast & video to Shorts" className="group flex h-full flex-col transition-colors hover:bg-accent/40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary">
         <div className={`relative flex aspect-video shrink-0 items-center overflow-hidden bg-[#10294d] text-white ${compact ? "gap-3 px-4" : "gap-5 px-6"}`} aria-label="Illustration of a podcast becoming captioned vertical clips">

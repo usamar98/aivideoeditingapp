@@ -15,5 +15,6 @@ export default async function CartoonProjectPage({ params }: { params: Promise<{
   if (!viewer || viewer.fixture) redirect(`/login?next=${encodeURIComponent(`/studio/cartoons/${id}`)}`);
   const db = await createClient(); if (!db) notFound();
   const project = await getCartoonProject(db, viewer.id, id); if (!project) notFound();
+  if (project.brief.kind === "short-film") redirect(`/studio/films/${id}`);
   return <WorkspaceShell title="Cartoon studio" active="Cartoon videos"><CartoonEditor key={id} initial={project} demo={false} /></WorkspaceShell>;
 }

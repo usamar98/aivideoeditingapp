@@ -12,6 +12,8 @@ import { CARTOON_PLAN_CREDITS, cartoonPlanCredits, cartoonModels, cartoonRenderC
 import { ugcDemo } from "@/lib/ugc/demo";
 import { UGC_PLAN_CREDITS, ugcRenderCredits } from "@/lib/ugc/schema";
 import { shortsDemo } from "@/lib/shorts/demo";
+import { filmDemo } from "@/lib/films/demo";
+import { filmModels, filmModelIds, filmRenderCredits } from "@/lib/films/models";
 
 const userA="10000000-0000-4000-8000-000000000001",userB="10000000-0000-4000-8000-000000000002",workspace="20000000-0000-4000-8000-000000000001",project="30000000-0000-4000-8000-000000000001",job="40000000-0000-4000-8000-000000000001";
 let db:PGlite;
@@ -39,6 +41,7 @@ beforeAll(async()=>{
   await db.exec(readFileSync("supabase/migrations/20260925165638_podcast_shorts.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20260926100154_cartoon_direct_models.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20260928174504_digital_clone_presenter.sql","utf8"));
+  await db.exec(readFileSync("supabase/migrations/20261003142755_short_film_studio.sql","utf8"));
   await db.exec("grant usage on schema storage to authenticated; grant select,insert,update,delete on storage.objects to authenticated;");
   await db.exec(`insert into auth.users values ('${userA}'),('${userB}'); insert into public.profiles(id) values ('${userA}'),('${userB}'); insert into public.workspaces(id,name,owner_id) values('${workspace}','Test studio','${userA}'); insert into public.workspace_members(workspace_id,user_id,role) values('${workspace}','${userA}','owner'); insert into public.credit_accounts(workspace_id,cached_balance) values('${workspace}',100); insert into public.faceless_projects(id,user_id,workspace_id,title,brief) values('${project}','${userA}','${workspace}','Test project','{}');`);
 },30000);
@@ -375,6 +378,75 @@ describe("cartoon database ownership, pricing and settlement", () => {
     await db.query("update public.generations set status='failed' where id=$1",[other]);
   });
 });
+describe("short film database contract", () => {
+  async function fixture(model = filmDemo.brief.model as keyof typeof filmModels, duration = 24, ready = true) {
+    await db.exec("reset role");
+    const owner = randomUUID(), workspaceId = randomUUID(), projectId = randomUUID();
+    await db.query("insert into auth.users(id) values($1)", [owner]);
+    await db.query("insert into public.profiles(id) values($1)", [owner]);
+    await asService();
+    await db.query("insert into public.workspaces(id,name,owner_id) values($1,'Film test',$2)", [workspaceId,owner]);
+    await db.query("insert into public.workspace_members(workspace_id,user_id,role) values($1,$2,'owner')", [workspaceId,owner]);
+    await db.query("insert into public.credit_accounts(workspace_id,cached_balance) values($1,10000)", [workspaceId]);
+    const brief = { ...filmDemo.brief, duration, model, resolution: filmModels[model].defaultResolution };
+    const story = structuredClone(filmDemo.storyboard!);
+    if (duration === 48) story.scenes.push(...structuredClone(story.scenes));
+    await db.query("insert into public.cartoon_projects(id,user_id,workspace_id,title,brief,storyboard,cast_paths,status) values($1,$2,$3,'Film',$4,$5,$6,$7)", [projectId,owner,workspaceId,JSON.stringify(brief),ready ? JSON.stringify(story) : null,ready ? JSON.stringify({ c1: `${workspaceId}/${owner}/cartoons/cast/c1.png` }) : '{}',ready ? 'ready' : 'draft']);
+    return { owner, workspaceId, projectId };
+  }
+  async function balance(id:string) { return Number((await db.query<{n:string}>("select cached_balance n from public.credit_accounts where workspace_id=$1",[id])).rows[0].n); }
+  it.each(filmModelIds)("matches the UI quote for %s at both durations and refunds failures once", async model => {
+    for (const duration of [24,48]) {
+      const f = await fixture(model,duration), id = randomUUID();
+      await db.query("select public.start_short_film_job($1,$2,$3,'render')",[f.projectId,f.owner,id]);
+      expect(await balance(f.workspaceId)).toBe(10000-filmRenderCredits(model,duration));
+      expect((await db.query<{id:string}>("select public.start_short_film_job($1,$2,gen_random_uuid(),'render') id",[f.projectId,f.owner])).rows[0].id).toBe(id);
+      await db.query("select public.finish_cartoon_job($1,false)",[id]);
+      await db.query("select public.finish_cartoon_job($1,false)",[id]);
+      expect(await balance(f.workspaceId)).toBe(10000);
+    }
+  });
+  it("isolates owners and keeps reservation RPCs service-only", async () => {
+    const f = await fixture(); await asUser(userB);
+    expect((await db.query("select id from public.cartoon_projects where id=$1",[f.projectId])).rows).toHaveLength(0);
+    await asUser(f.owner);
+    await expect(db.query("select public.start_short_film_job($1,$2,gen_random_uuid(),'render')",[f.projectId,f.owner])).rejects.toThrow(/permission denied/);
+    await asService();
+    await expect(db.query("select public.start_short_film_job($1,$2,gen_random_uuid(),'render')",[f.projectId,userB])).rejects.toThrow(/not found/);
+  });
+  it("charges planning once and cancels without accepting a late result", async () => {
+    const f = await fixture(undefined,24,false), id=randomUUID();
+    await db.query("select public.start_short_film_job($1,$2,$3,'plan')",[f.projectId,f.owner,id]);
+    expect(await balance(f.workspaceId)).toBe(9960);
+    await db.query("select public.request_generation_cancellation($1,$2)",[id,f.owner]);
+    await db.query("select public.finish_cartoon_job($1,true,$2,$3)",[id,JSON.stringify(filmDemo.storyboard),JSON.stringify({c1:`${f.workspaceId}/${f.owner}/cartoons/${id}/cast-c1.png`})]);
+    await db.query("select public.confirm_generation_cancellation($1)",[id]);
+    expect(await balance(f.workspaceId)).toBe(10000);
+    expect((await db.query("select status,storyboard from public.cartoon_projects where id=$1",[f.projectId])).rows[0]).toMatchObject({status:"draft",storyboard:null});
+  });
+  it("rejects foreign output paths and settles successful exports exactly once", async () => {
+    const f = await fixture(), id=randomUUID();
+    await db.query("select public.start_short_film_job($1,$2,$3,'render')",[f.projectId,f.owner,id]);
+    await expect(db.query("select public.finish_cartoon_job($1,true,null,null,'foreign/video.mp4')",[id])).rejects.toThrow(/Invalid video/);
+    const path = `${f.workspaceId}/${f.owner}/cartoons/${id}/video.mp4`;
+    await db.query("select public.finish_cartoon_job($1,true,null,null,$2)",[id,path]);
+    await db.query("select public.finish_cartoon_job($1,true,null,null,$2)",[id,path]);
+    expect(await balance(f.workspaceId)).toBe(10000-filmRenderCredits("film-kling-o3",24));
+  });
+  it("refuses malformed shots, missing consent, unknown models and insufficient balance without charges", async () => {
+    for (const mutation of ["storyboard=jsonb_set(storyboard,'{scenes,0,duration}','5')", "brief=jsonb_set(brief,'{rightsConfirmed}','false')", "brief=jsonb_set(brief,'{model}','\"unknown\"')"]) {
+      const f = await fixture();
+      await db.query(`update public.cartoon_projects set ${mutation} where id=$1`,[f.projectId]);
+      await expect(db.query("select public.start_short_film_job($1,$2,gen_random_uuid(),'render')",[f.projectId,f.owner])).rejects.toThrow();
+      expect(await balance(f.workspaceId)).toBe(10000);
+    }
+    const f = await fixture();
+    await db.query("update public.credit_accounts set cached_balance=1 where workspace_id=$1",[f.workspaceId]);
+    await expect(db.query("select public.start_short_film_job($1,$2,gen_random_uuid(),'render')",[f.projectId,f.owner])).rejects.toThrow(/Not enough credits/);
+    expect(await balance(f.workspaceId)).toBe(1);
+  });
+});
+
 describe("real Postgres migration and authorization",()=>{
   it("allows username updates but never is_admin escalation",async()=>{await asUser(userA);await db.query("update public.profiles set username='creator_a' where id=$1",[userA]);await expect(db.query("update public.profiles set is_admin=true where id=$1",[userA])).rejects.toThrow();});
   it("isolates private projects between accounts",async()=>{await asUser(userA);expect((await db.query("select id from public.faceless_projects")).rows).toHaveLength(1);await asUser(userB);expect((await db.query("select id from public.faceless_projects")).rows).toHaveLength(0);});

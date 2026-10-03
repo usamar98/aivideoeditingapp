@@ -1,6 +1,7 @@
 import { formatUsd, planTerms, pricingTiers } from "@/lib/billing/pricing";
 import { CARTOON_PLAN_CREDITS, cartoonModels, cartoonRenderCredits } from "@/lib/cartoons/schema";
 import { UGC_PLAN_CREDITS, ugcRenderCredits } from "@/lib/ugc/schema";
+import { filmEditorial } from "@/lib/films/editorial";
 import { shortsEditorial } from "@/lib/shorts/editorial";
 
 export type Answer = { question: string; answer: string };
@@ -21,7 +22,7 @@ const cancellationAnswer = "Open Jobs to view waiting, running, completed, faile
 export const homeFaqs: Answer[] = [
   {
     question: "What can I create with ETA?",
-    answer: "ETA has four video workflows: narrated faceless videos, character-led AI cartoons, AI UGC product ads, and podcast-to-Shorts editing. Shorts repurpose your recordings into selected highlights with framing controls and animated captions. All workflows have a review step before rendering and export private MP4 files.",
+    answer: "ETA includes cinematic short films, narrated faceless videos, character-led AI cartoons, AI UGC product ads, digital-clone presenters and podcast-to-Shorts editing. Shorts repurpose your recordings into selected highlights with framing controls and animated captions. All workflows have a review step before rendering and export private MP4 files.",
   },
   {
     question: "What is the difference between faceless videos and cartoons?",
@@ -51,6 +52,7 @@ export const homeFaqs: Answer[] = [
 ];
 
 export const featureEditorial: Record<string, FeatureEditorial> = {
+  "ai-short-film-generator": filmEditorial,
   "podcast-to-shorts": shortsEditorial,
   "ai-ugc-product-ads": {
     updatedAt: "2026-09-25",

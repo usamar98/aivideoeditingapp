@@ -12,7 +12,7 @@ export default async function CartoonsPage({ searchParams }: { searchParams: Pro
   let projects: { id: string; title: string; status: string }[] = [], initialError: string | null = null;
   if (!demo && viewer) {
     const db = await createClient();
-    const result = await db!.from("cartoon_projects").select("id,title,status").eq("user_id", viewer.id).order("created_at", { ascending: false }).limit(24);
+    const result = await db!.from("cartoon_projects").select("id,title,status").eq("user_id", viewer.id).is("brief->>kind", null).order("created_at", { ascending: false }).limit(24);
     projects = result.data || []; if (result.error) initialError = "Cartoon storage is not ready. Apply the cartoon-studio migration to enable saved projects.";
   }
   return <WorkspaceShell title="Cartoon studio" active="Cartoon videos"><CartoonCreator demo={demo} seedanceEnabled={process.env.CARTOON_SEEDANCE_ENABLED === "true"} projects={projects} initialError={initialError} /></WorkspaceShell>;

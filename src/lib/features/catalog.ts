@@ -161,6 +161,19 @@ export function getFeature(slug: string) {
 }
 
 featureCatalog.push(featureDefinitionSchema.parse({
+  slug: "ai-short-film-generator", name: "AI short film generator",
+  description: "Turn an idea into a cinematic short film. Review your cast and shot plan, direct the action and dialogue, and render a private MP4 with image-guided models on fal.",
+  audience: ["Independent filmmakers", "Storytellers", "Creators", "Creative teams"],
+  searchIntent: "Create an AI short film from a story with consistent characters and cinematic shots",
+  benefits: ["Shape a complete story before paying for the final render", "Reuse approved cast references throughout your film", "Choose a simple production preset or explore 16 fal video models"],
+  capabilities: ["24- or 48-second films in landscape or vertical format, with three or six eight-second shots", "Six visual directions, including cinematic realism, noir, science fiction, fantasy, anime and 3D", "Original cast design or up to three authorized character-image uploads", "Editable written storyboard: shot order, action, camera, setting and short English dialogue", "Image-guided generation across Kling, MiniMax, Seedance, Veo, Grok, Wan, Happy Horse, LTX, PixVerse and Gemini Omni", "Private MP4 export, visible credit estimates, saved projects, background progress and cancellation"],
+  limitations: ["AI character identity, exact speech, voices and motion can vary. There is no guaranteed best model or perfect continuity.", "Written storyboard and cast portraits are reviewed before rendering; scene opening frames are generated during the paid render stage. No full timeline editor or per-shot regeneration in this release.", "Native model sound is not a separate editable soundtrack. No voice cloning, automatic captions or licensed music library.", "720p, 768p or 1080p exports depend on the model. Normalized export size does not guarantee native source resolution.", "Live generation requires the short-film credit migration, updated background worker, fal access and account credits. Models may have provider-specific availability restrictions."],
+  exampleMedia: [], relatedFeatures: ["ai-cartoon-series", "faceless-video-generator", "ai-ugc-product-ads"],
+  status: "published", developmentOnly: false, publishedAt: "2026-10-03T00:00:00.000Z", modifiedAt: "2026-10-03T00:00:00.000Z",
+  seo: { title: "AI Short Film Generator — Story to Cinematic Video", description: "Create AI short films with a reviewed cast, editable shots and 16 fal video models. Choose your look, direct the story and download a private MP4 with ETA.", heading: "Turn your story into an AI short film", canonicalPath: "/features/ai-short-film-generator", editorialOverride: true },
+}));
+
+featureCatalog.push(featureDefinitionSchema.parse({
   slug: "ai-digital-clone-presenter", name: "AI digital-clone presenter",
   description: "Create talking presenter videos from an authorized portrait and a short script. Save your presenter once, reuse it with new scripts, and export private videos with a studio voice and captions.",
   audience: ["Creators", "Educators", "Small businesses"], searchIntent: "Create an AI talking avatar video from my photo and script",

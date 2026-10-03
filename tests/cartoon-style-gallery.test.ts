@@ -5,12 +5,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { load } from "cheerio";
 import { describe, expect, it, vi } from "vitest";
 import { CartoonStyleGallery } from "@/components/studio/cartoon-style-gallery";
-import { cartoonStyles, cartoonBriefSchema, type CartoonBrief } from "@/lib/cartoons/schema";
+import { cartoonStyles, cartoonBriefSchema } from "@/lib/cartoons/schema";
 import { cartoonDemo } from "@/lib/cartoons/demo";
 import { cartoonPlannerPrompt, cartoonVideoInput } from "@/lib/cartoons/prompts";
 
 describe("cartoon style examples", () => {
-  it.each(Object.keys(cartoonStyles) as CartoonBrief["style"][])("shows only %s as selected and keeps all existing styles available", (value) => {
+  it.each(Object.keys(cartoonStyles) as (keyof typeof cartoonStyles)[])("shows only %s as selected and keeps all existing styles available", (value) => {
     const onChange = vi.fn();
     const $ = load(renderToStaticMarkup(createElement(CartoonStyleGallery, { value, onChange })));
     expect($("button").length).toBe(4);
@@ -35,7 +35,7 @@ describe("cartoon style examples", () => {
     expect(image.length).toBeGreaterThan(10_000);
   });
 
-  it.each(Object.keys(cartoonStyles) as CartoonBrief["style"][])("carries the %s selection through planning and rendering", (style) => {
+  it.each(Object.keys(cartoonStyles) as (keyof typeof cartoonStyles)[])("carries the %s selection through planning and rendering", (style) => {
     const brief = cartoonBriefSchema.parse({ ...cartoonDemo.brief, style });
     const story = cartoonDemo.storyboard!;
     expect(cartoonPlannerPrompt(brief)).toContain(cartoonStyles[style]);

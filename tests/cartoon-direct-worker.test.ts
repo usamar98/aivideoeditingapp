@@ -1,6 +1,8 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { cartoonDemo } from "@/lib/cartoons/demo";
 import type { CartoonModel } from "@/lib/cartoons/schema";
+import { filmDemo } from "@/lib/films/demo";
+import { filmModelIds, filmModels } from "@/lib/films/models";
 
 const mocks = vi.hoisted(() => ({
   job: vi.fn(), upload: vi.fn(), load: vi.fn(), provider: vi.fn(),
@@ -76,5 +78,28 @@ describe("direct cartoon worker", () => {
     await expect(run("render", "kling-v3", false)).resolves.toBeDefined();
     expect(mocks.exec.mock.calls.some(([, args]) => args.includes("anullsrc=r=48000:cl=stereo"))).toBe(true);
     await expect(run("render", "kling-v3", true)).rejects.toThrow("missing audio");
+  });
+});
+
+describe("short film worker", () => {
+  it.each(filmModelIds)("renders %s with three reference-guided shots and one final export", async (model) => {
+    const generationId = "10000000-0000-4000-8000-000000000001";
+    const audio = model !== "film-minimax-h3-turbo";
+    const story = structuredClone(filmDemo.storyboard!);
+    if (!audio) story.scenes.forEach(scene => { scene.dialogue = []; });
+    mocks.job.mockResolvedValue({ data: { operation: "cartoon-render", workspace_id: "workspace", requested_by: "owner",
+      settings: { projectId: generationId, kind: "render", brief: { ...filmDemo.brief, model, resolution: filmModels[model].defaultResolution, audio }, storyboard: story, castPaths: { c1: "workspace/owner/cartoons/previous/cast-c1.png" } } } });
+    mocks.signed.mockResolvedValue({ data: { signedUrl: "https://test.supabase.co/private/image.png" }, error: null });
+    mocks.provider.mockImplementation(async ({ name }) => name.startsWith("frame-") ? { images: [{ url: "https://fal.media/frame.png" }] } : { video: { url: "https://fal.media/clip.mp4" } });
+    mocks.exec.mockResolvedValue({ stdout: JSON.stringify({ streams: [{ codec_type: "video" }, { codec_type: "audio" }], format: { duration: "8" } }) });
+    const task = cartoonPipeline as unknown as { run: (payload: { generationId: string }, context: unknown) => Promise<unknown> };
+    await expect(task.run({ generationId }, { signal: new AbortController().signal, ctx: { run: { id: "film_test" }, attempt: { number: 1 } } })).resolves.toMatchObject({ outputPath: `workspace/owner/cartoons/${generationId}/video.mp4` });
+    expect(mocks.provider).toHaveBeenCalledTimes(6);
+    expect(mocks.image).toHaveBeenCalledTimes(3);
+    expect(mocks.clip).toHaveBeenCalledTimes(3);
+    const videoCalls = mocks.provider.mock.calls.filter(([request]) => request.name.startsWith("video-"));
+    expect(videoCalls.every(([request]) => request.endpoint === filmModels[model].endpoint)).toBe(true);
+    expect(mocks.exec.mock.calls.filter(([, args]) => args.includes("concat"))).toHaveLength(1);
+    if (!audio) expect(mocks.exec.mock.calls.some(([, args]) => args.includes("anullsrc=r=48000:cl=stereo"))).toBe(true);
   });
 });

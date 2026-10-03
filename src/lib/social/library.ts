@@ -17,12 +17,12 @@ export async function resolveVideo(db: SupabaseClient, userId: string, source: V
 export async function listVideos(db: SupabaseClient, userId: string): Promise<LibraryVideo[]> {
   const groups = await Promise.all((Object.keys(tables) as VideoSource["kind"][]).map(async (kind) => {
     const multi = kind === "ugc" || kind === "shorts";
-    const { data, error } = await db.from(tables[kind]).select(`id,title,workspace_id,status,${multi ? "outputs" : "output_path"}`).eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
+    const { data, error } = await db.from(tables[kind]).select(`id,title,workspace_id,status,${multi ? "outputs" : kind === "cartoon" ? "output_path,brief" : "output_path"}`).eq("user_id", userId).order("created_at", { ascending: false }).limit(50);
     if (error) throw new Error("Completed videos could not be loaded.");
     const videos: LibraryVideo[] = [];
     for (const item of data || []) {
-      const p = item as unknown as { id: string; title: string; status: string; workspace_id: string; output_path?: string; outputs?: Record<string, { videoPath?: string; title?: string; angle?: string }> };
-      const href = `/studio/${kind === "cartoon" ? "cartoons" : kind}/${p.id}`;
+      const p = item as unknown as { id: string; title: string; brief?: { kind?: string }; status: string; workspace_id: string; output_path?: string; outputs?: Record<string, { videoPath?: string; title?: string; angle?: string }> };
+      const href = `/studio/${kind === "cartoon" ? (p.brief?.kind === "short-film" ? "films" : "cartoons") : kind}/${p.id}`;
       if (!multi && p.status === "complete" && ownedOutputPath(p.output_path, p.workspace_id, userId)) videos.push({ kind, projectId: p.id, outputKey: "", title: p.title, href });
       if (multi) for (const [key, output] of Object.entries(p.outputs || {})) {
         if (/^[\w-]{1,80}$/.test(key) && ownedOutputPath(output.videoPath, p.workspace_id, userId)) videos.push({ kind, projectId: p.id, outputKey: key, title: `${p.title} · ${output.title || output.angle || key}`, href });

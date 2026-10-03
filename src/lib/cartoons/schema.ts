@@ -1,7 +1,10 @@
 import { z } from "zod";
+import { filmModels, filmModelIds, isFilmModel, filmRenderCredits, filmLooks } from "../films/models";
 
 export const cartoonStyles = { "3d": "Cinematic 3D", "2d": "Hand-drawn 2D", anime: "Anime", clay: "Clay animation" } as const;
+export const storyStyles = { ...cartoonStyles, ...filmLooks } as const;
 export const cartoonModels = {
+  ...filmModels,
   "kling-o3": { name: "Kling O3 Pro · character reference", endpoint: "fal-ai/kling-video/o3/pro/reference-to-video", inputMode: "reference", creditsPerSecond: 8, resolutions: ["720p"], defaultResolution: "720p", description: "Character-guided animation · native dialogue" },
   "seedance-2.5": { name: "Seedance 2.5 · character reference", endpoint: "bytedance/seedance-2.5/reference-to-video", inputMode: "reference", creditsPerSecond: 24, resolutions: ["720p"], defaultResolution: "720p", description: "Premium reference-guided animation · native audio" },
   "minimax-h3-turbo": { name: "MiniMax H3 Max Turbo · direct prompt", endpoint: "minimax/h3-max-turbo/text-to-video", inputMode: "text", creditsPerSecond: 3, resolutions: ["480p", "768p", "1080p"], defaultResolution: "768p", description: "Direct text-to-video · no character-image step · native sound" },
@@ -19,20 +22,23 @@ export function cartoonPlanCredits(brief: { model: CartoonModel }) { return isDi
 export const CARTOON_PLAN_CREDITS = 40;
 export const CHARACTER_IMAGE_MODEL = "openai/gpt-image-2.5/sunburst";
 export const cartoonBriefSchema = z.object({
+  kind: z.literal("short-film").optional(),
   prompt: z.string().trim().min(20).max(2500),
-  style: z.enum(["3d", "2d", "anime", "clay"]),
+  style: z.enum(["3d", "2d", "anime", "clay", "cinematic", "noir", "scifi", "fantasy"]),
   aspectRatio: z.enum(["16:9", "9:16"]),
-  duration: z.union([z.literal(15), z.literal(30), z.literal(60)]),
-  model: z.enum(["kling-o3", "seedance-2.5", "minimax-h3-turbo", "seedance-2.5-t2v", "kling-v3"]),
+  duration: z.union([z.literal(15), z.literal(30), z.literal(60), z.literal(24), z.literal(48)]),
+  model: z.enum(["kling-o3", "seedance-2.5", "minimax-h3-turbo", "seedance-2.5-t2v", "kling-v3", ...filmModelIds]),
   resolution: z.enum(["480p", "720p", "768p", "1080p"]).optional(),
   audio: z.boolean().optional(),
   references: z.array(z.object({ assetId: z.string().uuid(), name: z.string().trim().min(1).max(40) })).max(3),
   rightsConfirmed: z.literal(true),
 }).superRefine((brief, ctx) => {
+  const film = brief.kind === "short-film";
+  if (film !== isFilmModel(brief.model) || !(film ? [24,48] : [15,30,60]).includes(brief.duration) || !(film ? ["cinematic","noir","scifi","fantasy","anime","3d"] : ["3d","2d","anime","clay"]).includes(brief.style)) ctx.addIssue({ code: "custom", message: "Choose settings for the selected studio." });
   const resolutions: readonly string[] = cartoonModels[brief.model].resolutions;
   if (!resolutions.includes(cartoonResolution(brief))) ctx.addIssue({ code: "custom", path: ["resolution"], message: "Choose a supported resolution for this model." });
   if (isDirectCartoonModel(brief.model) && brief.references.length) ctx.addIssue({ code: "custom", path: ["references"], message: "Direct-prompt models do not accept character images. Remove them or choose a character-reference model." });
-  if (brief.audio === false && brief.model !== "kling-v3") ctx.addIssue({ code: "custom", path: ["audio"], message: "This model uses generated audio." });
+  if (brief.audio === false && brief.model !== "kling-v3" && !film) ctx.addIssue({ code: "custom", path: ["audio"], message: "This model uses generated audio." });
 });
 export const cartoonCharacterSchema = z.object({
   id: z.string().regex(/^c[1-3]$/), name: z.string().min(1).max(40),
@@ -65,6 +71,8 @@ export function validateCartoonStory(story: CartoonStory, brief: CartoonBrief) {
     if (story.characters.filter((character) => character.referenceSlot === slot).length !== 1) throw new Error("Each uploaded character must appear exactly once in the cast.");
   }
   for (const scene of story.scenes) {
+    if (brief.kind === "short-film" && scene.duration !== 8) throw new Error("Short films use eight-second shots. Keep each shot at 8 seconds.");
+    if (brief.kind === "short-film" && brief.audio === false && scene.dialogue.length) throw new Error("Remove spoken lines for a silent film.");
     if (new Set(scene.characterIds).size !== scene.characterIds.length || scene.characterIds.some((id) => !ids.includes(id))) throw new Error("Scene contains an unknown or repeated character.");
     if (scene.dialogue.some((line) => !scene.characterIds.includes(line.characterId))) throw new Error("A speaker must be present in the scene.");
     const words = scene.dialogue.reduce((sum, line) => sum + line.text.trim().split(/\s+/).length, 0);
@@ -76,6 +84,7 @@ export function cartoonRenderCredits(brief: Pick<CartoonBrief, "model" | "durati
   const resolution = cartoonResolution(brief);
   const allowed: readonly string[] = cartoonModels[brief.model].resolutions;
   if (!allowed.includes(resolution)) throw new Error("Unsupported resolution for this model.");
+  if (isFilmModel(brief.model)) return filmRenderCredits(brief.model, brief.duration);
   const rates: Partial<Record<CartoonModel, Partial<Record<CartoonResolution, number>>>> = {
     "minimax-h3-turbo": { "480p": 2, "768p": 3, "1080p": 6 },
     "seedance-2.5-t2v": { "480p": 15, "720p": 31, "1080p": 76 },

@@ -6,6 +6,7 @@ vi.mock("@trigger.dev/sdk", () => ({ tasks: { trigger: mocks.trigger } }));
 vi.mock("@/lib/account", () => ({ requireAccount: mocks.account, publicError: (error: Error) => error.message }));
 import { startCartoonJob, saveCartoonStory } from "@/app/studio/cartoons/actions";
 import { cartoonDemo } from "@/lib/cartoons/demo";
+import { filmDemo } from "@/lib/films/demo";
 const projectId = "10000000-0000-4000-8000-000000000001", jobId = "20000000-0000-4000-8000-000000000001";
 
 beforeEach(() => {
@@ -24,6 +25,13 @@ beforeEach(() => {
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 describe("cartoon server actions", () => {
+  it("reserves short films through the film-only rate card and dispatches the shared durable worker", async () => {
+    mocks.project.mockResolvedValue({data:{brief:filmDemo.brief,storyboard:filmDemo.storyboard}});
+    expect(await startCartoonJob(projectId,"render")).toEqual({ok:true});
+    expect(mocks.rpc).toHaveBeenCalledWith("start_short_film_job",expect.objectContaining({owner_id:"owner",project_id:projectId}));
+    expect(mocks.trigger).toHaveBeenCalledWith("cartoon-pipeline",{generationId:jobId},expect.objectContaining({idempotencyKey:jobId}),{retry:{maxAttempts:1}});
+    expect(mocks.revalidate).toHaveBeenCalledWith(`/studio/films/${projectId}`);
+  });
   it("authenticates inside every mutation", async () => {
     mocks.account.mockRejectedValue(new Error("Please sign in"));
     expect((await startCartoonJob(projectId, "render")).error).toContain("sign in");

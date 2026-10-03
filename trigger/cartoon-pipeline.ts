@@ -140,7 +140,7 @@ export const cartoonPipeline = schemaTask({
       const story = cartoonStorySchema.parse(settings.storyboard);
       validateCartoonStory(story, brief);
       for (const [index, scene] of story.scenes.entries()) {
-        await phase(`Animating scene ${index + 1} of ${story.scenes.length}`);
+        await phase(`${brief.kind === "short-film" ? "Filming shot" : "Animating scene"} ${index + 1} of ${story.scenes.length}`);
         const clip = path.join(work, `clip-${index}.mp4`);
         if (await artifacts.loadFile(`clip-${index}.mp4`, clip, MEDIA_LIMITS.video)) continue;
         const refs = direct ? [] : await Promise.all(scene.characterIds.map((id) => signed(settings.castPaths[id])));
@@ -160,7 +160,7 @@ export const cartoonPipeline = schemaTask({
         await exec(process.env.FFMPEG_PATH || "ffmpeg", cartoonClipArgs(index, scene.duration, brief.aspectRatio === "9:16", cartoonResolution(brief), brief.audio !== false), { cwd: work, signal, timeout: 180_000, maxBuffer: 256 * 1024 });
         await artifacts.saveFile(`clip-${index}.mp4`, clip, "video/mp4", MEDIA_LIMITS.video);
       }
-      await phase("Assembling your cartoon with dialogue");
+      await phase(brief.kind === "short-film" ? "Assembling your short film" : "Assembling your cartoon with dialogue");
       await writeFile(path.join(work, "concat.txt"), story.scenes.map((_, i) => `file 'clip-${i}.mp4'`).join("\n"));
       await exec(process.env.FFMPEG_PATH || "ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", "concat.txt", "-map", "0:v:0", "-map", "0:a:0", "-c", "copy", "-movflags", "+faststart", "video.mp4"], { cwd: work, signal, timeout: 120_000, maxBuffer: 256 * 1024 });
       await artifacts.saveFile("video.mp4", path.join(work, "video.mp4"), "video/mp4", MEDIA_LIMITS.video);
