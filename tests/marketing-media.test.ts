@@ -27,7 +27,7 @@ import { UgcPreview } from "@/components/studio/ugc-preview";
 
 const slugs = ["faceless-video-generator", "ai-cartoon-series", "ai-ugc-product-ads"];
 const plannedCards = [
-  ["real-estate", "Real Estate"], ["ad-remake", "Ad Remake"],
+  ["ad-remake", "Ad Remake"],
   ["social-content", "Social Content"], ["micro-drama", "Micro Drama"], ["brand-film", "Brand Film"],
   ["explainer", "Explainer"], ["film-trailer", "Film Trailer"], ["promo-video", "Promo video"],
 ];
@@ -248,9 +248,9 @@ describe("AI marketing media", () => {
     expect(grid.parent().attr("class")).toContain("@container");
     expect(grid.attr("class")).toContain("@xl:grid-cols-2");
     expect(grid.attr("class")).toContain("@4xl:grid-cols-3");
-    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "ai-short-film-generator", "podcast-to-shorts", "digital-clone"]);
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual(["ai-real-estate-video-generator", ...slugs, "ai-short-film-generator", "podcast-to-shorts", "digital-clone"]);
     expect(grid.find('[class*="col-span"]').length).toBe(0);
-    expect(grid.find("h2").length).toBe(6);
+    expect(grid.find("h2").length).toBe(7);
     expect(grid.find("h3").length).toBe(0);
     expect(grid.find("a[href^='/features/']").length).toBe(0);
     for (const feature of ["digital-clone"]) {

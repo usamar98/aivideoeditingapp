@@ -43,7 +43,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
       "@type": "VideoObject", name: video.title, description: video.description, contentUrl: absoluteUrl(video.url), thumbnailUrl: absoluteUrl(video.thumbnailUrl!), uploadDate: video.publishedAt, duration: video.durationIso, transcript: video.transcript,
     })),
   ] };
-  const studioPath = slug === "ai-short-film-generator" ? "/studio/films" : slug === "ai-digital-clone-presenter" ? "/studio/presenter" : slug === "podcast-to-shorts" ? "/studio/shorts" : slug === "ai-ugc-product-ads" ? "/studio/ugc" : slug === "faceless-video-generator" ? "/studio/faceless" : slug === "ai-cartoon-series" ? "/studio/cartoons" : "/studio";
+  const studioPath = slug === "ai-real-estate-video-generator" ? "/studio/real-estate" : slug === "ai-short-film-generator" ? "/studio/films" : slug === "ai-digital-clone-presenter" ? "/studio/presenter" : slug === "podcast-to-shorts" ? "/studio/shorts" : slug === "ai-ugc-product-ads" ? "/studio/ugc" : slug === "faceless-video-generator" ? "/studio/faceless" : slug === "ai-cartoon-series" ? "/studio/cartoons" : "/studio";
 
   return <>
     <SiteHeader />

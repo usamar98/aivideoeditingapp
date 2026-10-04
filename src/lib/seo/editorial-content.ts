@@ -2,6 +2,7 @@ import { formatUsd, planTerms, pricingTiers } from "@/lib/billing/pricing";
 import { CARTOON_PLAN_CREDITS, cartoonModels, cartoonRenderCredits } from "@/lib/cartoons/schema";
 import { UGC_PLAN_CREDITS, ugcRenderCredits } from "@/lib/ugc/schema";
 import { filmEditorial } from "@/lib/films/editorial";
+import { estateEditorial } from "@/lib/real-estate/editorial";
 import { shortsEditorial } from "@/lib/shorts/editorial";
 
 export type Answer = { question: string; answer: string };
@@ -53,6 +54,7 @@ export const homeFaqs: Answer[] = [
 
 export const featureEditorial: Record<string, FeatureEditorial> = {
   "ai-short-film-generator": filmEditorial,
+  "ai-real-estate-video-generator": estateEditorial,
   "podcast-to-shorts": shortsEditorial,
   "ai-ugc-product-ads": {
     updatedAt: "2026-09-25",

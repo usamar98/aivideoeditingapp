@@ -1,7 +1,6 @@
-import { BookOpen, Film, House, Megaphone, Repeat2, Smartphone, Sparkles, Theater } from "lucide-react";
+import { BookOpen, Film, Megaphone, Repeat2, Smartphone, Sparkles, Theater } from "lucide-react";
 
 const plannedFeatures = [
-  { slug: "real-estate", title: "Real Estate", icon: House, background: "from-[#d8e5dc] to-[#8da899]", accent: "#285748" },
   { slug: "ad-remake", title: "Ad Remake", icon: Repeat2, background: "from-[#ead5c5] to-[#c89987]", accent: "#784736" },
   { slug: "social-content", title: "Social Content", icon: Smartphone, background: "from-[#dedcf4] to-[#b2b1e1]", accent: "#544b99" },
   { slug: "micro-drama", title: "Micro Drama", icon: Theater, background: "from-[#47364e] to-[#a06c8b]", accent: "#f8d7eb" },

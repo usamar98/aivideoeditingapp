@@ -53,6 +53,17 @@ export type FeatureDefinition = z.infer<typeof featureDefinitionSchema>;
 
 export const featureCatalog: FeatureDefinition[] = [
   featureDefinitionSchema.parse({
+    slug: "ai-real-estate-video-generator", name: "Real estate video generator",
+    description: "Turn real listing photos into a branded property tour. Arrange rooms, choose faithful photo motion or eight AI video models, add optional narration, and export a private MP4.",
+    audience: ["Real estate agents", "Property photographers", "Agencies"], searchIntent: "Create real estate listing videos from property photos",
+    benefits: ["Build a room-by-room tour from real property photos", "Review facts and credit cost before rendering", "Finish with your agency branding and contact card"],
+    capabilities: ["Two to twelve private photo uploads with room labels and reorder controls", "Faithful photo motion plus Kling 3.0, Seedance 2.5, Veo 3.1, Wan 3.0 and LTX 2.3 variants", "Six or eight seconds per photo plus a four-second contact card: 16–100 seconds total", "Optional English ElevenLabs v3 narration and room-timed SRT downloads", "Portrait or landscape 1080p MP4 canvas with aspect-preserving padding", "Saved projects, durable room checkpoints, progress and cancellation"],
+    limitations: ["AI motion can alter architecture or objects. Compare every generated room with the originals; AI exports carry a visible disclosure.", "No virtual staging, music, MLS import, automatic posting or continuous 3D walkthrough. SRT captions are not burned in.", "Export resolution is not a guarantee of native model detail; Seedance uses a 720p source configuration.", "Requires the real-estate database migration, deployed worker and credits. fal access is needed for AI motion or narration; silent faithful mode does not call fal."],
+    exampleMedia: [], relatedFeatures: ["ai-short-film-generator", "ai-ugc-product-ads", "podcast-to-shorts"], status: "published",
+    publishedAt: "2026-10-04T00:00:00.000Z", modifiedAt: "2026-10-04T00:00:00.000Z", developmentOnly: false,
+    seo: { title: "AI Real Estate Video Generator from Listing Photos", description: "Create branded real estate videos from listing photos. Arrange rooms, choose photo or AI motion, add narration and export portrait or landscape property tours.", heading: "Real estate videos from your actual listing photos", canonicalPath: "/features/ai-real-estate-video-generator", editorialOverride: true },
+  }),
+  featureDefinitionSchema.parse({
     slug: "ai-cartoon-series",
     name: "AI cartoon series",
     description:

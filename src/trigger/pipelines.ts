@@ -6,3 +6,4 @@ export { cartoonPipeline } from "../../trigger/cartoon-pipeline";
 export { ugcPipeline } from "../../trigger/ugc-pipeline";
 export { shortsPipeline } from "../../trigger/shorts-pipeline";
 export { presenterPipeline } from "../../trigger/presenter-pipeline";
+export { realEstatePipeline } from "../../trigger/real-estate-pipeline";

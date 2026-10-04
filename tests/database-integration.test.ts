@@ -16,6 +16,8 @@ import { filmDemo } from "@/lib/films/demo";
 import { filmModels, filmModelIds, filmRenderCredits, filmDurations, type FilmDuration } from "@/lib/films/models";
 
 import { longFilmStory } from "./fixtures/long-film";
+import { estateBrief } from "./fixtures/real-estate";
+import { estateModelIds, estateCredits } from "@/lib/real-estate/schema";
 
 const userA="10000000-0000-4000-8000-000000000001",userB="10000000-0000-4000-8000-000000000002",workspace="20000000-0000-4000-8000-000000000001",project="30000000-0000-4000-8000-000000000001",job="40000000-0000-4000-8000-000000000001";
 let db:PGlite;
@@ -45,6 +47,7 @@ beforeAll(async()=>{
   await db.exec(readFileSync("supabase/migrations/20260928174504_digital_clone_presenter.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20261003142755_short_film_studio.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20261003162233_long_film_continuity.sql","utf8"));
+  await db.exec(readFileSync("supabase/migrations/20261004140532_real_estate_video_studio.sql","utf8"));
   await db.exec("grant usage on schema storage to authenticated; grant select,insert,update,delete on storage.objects to authenticated;");
   await db.exec(`insert into auth.users values ('${userA}'),('${userB}'); insert into public.profiles(id) values ('${userA}'),('${userB}'); insert into public.workspaces(id,name,owner_id) values('${workspace}','Test studio','${userA}'); insert into public.workspace_members(workspace_id,user_id,role) values('${workspace}','${userA}','owner'); insert into public.credit_accounts(workspace_id,cached_balance) values('${workspace}',100); insert into public.faceless_projects(id,user_id,workspace_id,title,brief) values('${project}','${userA}','${workspace}','Test project','{}');`);
 },30000);
@@ -52,6 +55,49 @@ afterAll(async()=>{await db?.close();});
 
 async function asUser(id:string){await db.exec(`reset role; set role authenticated; select set_config('request.jwt.claim.sub','${id}',false); select set_config('request.jwt.claim.role','authenticated',false);`);}
 async function asService(){await db.exec("reset role; set role service_role; select set_config('request.jwt.claim.role','service_role',false);");}
+
+describe("Real estate ownership, immutable snapshots and billing", () => {
+  async function fixture() {
+    await asService(); const workspaceId=randomUUID(),projectId=randomUUID(),ids=[randomUUID(),randomUUID()];
+    await db.query("insert into public.workspaces(id,name,owner_id) values($1,'Listing test',$2)",[workspaceId,userA]);
+    await db.query("insert into public.workspace_members(workspace_id,user_id,role) values($1,$2,'owner')",[workspaceId,userA]);
+    await db.query("insert into public.credit_accounts(workspace_id,cached_balance) values($1,20000)",[workspaceId]);
+    for(const asset of ids) await db.query("insert into public.assets(id,workspace_id,owner_id,kind,storage_path,mime_type,byte_size) values($1,$2,$3,'reference',$4,'image/png',1000)",[asset,workspaceId,userA,`${workspaceId}/${userA}/real-estate-inputs/${asset}.png`]);
+    const brief={...estateBrief,rooms:estateBrief.rooms.map((r,i)=>({...r,assetId:ids[i]}))};
+    await db.query("select public.create_real_estate_project($1,$2,$3,$4)",[projectId,userA,workspaceId,JSON.stringify(brief)]);
+    return {workspaceId,projectId,brief,ids};
+  }
+  async function balance(id:string){return Number((await db.query<{n:string}>("select cached_balance n from public.credit_accounts where workspace_id=$1",[id])).rows[0].n);}
+  it("isolates owners, forbids browser mutations and rejects foreign assets",async()=>{
+    const f=await fixture(); await asUser(userB); expect((await db.query("select id from public.real_estate_projects where id=$1",[f.projectId])).rows).toHaveLength(0);
+    await asUser(userA); expect((await db.query("select id from public.real_estate_projects where id=$1",[f.projectId])).rows).toHaveLength(1);
+    await expect(db.query("update public.real_estate_projects set brief='{}' where id=$1",[f.projectId])).rejects.toThrow(/permission denied/);
+    await expect(db.query("select public.start_real_estate_job($1,$2,gen_random_uuid())",[f.projectId,userA])).rejects.toThrow(/permission denied/);
+    await asService(); await expect(db.query("select public.start_real_estate_job($1,$2,gen_random_uuid())",[f.projectId,userB])).rejects.toThrow(/not found/);
+    await expect(db.query("select public.create_real_estate_project(gen_random_uuid(),$1,$2,$3)",[userA,f.workspaceId,JSON.stringify({...f.brief,rooms:[...f.brief.rooms.slice(0,1),{...f.brief.rooms[1],assetId:randomUUID()}]})])).rejects.toThrow(/photo not found/);
+  });
+  it("matches every model and voice price with the database rate card",async()=>{
+    await asService(); for(const model of estateModelIds) for(const secondsPerRoom of [6,8] as const) for(const voice of ["none","Aria"] as const){const brief={...estateBrief,model,secondsPerRoom,voice};expect(Number((await db.query<{n:string}>("select private.real_estate_cost($1) n",[JSON.stringify(brief)])).rows[0].n)).toBe(estateCredits(brief));}
+    await expect(db.query("select private.real_estate_cost($1)",[JSON.stringify({...estateBrief,model:"free-model"})])).rejects.toThrow(/Unsupported/);
+  });
+  it("reserves once, snapshots ordered source paths, validates completion and settles once",async()=>{
+    const f=await fixture(),id=randomUUID(); await db.query("select public.start_real_estate_job($1,$2,$3)",[f.projectId,userA,id]);
+    expect(await balance(f.workspaceId)).toBe(19978); expect((await db.query<{id:string}>("select public.start_real_estate_job($1,$2,gen_random_uuid()) id",[f.projectId,userA])).rows[0].id).toBe(id);
+    const snapshot=(await db.query<{settings:{photoPaths:string[]}}>("select settings from public.generations where id=$1",[id])).rows[0].settings;
+    expect(snapshot.photoPaths).toEqual(f.ids.map(a=>`${f.workspaceId}/${userA}/real-estate-inputs/${a}.png`));
+    expect((await db.query<{ok:boolean}>("select public.claim_generation_job($1,'listing_run',1) ok",[id])).rows[0].ok).toBe(true);
+    await expect(db.query("select public.finish_real_estate_job($1,true,12)",[id])).rejects.toThrow(/duration/);
+    await db.query("select public.finish_real_estate_job($1,true,16)",[id]); await db.query("select public.finish_real_estate_job($1,true,16)",[id]); expect(await balance(f.workspaceId)).toBe(19978);
+    expect((await db.query("select status,output_path from public.real_estate_projects where id=$1",[f.projectId])).rows[0]).toEqual({status:"complete",output_path:`${f.workspaceId}/${userA}/real-estate/${id}/listing.mp4`});
+  });
+  it("refunds failures and cancellation exactly once and fences a late worker",async()=>{
+    for(const cancel of [true,false]){const f=await fixture(),id=randomUUID(); await db.query("select public.start_real_estate_job($1,$2,$3)",[f.projectId,userA,id]);
+      if(cancel){await db.query("select public.request_generation_cancellation($1,$2)",[id,userA]); await db.query("select public.finish_real_estate_job($1,true,16)",[id]); await db.query("select public.confirm_generation_cancellation($1)",[id]);}
+      else {await db.query("select public.finish_real_estate_job($1,false)",[id]); await db.query("select public.finish_real_estate_job($1,false)",[id]);}
+      expect(await balance(f.workspaceId)).toBe(20000); expect((await db.query<{ok:boolean}>("select public.claim_generation_job($1,'late',1) ok",[id])).rows[0].ok).toBe(false);
+    }
+  });
+});
 
 describe("Presenter consent, ownership and exactly-once credits", () => {
   const brief = { title: "My introduction", script: "Hello and welcome to my studio. Here is a little inspiration for your next creative project.", duration: 15, resolution: "480p", aspectRatio: "9:16", captions: true, model: "fabric-1.0" };
