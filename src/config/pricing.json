@@ -1,26 +1,20 @@
 [
   {
-    "id": "starter",
-    "name": "Starter",
-    "description": "For your first stories and a little creative momentum.",
-    "monthlyAmount": 2999,
-    "annualMonthlyAmount": 1999,
-    "monthlyCredits": 440
-  },
-  {
     "id": "creator",
     "name": "Creator",
-    "description": "More room to experiment and keep your channel creating.",
-    "monthlyAmount": 4999,
-    "annualMonthlyAmount": 2999,
-    "monthlyCredits": 1100
+    "catalogVersion": "v2",
+    "description": "For your first stories and a little creative momentum.",
+    "monthlyAmount": 900,
+    "annualMonthlyAmount": 720,
+    "monthlyCredits": 200
   },
   {
-    "id": "studio",
-    "name": "Studio",
-    "description": "A bigger credit budget for your growing collection of stories.",
-    "monthlyAmount": 9999,
-    "annualMonthlyAmount": 7999,
-    "monthlyCredits": 2200
+    "id": "growth",
+    "name": "Growth",
+    "catalogVersion": "v2",
+    "description": "More room to experiment and keep your channel creating.",
+    "monthlyAmount": 4900,
+    "annualMonthlyAmount": 3920,
+    "monthlyCredits": 1100
   }
 ]

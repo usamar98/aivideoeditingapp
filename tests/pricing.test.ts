@@ -15,7 +15,7 @@ function priceFor(entry: ReturnType<typeof catalogEntries>[number]) {
   } as unknown as Stripe.Price;
 }
 
-describe("three-tier monthly and annual pricing", () => {
+describe("Creator and Growth monthly and annual pricing", () => {
   it.each(creditBundleOptions)("applies the approved discount without reducing credits for the %i× bundle", (quantity) => {
     for (const tier of pricingTiers) for (const interval of ["month", "year"] as const) {
       const base = planTerms(tier, interval);
@@ -23,7 +23,7 @@ describe("three-tier monthly and annual pricing", () => {
       expect(selected.amount).toBe(Math.round(base.amount * quantity * (100 - bundleDiscount(quantity)) / 100));
       expect(selected.credits).toBe(base.credits * quantity);
       expect(selected.monthlyEquivalent).toBe(selected.amount / (interval === "year" ? 12 : 1));
-      expect(selected.lookupKey).toBe(quantity === 1 ? base.lookupKey : `framefoundry_${tier.id}_${interval}_bundle${quantity}_v1`);
+      expect(selected.lookupKey).toBe(quantity === 1 ? base.lookupKey : `framefoundry_${tier.id}_${interval}_bundle${quantity}_v2`);
     }
   });
   it("validates credit bundles and safely defaults untrusted query values", () => {
@@ -34,11 +34,11 @@ describe("three-tier monthly and annual pricing", () => {
     expect(pricingAccountHref("creator", "year", 3)).toBe("/studio/profile?tab=billing&plan=creator&interval=year&quantity=3");
   });
   it("uses the requested prices and grants twelve months upfront yearly", () => {
-    expect(pricingTiers.map((tier) => planTerms(tier, "month").amount)).toEqual([2999, 4999, 9999]);
-    expect(pricingTiers.map((tier) => planTerms(tier, "month").credits)).toEqual([440, 1100, 2200]);
-    expect(pricingTiers.map((tier) => planTerms(tier, "year").monthlyEquivalent)).toEqual([1999, 2999, 7999]);
-    expect(pricingTiers.map((tier) => planTerms(tier, "year").amount)).toEqual([23988, 35988, 95988]);
-    expect(pricingTiers.map((tier) => planTerms(tier, "year").credits)).toEqual([5280, 13200, 26400]);
+    expect(pricingTiers.map((tier) => planTerms(tier, "month").amount)).toEqual([900, 4900]);
+    expect(pricingTiers.map((tier) => planTerms(tier, "month").credits)).toEqual([200, 1100]);
+    expect(pricingTiers.map((tier) => planTerms(tier, "year").monthlyEquivalent)).toEqual([720, 3920]);
+    expect(pricingTiers.map((tier) => planTerms(tier, "year").amount)).toEqual([8640, 47040]);
+    expect(pricingTiers.map((tier) => planTerms(tier, "year").credits)).toEqual([2400, 13200]);
   });
 
   it.each(catalogEntries())("accepts the exact $lookupKey Stripe price", (entry) => {
@@ -80,12 +80,12 @@ describe("safe Stripe catalog setup", () => {
     };
   }
 
-  it("creates exactly three products and eighteen prices with immutable allocations", async () => {
+  it("creates two versioned products and twelve prices without overwriting the old catalog", async () => {
     const stripe = provider();
-    expect(await syncStripeCatalog(stripe)).toHaveLength(18);
-    expect(stripe.products.create).toHaveBeenCalledTimes(3);
-    expect(stripe.prices.create).toHaveBeenCalledTimes(18);
-    expect(stripe.prices.create).toHaveBeenCalledWith(expect.objectContaining({ unit_amount: 95988, recurring: { interval: "year", interval_count: 1, usage_type: "licensed" }, metadata: { credits: "26400" } }), expect.objectContaining({ idempotencyKey: "catalog:price:framefoundry_studio_year_v1" }));
+    expect(await syncStripeCatalog(stripe)).toHaveLength(12);
+    expect(stripe.products.create).toHaveBeenCalledTimes(2);
+    expect(stripe.prices.create).toHaveBeenCalledTimes(12);
+    expect(stripe.prices.create).toHaveBeenCalledWith(expect.objectContaining({ unit_amount: 47040, recurring: { interval: "year", interval_count: 1, usage_type: "licensed" }, metadata: { credits: "13200" } }), expect.objectContaining({ idempotencyKey: "catalog:price:framefoundry_growth_year_v2" }));
   });
 
   it("reuses an existing catalog without mutating anything", async () => {

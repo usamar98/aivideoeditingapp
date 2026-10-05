@@ -15,7 +15,7 @@ type FeatureEditorial = {
   updatedAt: string;
 };
 
-const starter = pricingTiers.find((tier) => tier.id === "starter")!;
+const starter = pricingTiers.find((tier) => tier.id === "creator")!;
 const starterAnnual = planTerms(starter, "year");
 const klingShortCredits = cartoonRenderCredits({ model: "kling-o3", duration: 15 });
 const cancellationAnswer = "Open Jobs to view waiting, running, completed, failed and cancelled work. You can request cancellation from an active job. A job that has not started can release its reserved credits immediately; a running job releases them after the worker stops. Provider work already in progress may not stop instantly.";
@@ -35,7 +35,7 @@ export const homeFaqs: Answer[] = [
   },
   {
     question: "How much does ETA cost?",
-    answer: `Monthly plans start at ${formatUsd(starter.monthlyAmount)} for ${starter.monthlyCredits.toLocaleString("en-US")} credits. Starter yearly billing is ${formatUsd(starterAnnual.amount)} upfront, equivalent to ${formatUsd(starterAnnual.monthlyEquivalent)} per month, with ${starterAnnual.credits.toLocaleString("en-US")} credits issued upfront. Faceless rendering costs 20 credits; cartoon costs depend on length and model. Prices are in USD; any applicable taxes are shown at checkout.`,
+    answer: `Monthly plans start at ${formatUsd(starter.monthlyAmount)} for ${starter.monthlyCredits.toLocaleString("en-US")} credits. Creator yearly billing is ${formatUsd(starterAnnual.amount)} upfront, equivalent to ${formatUsd(starterAnnual.monthlyEquivalent)} per month, with ${starterAnnual.credits.toLocaleString("en-US")} credits issued upfront. Growth starts at $49 per month; Enterprise pricing is agreed individually. Faceless rendering costs 20 credits; cartoon costs depend on length and model. Prices are in USD; any applicable taxes are shown at checkout.`,
   },
   {
     question: "Can I use my own cartoon character images?",

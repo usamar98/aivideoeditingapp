@@ -5,50 +5,74 @@ import { describe, expect, it } from "vitest";
 import { PricingCards } from "@/components/billing/pricing-cards";
 import type { OfferedBillingPlan } from "@/lib/billing/catalog";
 
-describe("credit allowance menus", () => {
-  it("highlights only the $49.99 Creator tier with a blue border and Popular badge", () => {
-    const $ = load(renderToStaticMarkup(createElement(PricingCards)));
-    const creator = $("[data-pricing-tier='creator']");
-    expect(creator.text()).toContain("$49.99");
-    expect(creator.text()).toContain("Popular");
-    expect(creator.hasClass("border-2")).toBe(true);
-    expect(creator.hasClass("border-primary")).toBe(true);
-    expect(creator.attr("style")).toContain("border-color:var(--primary)");
-    expect($("[data-pricing-tier='starter']").text()).not.toContain("Popular");
-    expect($("[data-pricing-tier='studio']").text()).not.toContain("Popular");
+const render = (props: Parameters<typeof PricingCards>[0] = {}) => load(renderToStaticMarkup(createElement(PricingCards, props)));
+
+describe("reference-style pricing cards", () => {
+  it("shows Creator at $9, Growth at $49 and Enterprise as custom", () => {
+    const $ = render();
+    expect($("[data-pricing-tier]").length).toBe(3);
+    expect($("[data-pricing-tier='creator']").text()).toContain("$9");
+    expect($("[data-pricing-tier='growth']").text()).toContain("$49");
+    expect($("[data-pricing-tier='enterprise']").text()).toContain("Custom");
+    expect($("[data-pricing-tier='enterprise'] a").attr("href")).toBe("/contact");
+    expect($("[data-pricing-tier='enterprise'] input").length).toBe(0);
+    expect($.text()).not.toContain("Then $15");
   });
-  it("keeps the Popular badge visible when Creator is the selected plan", () => {
-    const $ = load(renderToStaticMarkup(createElement(PricingCards, { selectedTier: "creator" })));
-    expect($("[data-pricing-tier='creator']").text()).toContain("Popular");
-    expect($("[data-pricing-tier='creator']").text()).toContain("Your selection");
+
+  it("puts the full-width popular header only on Growth while preserving ETA's theme", () => {
+    const $ = render({ selectedTier: "growth" });
+    const growth = $("[data-pricing-tier='growth']");
+    expect(growth.text()).toContain("MOST POPULAR");
+    expect(growth.text()).toContain("Your selection");
+    expect(growth.hasClass("border-primary")).toBe(true);
+    expect(growth.hasClass("bg-card")).toBe(true);
+    expect($("[data-pricing-tier='creator']").text()).not.toContain("MOST POPULAR");
+    expect(growth.find("a").text()).toBe("Get Started");
+    expect(growth.html()!.indexOf("Get Started")).toBeLessThan(growth.html()!.indexOf("Plan Includes:"));
   });
-  it.each([1, 2] as const)("enables the 2× choice only when its actual discounted price exists (available bundle %i)", (creditBundle) => {
-    const plan: OfferedBillingPlan = { id: "price_test", name: "Creator", description: "", tierId: "creator", creditBundle, amount: creditBundle === 2 ? 64778 : 35988, credits: creditBundle === 2 ? 26400 : 13200, currency: "usd", interval: "year", intervalCount: 1 };
-    const $ = load(renderToStaticMarkup(createElement(PricingCards, { mode: "billing", plans: [plan], pending: false, demo: false, hasSubscription: false, onChoose: () => {}, selectedTier: "creator", initialQuantity: 2, initialInterval: "year" })));
-    const button = $("select[aria-label='Creator credit allowance']").parent().parent().find("button");
-    expect(button.length).toBe(1);
-    expect(button.attr("disabled") !== undefined).toBe(creditBundle !== 2);
-  });
-  it("shows an accessible three-option credit menu on every plan, without the retired offer", () => {
-    const $ = load(renderToStaticMarkup(createElement(PricingCards)));
-    expect($("select").length).toBe(3);
-    for (const tier of ["Starter", "Creator", "Studio"]) {
-      const select = $(`select[aria-label='${tier} credit allowance']`);
-      expect(select.find("option").map((_, el) => $(el).attr("value")).get()).toEqual(["1", "2", "3"]);
-      expect($(`label[for='${select.attr("id")}']`).text()).toBe("Choose your credits");
+
+  it("provides keyboard-accessible sliders and three credit pills on both paid cards", () => {
+    const $ = render();
+    expect($("select").length).toBe(0);
+    expect($("input[type='range']").length).toBe(2);
+    for (const [tier, credits] of [["creator", "200"], ["growth", "1,100"]]) {
+      const card = $(`[data-pricing-tier='${tier}']`);
+      expect(card.find("input[type='radio']").length).toBe(3);
+      expect(card.find("input[type='range']").attr("aria-valuetext")).toBe(`${credits} credits`);
+      expect(card.find("input[type='radio'][checked]").attr("value")).toBe("1");
     }
-    expect($.text()).toContain("10% off");
-    expect($.text()).toContain("15% off");
-    expect($.text()).not.toContain("Temporary offer");
-    expect($.text()).not.toContain("one-time purchase");
+    expect($.text()).not.toContain("Brand Machine");
+    expect($.text()).not.toContain("Unlimited");
   });
-  it("restores only the selected tier's bundle and explains the annual total upfront", () => {
-    const $ = load(renderToStaticMarkup(createElement(PricingCards, { selectedTier: "creator", initialQuantity: 2, initialInterval: "year" })));
-    expect($("select[aria-label='Creator credit allowance'] option[selected]").attr("value")).toBe("2");
-    expect($("select[aria-label='Starter credit allowance'] option[selected]").attr("value")).toBe("1");
-    expect($.text()).toContain("$53.98");
-    expect($.text()).toContain("$647.78 billed yearly");
-    expect($.text()).toContain("All 26,400 credits upfront");
-    expect($("a").filter((_, el) => $(el).text().includes("Choose Creator")).attr("href")).toBe("/studio/profile?tab=billing&plan=creator&interval=year&quantity=2");
+
+  it("restores the chosen bundle and explains annual payment and upfront credits", () => {
+    const $ = render({ selectedTier: "growth", initialQuantity: 2, initialInterval: "year" });
+    const growth = $("[data-pricing-tier='growth']");
+    expect(growth.find("input[type='range']").attr("value")).toBe("1");
+    expect(growth.find("input[type='radio'][checked]").attr("value")).toBe("2");
+    expect($("[data-pricing-tier='creator'] input[type='radio'][checked]").attr("value")).toBe("1");
+    expect(growth.text()).toContain("$70.56");
+    expect(growth.text()).toContain("$846.72 billed yearly");
+    expect(growth.text()).toContain("All 26,400 credits upfront");
+    expect(growth.find("a").attr("href")).toBe("/studio/profile?tab=billing&plan=growth&interval=year&quantity=2");
+  });
+
+  it.each([1, 2] as const)("enables checkout only for the matching %i bundle", (creditBundle) => {
+    const plan: OfferedBillingPlan = { id: "price_test", name: "Growth", description: "", tierId: "growth", creditBundle, amount: creditBundle === 2 ? 84672 : 47040, credits: creditBundle === 2 ? 26400 : 13200, currency: "usd", interval: "year", intervalCount: 1 };
+    const $ = render({ mode: "billing", plans: [plan], pending: false, demo: false, hasSubscription: false, onChoose: () => {}, selectedTier: "growth", initialQuantity: 2, initialInterval: "year" });
+    expect($("[data-pricing-tier='growth'] [data-pricing-checkout]").attr("disabled") !== undefined).toBe(creditBundle !== 2);
+  });
+
+  it("does not enable checkout when a returned price disagrees with the card", () => {
+    const plan: OfferedBillingPlan = { id: "price_old", name: "Creator", description: "", tierId: "creator", creditBundle: 1, amount: 4999, credits: 1100, currency: "usd", interval: "month", intervalCount: 1 };
+    const $ = render({ mode: "billing", plans: [plan], pending: false, demo: false, hasSubscription: false, onChoose: () => {} });
+    expect($("[data-pricing-tier='creator'] [data-pricing-checkout]").attr("disabled")).toBeDefined();
+  });
+
+  it.each([{ pending: true, demo: false, hasSubscription: false }, { pending: false, demo: true, hasSubscription: false }, { pending: false, demo: false, hasSubscription: true }])("preserves checkout safety in %j", (state) => {
+    const $ = render({ mode: "billing", plans: [], ...state, onChoose: () => {} });
+    expect($("[data-pricing-checkout]:disabled").length).toBe(2);
+    expect($("[data-pricing-tier='enterprise'] a").attr("href")).toBe("/contact");
+    if (state.pending) expect($("fieldset[disabled]").length).toBe(2);
   });
 });

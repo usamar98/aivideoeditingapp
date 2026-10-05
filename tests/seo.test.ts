@@ -160,14 +160,12 @@ describe("structured data", () => {
   it("publishes exact billed monthly/yearly amounts, not misleading annual monthly equivalents", () => {
     const offers = pricingOffers();
     expect(offers.map((offer) => [offer.name, offer.price, offer.priceSpecification.billingDuration])).toEqual([
-      ["Starter — monthly subscription", "29.99", "P1M"], ["Starter — annual subscription", "239.88", "P1Y"],
-      ["Creator — monthly subscription", "49.99", "P1M"], ["Creator — annual subscription", "359.88", "P1Y"],
-      ["Studio — monthly subscription", "99.99", "P1M"], ["Studio — annual subscription", "959.88", "P1Y"],
+      ["Creator — monthly subscription", "9.00", "P1M"], ["Creator — annual subscription", "86.40", "P1Y"],
+      ["Growth — monthly subscription", "49.00", "P1M"], ["Growth — annual subscription", "470.40", "P1Y"],
     ]);
     expect(offers.map((offer) => offer.description)).toEqual([
-      "440 credits per month. Billed monthly.", "5,280 credits per year. Billed annually; full year's credits granted upfront.",
+      "200 credits per month. Billed monthly.", "2,400 credits per year. Billed annually; full year's credits granted upfront.",
       "1,100 credits per month. Billed monthly.", "13,200 credits per year. Billed annually; full year's credits granted upfront.",
-      "2,200 credits per month. Billed monthly.", "26,400 credits per year. Billed annually; full year's credits granted upfront.",
     ]);
     for (const offer of offers) {
       expect(offer.url).toBe(`${origin}/pricing`);

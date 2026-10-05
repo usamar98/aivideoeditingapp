@@ -28,7 +28,7 @@ export function planTerms(tier: PricingTier, interval: BillingInterval, quantity
     monthlyEquivalent: amount / (annual ? 12 : 1),
     credits: tier.monthlyCredits * (annual ? 12 : 1) * quantity,
     monthlyCredits: tier.monthlyCredits * quantity,
-    lookupKey: quantity === 1 ? `framefoundry_${tier.id}_${interval}_v1` : `framefoundry_${tier.id}_${interval}_bundle${quantity}_v1`,
+    lookupKey: quantity === 1 ? `framefoundry_${tier.id}_${interval}_${tier.catalogVersion}` : `framefoundry_${tier.id}_${interval}_bundle${quantity}_${tier.catalogVersion}`,
     annualSavings: Math.round(tier.monthlyAmount * quantity * (100 - discountPercent) / 100) * 12 - Math.round(tier.annualMonthlyAmount * 12 * quantity * (100 - discountPercent) / 100),
   };
 }

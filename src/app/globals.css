@@ -74,6 +74,33 @@ button, a, input, textarea, [role="button"] { -webkit-tap-highlight-color: trans
 .text-red-300 { color: #b33434; }
 .text-emerald-300 { color: #18714e; }
 
+.pricing-credit-range {
+  appearance: none;
+  height: 28px;
+  margin: 0;
+  background: transparent;
+  outline-offset: 4px;
+  accent-color: var(--primary);
+}
+.pricing-credit-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--primary) 0 var(--credit-progress), var(--border) var(--credit-progress) 100%);
+}
+.pricing-credit-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border: 3px solid var(--card);
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), 0 2px 7px #182d4e20;
+}
+.pricing-credit-range::-moz-range-track { height: 4px; border-radius: 999px; background: var(--border); }
+.pricing-credit-range::-moz-range-progress { height: 4px; border-radius: 999px; background: var(--primary); }
+.pricing-credit-range::-moz-range-thumb { width: 11px; height: 11px; border: 3px solid var(--card); border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+
 .studio-grid {
   background-image: linear-gradient(oklch(0.78 0.15 163 / 0.025) 1px, transparent 1px), linear-gradient(90deg, oklch(0.78 0.15 163 / 0.025) 1px, transparent 1px);
   background-size: 32px 32px;

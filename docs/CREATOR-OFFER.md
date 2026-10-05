@@ -1,5 +1,7 @@
 # Creator 24-hour promotion
 
+**Historical reference only:** this promotion is retired for new checkouts. Current cards and checkout use [Pricing v2](PRICING-V2.md). Historical paid-invoice validation is retained so existing purchases can still be fulfilled; the terms below describe that legacy implementation.
+
 The shared campaign window is defined in `src/lib/billing/creator-offer.ts`: September 26, 2026 at 14:11:03 UTC through September 27, 2026 at 14:11:03 UTC (19:11:03 Pakistan time). It does not reset on refresh, sign-in, server restart, or redeployment. A no-store server-clock endpoint drives the timer; checkout enforces the same deadline independently.
 
 ## Customer terms

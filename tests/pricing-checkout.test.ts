@@ -10,7 +10,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   const chain = { update: () => chain, eq: () => chain, or: () => chain, select: () => chain, maybeSingle: async () => ({ data: { user_id: "owner" }, error: null }) };
   mocks.account.mockResolvedValue({ user: { id: "owner" }, workspaceId: "owned_workspace", admin: { from: () => chain } });
-  mocks.price.mockResolvedValue({ id: "price_annual", active: true, currency: "usd", unit_amount: 35988, lookup_key: "framefoundry_creator_year_v1", billing_scheme: "per_unit", metadata: { credits: "13200" }, recurring: { interval: "year", interval_count: 1, usage_type: "licensed" }, product: { active: true, name: "Creator", metadata: { app: "framefoundry" } } });
+  mocks.price.mockResolvedValue({ id: "price_annual", active: true, currency: "usd", unit_amount: 47040, lookup_key: "framefoundry_growth_year_v2", billing_scheme: "per_unit", metadata: { credits: "13200" }, recurring: { interval: "year", interval_count: 1, usage_type: "licensed" }, product: { active: true, name: "Growth", metadata: { app: "framefoundry" } } });
   mocks.customer.mockResolvedValue("cus_owned");
   mocks.subscriptions.mockResolvedValue({ data: [] });
   mocks.sessions.mockResolvedValue({ data: [] });

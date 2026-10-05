@@ -6,8 +6,8 @@ export function catalogEntries() {
   return tiers.flatMap((tier) => ["month", "year"].flatMap((interval) => [1, 2, 3].map((quantity) => ({
     tier,
     interval, quantity,
-    productId: `framefoundry_${tier.id}_v1`,
-    lookupKey: quantity === 1 ? `framefoundry_${tier.id}_${interval}_v1` : `framefoundry_${tier.id}_${interval}_bundle${quantity}_v1`,
+    productId: `framefoundry_${tier.id}_${tier.catalogVersion}`,
+    lookupKey: quantity === 1 ? `framefoundry_${tier.id}_${interval}_${tier.catalogVersion}` : `framefoundry_${tier.id}_${interval}_bundle${quantity}_${tier.catalogVersion}`,
     amount: Math.round((interval === "year" ? tier.annualMonthlyAmount * 12 : tier.monthlyAmount) * quantity * (100 - discounts[quantity]) / 100),
     credits: tier.monthlyCredits * (interval === "year" ? 12 : 1) * quantity,
   }))));
