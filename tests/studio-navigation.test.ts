@@ -13,6 +13,7 @@ describe("studio branding navigation", () => {
     expect($("a[href='/']").length).toBe(0);
     expect($("a[href='/studio'][aria-current='page']").length).toBe(1);
     expect($("a[href='/studio/faceless']").length).toBe(1);
+    expect($("a[href='/studio/ad-remake'][aria-label='Ad Remake']").length).toBe(1);
     expect($("a[href='/studio/profile']").length).toBe(1);
   });
 

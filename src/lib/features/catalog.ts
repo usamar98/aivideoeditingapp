@@ -201,6 +201,18 @@ export function canIndexFeature(feature: FeatureDefinition) {
 }
 
 featureCatalog.push(featureDefinitionSchema.parse({
+  slug: "ai-ad-remake", name: "AI Ad Remake",
+  description: "Adapt an authorized reference ad to your product with Kling O3. Upload a short video and product images, write the changes, review the cost, and download a private AI-edited MP4.",
+  audience: ["Product brands", "Creative teams", "Small businesses"], searchIntent: "Remake an authorized video ad for my product using AI",
+  benefits: ["Start from an existing authorized clip’s pacing and composition", "Guide the edit with your own product images", "Review the remake against the original before sharing"],
+  capabilities: ["Private MP4 or MOV references, 3–15 seconds, up to 100 MB and 720–3840 pixels per side", "One to four product-image references in JPEG, PNG or WebP", "Kling O3 Standard or Pro video-to-video editing through fal", "Optional exact closing CTA, brand color and authorized original-audio retention", "Aspect-preserving MP4 export capped at a 1920-pixel longest side with a visible AI-edited disclosure", "Saved briefs, explicit credit approval, background progress and cancellation"],
+  limitations: ["Only use reference footage, product assets, music and likenesses you own or are authorized to adapt. No link importing, impersonation or fabricated endorsements.", "Product fidelity, logos, generated text, scene continuity and motion may vary. Human review is required; no promised campaign performance.", "Standard costs 6 credits per second and Pro costs 8. Duration is rounded up; failed or cancelled renders return reserved credits.", "Audio is off by default. Optional retention reuses original audio, not a newly generated voiceover or licensed soundtrack.", "Live rendering requires the Ad Remake migration, deployed worker, fal access and credits. No automatic posting or unlimited-length generation."],
+  exampleMedia: [], relatedFeatures: ["ai-ugc-product-ads", "ai-short-film-generator", "faceless-video-generator"],
+  status: "published", developmentOnly: false, publishedAt: "2026-10-09T00:00:00.000Z", modifiedAt: "2026-10-09T00:00:00.000Z",
+  seo: { title: "AI Ad Remake — Reference Video to Product Ad", description: "Remake an authorized 3–15-second ad with your product photos and Kling O3. Review the edit, add a closing CTA and download a private AI-edited MP4.", heading: "Remake an authorized ad for your product", canonicalPath: "/features/ai-ad-remake", editorialOverride: true },
+}));
+
+featureCatalog.push(featureDefinitionSchema.parse({
   slug: "podcast-to-shorts", name: "Podcast & video to Shorts",
   description: "Turn recorded podcasts, interviews and talking videos into vertical Shorts. Find useful moments, review the cuts, follow faces near selected speaker positions and add animated captions.",
   audience: ["Podcasters", "Educators", "Interviewers", "Content teams"], searchIntent: "Turn a long podcast or talking video into captioned vertical short clips",

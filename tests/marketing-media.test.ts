@@ -234,7 +234,7 @@ describe("AI marketing media", () => {
     const $ = load(renderToStaticMarkup(await StudioLibraryPage()));
     expect($("main img").length).toBe(4);
     expect($("main img[loading='eager']").length).toBe(1);
-    for (const path of ["/studio/faceless", "/studio/cartoons", "/studio/ugc", "/studio/shorts", "/studio/films"]) {
+    for (const path of ["/studio/faceless", "/studio/cartoons", "/studio/ugc", "/studio/shorts", "/studio/films", "/studio/ad-remake"]) {
       expect($(`main a[href='${path}']`).length).toBe(1);
     }
     expect($.text()).toContain("Demo workspace");
@@ -248,9 +248,9 @@ describe("AI marketing media", () => {
     expect(grid.parent().attr("class")).toContain("@container");
     expect(grid.attr("class")).toContain("@xl:grid-cols-2");
     expect(grid.attr("class")).toContain("@4xl:grid-cols-3");
-    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual(["ai-real-estate-video-generator", ...slugs, "ai-short-film-generator", "podcast-to-shorts", "digital-clone"]);
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual(["ai-ad-remake", "ai-real-estate-video-generator", ...slugs, "ai-short-film-generator", "podcast-to-shorts", "digital-clone"]);
     expect(grid.find('[class*="col-span"]').length).toBe(0);
-    expect(grid.find("h2").length).toBe(7);
+    expect(grid.find("h2").length).toBe(8);
     expect(grid.find("h3").length).toBe(0);
     expect(grid.find("a[href^='/features/']").length).toBe(0);
     for (const feature of ["digital-clone"]) {

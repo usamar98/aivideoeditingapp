@@ -4,7 +4,7 @@ import { canIndexFeature, featureCatalog, getPublishedFeatures } from "@/lib/fea
 
 describe("feature publishing rules", () => {
   it("indexes only published production features", () => {
-    expect(getPublishedFeatures().map((feature) => feature.slug)).toEqual(["ai-real-estate-video-generator", "ai-cartoon-series", "faceless-video-generator", "ai-ugc-product-ads", "ai-short-film-generator", "ai-digital-clone-presenter", "podcast-to-shorts"]);
+    expect(getPublishedFeatures().map((feature) => feature.slug)).toEqual(["ai-real-estate-video-generator", "ai-cartoon-series", "faceless-video-generator", "ai-ugc-product-ads", "ai-short-film-generator", "ai-digital-clone-presenter", "ai-ad-remake", "podcast-to-shorts"]);
     expect(canIndexFeature(featureCatalog.find(f => f.slug === "ecommerce-product-videos")!)).toBe(false);
   });
 

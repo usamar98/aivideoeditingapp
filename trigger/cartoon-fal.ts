@@ -7,6 +7,7 @@ import { UGC_AVATAR_MODEL } from "../src/lib/ugc/schema";
 import { SHORTS_TRANSCRIPTION_MODEL } from "../src/lib/shorts/schema";
 import { PRESENTER_MODEL } from "../src/lib/presenter/schema";
 import { ESTATE_TTS } from "../src/lib/real-estate/schema";
+import { adRemakeModels } from "../src/lib/ad-remake/schema";
 import { AbortTaskRunError } from "@trigger.dev/sdk";
 
 // Verified against fal's OpenRouter catalog on 2026-09-24. Server-owned, never user supplied.
@@ -28,7 +29,7 @@ export function cartoonFalClient() {
   const client = createFalClient({ credentials: key, retry: { maxRetries: 0 } });
   // SDK 1.10.1 queue.submit overrides config.retry with three retries. Use a
   // single native POST for this non-idempotent operation; retain SDK read/cancel.
-  const allowed = new Set([ESTATE_TTS, PRESENTER_MODEL, SHORTS_TRANSCRIPTION_MODEL, CARTOON_PLANNER_ENDPOINT, UGC_AVATAR_MODEL, `${CHARACTER_IMAGE_MODEL}/text-to-image`, `${CHARACTER_IMAGE_MODEL}/edit`, ...Object.values(cartoonModels).map((model) => model.endpoint)]);
+  const allowed = new Set([ESTATE_TTS, PRESENTER_MODEL, SHORTS_TRANSCRIPTION_MODEL, CARTOON_PLANNER_ENDPOINT, UGC_AVATAR_MODEL, `${CHARACTER_IMAGE_MODEL}/text-to-image`, `${CHARACTER_IMAGE_MODEL}/edit`, ...Object.values(cartoonModels).map((model) => model.endpoint), ...Object.values(adRemakeModels).map(model => model.endpoint)]);
   client.queue.submit = async (endpoint, options) => {
     if (!allowed.has(endpoint)) throw new Error("Cartoon model is not allowlisted");
     if (endpoint === CARTOON_PLANNER_ENDPOINT && (options.input as { model?: unknown } | undefined)?.model !== CARTOON_PLANNER_MODEL) throw new Error("Cartoon planner model is not allowlisted");
