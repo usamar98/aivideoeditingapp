@@ -1,4 +1,4 @@
-# ETA SEO and AI-search action plan
+# Create AI Videos SEO and AI-search action plan
 
 Prepared: **2026-09-25**. This is a release and measurement checklist, not a promise of ranking or completion of owner-controlled tasks.
 
@@ -14,7 +14,7 @@ Read the [full audit](./FULL-AUDIT-REPORT.md) for evidence, the [Search Console 
 - Check the homepage and representative feature, pricing, comparison and contact pages at desktop and mobile sizes. Ensure the comparison/pricing tables scroll within their containers and essential content remains available without JavaScript.
 - Inspect `/robots.txt`, `/sitemap.xml`, `/llms.txt` and social-card responses. Ensure discovery files contain no localhost/preview origin, accidental doubled path slash, private URL or draft feature.
 - Confirm login, bare and nested studio/admin/API/auth routes receive the intended noindex treatment. Test preview/demo builds separately from Production. Preserve application authentication; robots.txt is not access control.
-- Confirm public support links display `support@editingapp.live` and that all visible branding and social images use ETA.
+- Confirm public support links display `support@createaivideos.app` and that all visible branding and social images use Create AI Videos.
 
 Current expected public sitemap paths:
 
@@ -39,9 +39,9 @@ Additional genuinely published features may increase the list. Unreleased featur
 Check the intended Vercel Production project and configuration before deployment:
 
 ```dotenv
-NEXT_PUBLIC_SITE_URL=https://www.editingapp.live
+NEXT_PUBLIC_SITE_URL=https://createaivideos.app
 NEXT_PUBLIC_DEMO_MODE=false
-NEXT_PUBLIC_SUPPORT_EMAIL=support@editingapp.live
+NEXT_PUBLIC_SUPPORT_EMAIL=support@createaivideos.app
 ```
 
 Optional HTML-tag verification values must be real values from the correct property:
@@ -51,7 +51,7 @@ Optional HTML-tag verification values must be real values from the correct prope
 
 These are public verification identifiers, not Google/Bing API keys. Never put private service credentials in `NEXT_PUBLIC_` variables. Changes to build-time public values require a new deployment.
 
-After deployment, inspect fresh responses from `https://www.editingapp.live`, not just localhost or a preview. Check both host variants and preserve the chosen canonical host. Confirm each sitemap URL is usable, that the generated canonical uses the intended origin, and that public pages do not accidentally inherit preview noindex headers.
+After deployment, inspect fresh responses from `https://createaivideos.app`, not just localhost or a preview. Check both host variants and preserve the chosen canonical host. Confirm each sitemap URL is usable, that the generated canonical uses the intended origin, and that public pages do not accidentally inherit preview noindex headers.
 
 Also verify the configured feature catalog can be read successfully. The new publication logic intentionally does not hide database errors by serving potentially retired static content. Resolve configuration/permissions if a valid catalog cannot load; do not restore unsafe fallback simply to silence an error.
 
@@ -64,7 +64,7 @@ Follow [SEARCH-CONSOLE-SETUP.md](./SEARCH-CONSOLE-SETUP.md). First check whether
 Submit only this canonical sitemap in the respective Sitemaps tools:
 
 ```text
-https://www.editingapp.live/sitemap.xml
+https://createaivideos.app/sitemap.xml
 ```
 
 Robots.txt and llms.txt are not sitemap submissions. Source code, database files, API keys and private application URLs do not belong in Search Console. A sitemap aids discovery, not guaranteed indexing. [Google sitemap guidance](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap)
@@ -112,7 +112,7 @@ Record a deployment date and initial observations. Review after enough data accu
 | Which user questions bring qualified visits? | Search queries, page impressions/clicks and meaningful signup outcomes. | Improve the relevant page rather than blindly adding keywords. |
 | Are users finding the answers and next step? | Existing privacy-appropriate usage/support evidence and tested navigation. | Improve unclear costs, workflow choices or CTA placement. |
 | Is the page fast for real visitors? | Retry PageSpeed Insights; inspect Core Web Vitals field reports if sufficient data exists. | Address measured bottlenecks, not an invented performance score. |
-| Do AI services cite or refer to ETA? | Available AI-search reports, actual referrers, citations with prompt/date/context and verified crawler logs. | Assess specific content gaps without treating bot allowance as a citation. |
+| Do AI services cite or refer to Create AI Videos? | Available AI-search reports, actual referrers, citations with prompt/date/context and verified crawler logs. | Assess specific content gaps without treating bot allowance as a citation. |
 
 The baseline PSI request was rate-limited with HTTP 429. No current field measurement or passing score exists. Do not turn a one-off lab run into a claim about all visitors.
 

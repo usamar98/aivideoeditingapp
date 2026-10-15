@@ -1,5 +1,5 @@
 // Verified against fal's public endpoint schemas on 2026-10-03.
-// These are ETA credit rates, not quoted fal dollar prices. Keep SQL rate card in sync.
+// These are Create AI Videos credit rates, not quoted fal dollar prices. Keep SQL rate card in sync.
 const model = (name: string, endpoint: string, adapter: string, resolution: "720p" | "768p" | "1080p", creditsPerSecond: number, description: string) => ({
   name, endpoint, adapter, inputMode: "image" as const, resolutions: [resolution], defaultResolution: resolution, creditsPerSecond, description,
 });

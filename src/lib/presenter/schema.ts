@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const PRESENTER_MODEL = "veed/fabric-1.0";
 export const PRESENTER_CONSENT_VERSION = "photo-presenter-v1";
-export const presenterConsentText = "I am this adult presenter or have their explicit permission to animate their likeness with AI. I have rights to this photo and authorize ETA to send it and my approved scripts to its generation providers. I will disclose synthetic media where required and will not impersonate someone or fabricate their endorsement.";
+export const presenterConsentText = "I am this adult presenter or have their explicit permission to animate their likeness with AI. I have rights to this photo and authorize Create AI Videos to send it and my approved scripts to its generation providers. I will disclose synthetic media where required and will not impersonate someone or fabricate their endorsement.";
 export const portraitUploadSchema = z.object({ mime: z.enum(["image/jpeg", "image/png", "image/webp"]), size: z.number().int().positive().max(8 * 1024 * 1024) });
 export const presenterSchema = z.object({ name: z.string().trim().min(2).max(80), assetId: z.uuid(), consent: z.literal(true), adult: z.literal(true) });
 export const presenterBriefSchema = z.object({

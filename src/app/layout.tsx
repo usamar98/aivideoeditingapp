@@ -14,9 +14,10 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   metadataBase: new URL(brand.siteUrl),
-  title: { default: `AI Video Generator for Faceless Videos & Cartoons | ${brand.name}`, template: `%s | ${brand.name}` },
+  title: { default: `AI Video Generator & Creative Studio | ${brand.name}`, template: `%s | ${brand.name}` },
   description: brand.description,
   applicationName: brand.name,
+  manifest: "/manifest.webmanifest",
   robots: publicRobots(),
   openGraph: { type: "website", title: `${brand.name} — AI video creation studio`, description: brand.description, siteName: brand.name, url: "/" },
   twitter: { card: "summary_large_image", title: brand.name, description: brand.description },

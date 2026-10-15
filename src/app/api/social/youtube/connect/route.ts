@@ -8,7 +8,7 @@ import { connection } from "@/lib/social/repository";
 export async function POST(request: Request) {
   try {
     const config = youtubeConfig();
-    if (request.headers.get("origin") !== config.origin) return Response.json({ error: "Open YouTube connections from the configured ETA website." }, { status: 403 });
+    if (request.headers.get("origin") !== config.origin) return Response.json({ error: "Open YouTube connections from the configured Create AI Videos website." }, { status: 403 });
     if ((await request.formData()).get("policy") !== "agree") return Response.json({ error: "Accept the YouTube data policy before connecting." }, { status: 400 });
     const { admin, user } = await requireAccount();
     const existing = await connection(admin, user.id);

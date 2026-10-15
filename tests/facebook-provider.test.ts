@@ -7,7 +7,7 @@ import { facebookPublishSchema, validateFacebookMedia } from "@/lib/social/faceb
 const fetcher = vi.fn(), origin = "https://storage.example.com";
 beforeEach(() => {
   vi.stubEnv("FACEBOOK_APP_ID", "123"); vi.stubEnv("FACEBOOK_APP_SECRET", "test-secret"); vi.stubEnv("FACEBOOK_GRAPH_VERSION", "v25.0");
-  vi.stubEnv("FACEBOOK_REDIRECT_URI", "https://www.editingapp.live/api/social/facebook/callback"); vi.stubEnv("SOCIAL_TOKEN_ENCRYPTION_KEY", "12".repeat(32));
+  vi.stubEnv("FACEBOOK_REDIRECT_URI", "https://createaivideos.app/api/social/facebook/callback"); vi.stubEnv("SOCIAL_TOKEN_ENCRYPTION_KEY", "12".repeat(32));
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", origin); vi.stubGlobal("fetch", fetcher); fetcher.mockReset();
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });

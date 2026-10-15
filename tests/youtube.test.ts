@@ -43,7 +43,7 @@ describe("YouTube security and request validation", () => {
   });
   it("requires a fixed HTTPS callback (HTTP only on localhost) and full configuration", () => {
     expect(youtubeConfigured()).toBe(true);
-    for (const bad of ["http://editingapp.live/api/social/youtube/callback", "https://editingapp.live/wrong", "https://u:p@editingapp.live/api/social/youtube/callback", "https://editingapp.live/api/social/youtube/callback?next=evil"]) {
+    for (const bad of ["http://createaivideos.app/api/social/youtube/callback", "https://createaivideos.app/wrong", "https://u:p@createaivideos.app/api/social/youtube/callback", "https://createaivideos.app/api/social/youtube/callback?next=evil"]) {
       vi.stubEnv("YOUTUBE_REDIRECT_URI", bad); expect(() => youtubeConfig()).toThrow(); expect(youtubeConfigured()).toBe(false);
     }
   });

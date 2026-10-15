@@ -6,11 +6,11 @@ export function BrandMark({ compact = false, className }: { compact?: boolean; c
   return (
     <span className={cn("inline-flex shrink-0 items-center align-middle", className)}>
       <Image
-        src={compact ? "/brand/eta-symbol.svg" : "/brand/eta-logo.svg"}
+        src={compact ? "/brand/create-ai-videos-symbol.svg" : "/brand/create-ai-videos-logo.svg"}
         alt={`${brand.name} — AI video studio`}
-        width={compact ? 64 : 216}
+        width={compact ? 64 : 330}
         height={64}
-        className={compact ? "size-10" : "h-auto w-[112px] sm:w-[135px]"}
+        className={compact ? "size-10" : "h-auto w-[138px] sm:w-[190px]"}
         loading="eager"
         unoptimized
       />

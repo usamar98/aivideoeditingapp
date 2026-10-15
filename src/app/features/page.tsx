@@ -6,8 +6,8 @@ import { getPublishedFeaturesData } from "@/lib/features/repository";
 import { publicMetadata } from "@/lib/seo/metadata";
 import { absoluteUrl, breadcrumbSchema, pageSchema } from "@/lib/seo/structured-data";
 
-const title = "AI Video Tools: Shorts, Faceless Videos, Cartoons & Ads";
-const description = "Create faceless videos, AI cartoons, product ads or podcast Shorts. Compare editing controls, formats and credit costs before creating with ETA.";
+const title = "AI Video Tools & Creative Workflows";
+const description = "Create faceless videos, AI cartoons, product ads or podcast Shorts. Compare editing controls, formats and credit costs before creating with Create AI Videos.";
 export const metadata = publicMetadata({ title, description, path: "/features" });
 export const dynamic = "force-dynamic";
 

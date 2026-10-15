@@ -30,7 +30,7 @@ export type FacebookDashboardData = {
   pages: { id: string; name: string }[]; videos: LibraryVideo[]; posts: FacebookPostView[];
 };
 
-// ETA's initial Reels workflow intentionally accepts a conservative format subset.
+// Create AI Videos’ initial Reels workflow intentionally accepts a conservative format subset.
 export function validateFacebookMedia(info: unknown) {
   const media = z.object({ format: z.object({ duration: z.coerce.number().finite() }), streams: z.array(z.object({
     codec_type: z.string(), codec_name: z.string().optional(), width: z.number().optional(), height: z.number().optional(), avg_frame_rate: z.string().optional(),

@@ -4,22 +4,22 @@ import { brand } from "../src/config/brand";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url));
 
-describe("ETA branding", () => {
+describe("Create AI Videos branding", () => {
   it("uses the same name for visible branding and page metadata", () => {
-    expect(brand.name).toBe("ETA");
-    expect(brand.shortName).toBe("ETA");
+    expect(brand.name).toBe("Create AI Videos");
+    expect(brand.shortName).toBe("Create AI");
   });
 
   it("keeps the SVG browser icon identical to the sidebar emblem", () => {
-    expect(read("src/app/icon.svg")).toEqual(read("public/brand/eta-symbol.svg"));
+    expect(read("src/app/icon.svg")).toEqual(read("public/brand/create-ai-videos-symbol.svg"));
   });
 
   it("ships a labeled, self-contained vector logo", () => {
-    const logo = read("public/brand/eta-logo.svg").toString();
-    expect(logo).toContain("<title>ETA — AI video studio</title>");
-    expect(logo).toContain('viewBox="0 0 216 64"');
+    const logo = read("public/brand/create-ai-videos-logo.svg").toString();
+    expect(logo).toContain("<title>Create AI Videos — AI video studio</title>");
+    expect(logo).toContain('viewBox="0 0 330 64"');
     expect(logo).not.toMatch(/<script|<image|href=/);
-    expect(logo).toContain('transform="translate(84 3)"');
+    expect(logo).toContain('transform="translate(84 0)"');
   });
 
   it("includes valid favicon frames for tabs and high-DPI shortcuts", () => {
@@ -49,5 +49,17 @@ describe("ETA branding", () => {
     const png = read("src/app/apple-icon.png");
     expect(png.readUInt32BE(16)).toBe(180);
     expect(png.readUInt32BE(20)).toBe(180);
+  });
+
+  it.each([192, 512, 1024])("ships a %ipx icon for app shortcuts and provider branding", (size) => {
+    const png = read(`public/brand/create-ai-videos-icon-${size}.png`);
+    expect(png.readUInt32BE(16)).toBe(size);
+    expect(png.readUInt32BE(20)).toBe(size);
+  });
+
+  it("keeps previously shared asset URLs on the new artwork", () => {
+    for (const file of ["symbol.svg", "wordmark.svg", "logo.svg", "logo.png"]) {
+      expect(read(`public/brand/eta-${file}`)).toEqual(read(`public/brand/create-ai-videos-${file}`));
+    }
   });
 });

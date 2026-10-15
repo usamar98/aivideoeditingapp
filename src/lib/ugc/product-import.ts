@@ -32,7 +32,7 @@ export async function fetchPublicProduct(raw: string, kind: "page" | "image") {
     const pinned = addresses[0];
     const response = await new Promise<{ status: number; location?: string; type: string; bytes: Buffer }>((resolve, reject) => {
       const req = request(url, { signal, agent: false, family: pinned.family, lookup: (_hostname, _options, callback) => callback(null, pinned.address, pinned.family),
-        headers: { "User-Agent": "ETA-Product-Import/1.0", Accept: kind === "page" ? "text/html" : "image/png,image/jpeg,image/webp", "Accept-Encoding": "identity" } }, (res) => {
+        headers: { "User-Agent": "CreateAIVideos-Product-Import/1.0", Accept: kind === "page" ? "text/html" : "image/png,image/jpeg,image/webp", "Accept-Encoding": "identity" } }, (res) => {
         const status = res.statusCode || 0;
         if ([301, 302, 303, 307, 308].includes(status)) { res.destroy(); resolve({ status, location: res.headers.location, type: "", bytes: Buffer.alloc(0) }); return; }
         const type = (res.headers["content-type"] || "").split(";")[0].toLowerCase();

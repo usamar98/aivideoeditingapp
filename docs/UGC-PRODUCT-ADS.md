@@ -6,12 +6,12 @@ Implemented locally on September 25, 2026. This document does not certify a prod
 
 Reviewed primary product examples before implementation:
 
-- [Arcads](https://www.arcads.ai/): actor-led ads, product presentation and creative controls. ETA adopts presenter choice and editable messaging, not its customer testimonials, results or actor library claims.
-- [HeyGen video ad creator](https://www.heygen.com/tool/video-ad-creator): product links/photos, scripts, avatars, captions and variant testing. ETA separates fact review, planning and paid rendering.
+- [Arcads](https://www.arcads.ai/): actor-led ads, product presentation and creative controls. Create AI Videos adopts presenter choice and editable messaging, not its customer testimonials, results or actor library claims.
+- [HeyGen video ad creator](https://www.heygen.com/tool/video-ad-creator): product links/photos, scripts, avatars, captions and variant testing. Create AI Videos separates fact review, planning and paid rendering.
 - [Creatify Boreal on fal](https://fal.ai/models/creatify/boreal/api): product/presenter video with native or supplied audio. Considered as a future full-scene option; not silently used as a fallback.
 - [Kling AI Avatar v2 Pro on fal](https://fal.ai/models/fal-ai/kling-video/ai-avatar/v2/pro/api): verified image_url + audio_url + optional prompt contract. Chosen for audio-driven presenter animation and predictable scripted narration, not because of an unsupported “best model” ranking.
 
-ETA retains original product photos in a composition alongside the presenter. It does **not** promise generated product handling, unboxing or exact AI-recreated packaging. Three different hooks share the body, CTA and presenter. Exported videos visibly disclose “AI presenter”.
+Create AI Videos retains original product photos in a composition alongside the presenter. It does **not** promise generated product handling, unboxing or exact AI-recreated packaging. Three different hooks share the body, CTA and presenter. Exported videos visibly disclose “AI presenter”.
 
 ## Workflow and costs
 
@@ -36,7 +36,7 @@ Provider stack: existing Gemini-through-fal planner; GPT Image 2.5 Sunburst port
 
 No new provider account or subscription price IDs are required.
 
-- Vercel: existing Supabase URL/publishable/secret keys and production `TRIGGER_SECRET_KEY`, `TRIGGER_PROJECT_REF`, `NEXT_PUBLIC_SITE_URL=https://www.editingapp.live`, `NEXT_PUBLIC_DEMO_MODE=false`.
+- Vercel: existing Supabase URL/publishable/secret keys and production `TRIGGER_SECRET_KEY`, `TRIGGER_PROJECT_REF`, `NEXT_PUBLIC_SITE_URL=https://createaivideos.app`, `NEXT_PUBLIC_DEMO_MODE=false`.
 - Trigger **Production**: `FAL_KEY`, `ELEVENLABS_API_KEY`, `ELEVENLABS_DEFAULT_VOICE_ID`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`. Vercel variables do not necessarily appear in Trigger automatically; verify the worker environment.
 - No direct Google Gemini key is required by this UGC worker. Never prefix secrets with `NEXT_PUBLIC_`.
 
@@ -50,11 +50,11 @@ Clean `ugc_import_attempts` older than 30 days as routine maintenance if desired
 
 ## SEO and AI discovery
 
-Public feature URL: `https://www.editingapp.live/features/ai-ugc-product-ads`.
+Public feature URL: `https://createaivideos.app/features/ai-ugc-product-ads`.
 
 The feature is in the typed publication catalog, public homepage/features links, sitemap and `llms.txt`. It gets canonical, Open Graph/Twitter metadata, a generated social image, WebPage/SoftwareApplication/BreadcrumbList JSON-LD, process guidance, use cases and visible question-and-answer content. Private studio/API routes remain noindex and absent from sitemaps. There are no fake reviews, fabricated VideoObject examples, ranking promises or guaranteed ad-performance claims.
 
-After production deployment, inspect the feature URL in Search Console and resubmit the existing `https://www.editingapp.live/sitemap.xml` if needed. URL inspection is for the public feature page, not private projects. SEO makes the content discoverable; it cannot guarantee top ranking or AI citations.
+After production deployment, inspect the feature URL in Search Console and resubmit the existing `https://createaivideos.app/sitemap.xml` if needed. URL inspection is for the public feature page, not private projects. SEO makes the content discoverable; it cannot guarantee top ranking or AI citations.
 
 ## Local verification
 

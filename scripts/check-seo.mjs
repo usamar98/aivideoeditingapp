@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 // Read-only HTTP checks. Run against a local production build or the deployed site.
 const origin = new URL(process.argv[2] || "http://localhost:3002");
 const production = process.argv.includes("--production");
-const canonicalOrigin = "https://www.editingapp.live";
-const paths = ["/", "/features", "/features/ai-cartoon-series", "/features/faceless-video-generator", "/features/ai-ugc-product-ads", "/features/podcast-to-shorts", "/pricing", "/guides", "/guides/faceless-videos-vs-ai-cartoons", "/about", "/contact", "/privacy", "/terms"];
+const canonicalOrigin = "https://createaivideos.app";
+const paths = ["/", "/features", "/features/ai-cartoon-series", "/features/faceless-video-generator", "/features/ai-ugc-product-ads", "/features/ai-short-film-generator", "/features/ai-real-estate-video-generator", "/features/ai-digital-clone-presenter", "/features/ai-ad-remake", "/features/podcast-to-shorts", "/pricing", "/guides", "/guides/faceless-videos-vs-ai-cartoons", "/about", "/contact", "/privacy", "/terms"];
 const titles = new Set();
 const descriptions = new Set();
 const results = [];
@@ -18,7 +18,7 @@ function meta(html, name) {
   return tag ? attr(tag, "content") : undefined;
 }
 async function request(path, redirect = "follow") {
-  return fetch(new URL(path, origin), { redirect, signal: AbortSignal.timeout(30000), headers: { "User-Agent": "ETA-SEO-Verification/1.0" } });
+  return fetch(new URL(path, origin), { redirect, signal: AbortSignal.timeout(30000), headers: { "User-Agent": "CreateAIVideos-SEO-Verification/1.0" } });
 }
 
 for (const path of paths) {
@@ -29,13 +29,14 @@ for (const path of paths) {
   const description = meta(html, "description");
   const canonical = [...html.matchAll(/<link\b[^>]*>/gi)].map(([tag]) => tag).find((tag) => attr(tag, "rel") === "canonical");
   assert.equal(canonical && new URL(attr(canonical, "href")).toString(), `${canonicalOrigin}${path}`, `${path}: canonical`);
-  assert.ok(title?.endsWith(" | ETA"), `${path}: branded title`);
+  assert.ok(title?.endsWith(" | Create AI Videos"), `${path}: branded title`);
+  assert.ok(!/\bETA\b|editingapp\.live|FrameFoundry/.test(html), `${path}: no retired public branding`);
   assert.ok(!titles.has(title), `${path}: unique title`);
   titles.add(title);
   assert.ok(description?.length > 40 && !descriptions.has(description), `${path}: unique useful description`);
   descriptions.add(description);
   assert.equal((html.match(/<h1\b/g) || []).length, 1, `${path}: one H1`);
-  assert.ok(html.includes("support@editingapp.live"), `${path}: contact information`);
+  assert.ok(html.includes("support@createaivideos.app"), `${path}: contact information`);
   assert.ok(!html.includes("support@example.com"), `${path}: no placeholder support`);
   const robots = meta(html, "robots");
   if (production) {
@@ -75,7 +76,7 @@ if (production) {
 const llmsResponse = await request("/llms.txt");
 assert.equal(llmsResponse.status, 200);
 const llms = await llmsResponse.text();
-assert.ok(llms.startsWith("# ETA\n"));
+assert.ok(llms.startsWith("# Create AI Videos\n"));
 assert.ok(llms.includes(`${canonicalOrigin}/pricing`));
 assert.ok(llms.includes(`${canonicalOrigin}/features/ai-ugc-product-ads`), "UGC feature in AI discovery file");
 assert.ok(llms.includes(`${canonicalOrigin}/features/podcast-to-shorts`), "Shorts feature in AI discovery file");

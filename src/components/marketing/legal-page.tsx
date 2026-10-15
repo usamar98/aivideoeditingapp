@@ -5,7 +5,7 @@ import { JsonLd } from "@/components/marketing/json-ld";
 import { breadcrumbSchema, pageSchema } from "@/lib/seo/structured-data";
 
 export type LegalSection = { id: string; title: string; content: ReactNode };
-export const legalUpdatedAt = "2026-09-27";
+export const legalUpdatedAt = "2026-10-15";
 
 export function LegalPage({ title, description, path, sections }: {
   title: string;
@@ -14,11 +14,11 @@ export function LegalPage({ title, description, path, sections }: {
   sections: LegalSection[];
 }) {
   return (
-    <MarketingPage title={title} description={description} eyebrow="ETA / Legal">
+    <MarketingPage title={title} description={description} eyebrow="Create AI Videos / Legal">
       <JsonLd data={{ ...pageSchema(path, title, description), dateModified: legalUpdatedAt }} />
       <JsonLd data={breadcrumbSchema([{ name: "Home", path: "/" }, { name: title, path }])} />
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-y border-border py-4 text-sm">
-        <p className="text-muted-foreground">Last updated: <time dateTime={legalUpdatedAt}>September 27, 2026</time></p>
+        <p className="text-muted-foreground">Last updated: <time dateTime={legalUpdatedAt}>October 15, 2026</time></p>
         <Link href={path === "/privacy" ? "/terms" : "/privacy"} className="text-primary underline underline-offset-4">
           {path === "/privacy" ? "Terms of Service" : "Privacy Policy"}
         </Link>

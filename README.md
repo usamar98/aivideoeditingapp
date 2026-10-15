@@ -1,6 +1,8 @@
-# FrameFoundry
+# Create AI Videos
 
-FrameFoundry is a multi-feature AI video studio with a cream-and-blue public site, a generic faceless-video workflow, a recurring-character cartoon editor, private projects, durable rendering, Stripe billing, and account settings.
+Website: **https://createaivideos.app** · Support: **support@createaivideos.app**. See the [brand and domain cutover checklist](docs/DOMAIN_MIGRATION.md) before deploying this rebrand. It includes Vercel, Meta, Supabase, Google/YouTube, Stripe and Search Console settings; accounts and existing billing identities are preserved.
+
+Create AI Videos is a multi-feature AI video studio with a cream-and-blue public site, a generic faceless-video workflow, a recurring-character cartoon editor, private projects, durable rendering, Stripe billing, and account settings.
 
 Start with [the deployment guide](docs/DEPLOYMENT.md) for the exact Vercel/worker variables, Stripe product/portal/webhook setup, migrations, and launch checklist. [Faceless workflow research](docs/FACELESS-RESEARCH.md) explains the product examples and deliberately bounded feature scope.
 

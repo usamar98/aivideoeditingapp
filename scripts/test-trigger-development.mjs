@@ -13,7 +13,7 @@ try {
   configure({ secretKey });
   const options = { timeoutInMs: 10000, retry: { maxAttempts: 1 } };
   const handle = await tasks.trigger("connectivity-check", {
-    message: "FrameFoundry development setup verified.",
+    message: "Create AI Videos development setup verified.",
   }, { ttl: "2m", tags: ["setup-verification"] }, options);
   console.log(`Submitted connectivity-check: ${handle.id}`);
   const deadline = Date.now() + 90000;

@@ -1,7 +1,7 @@
 # Public legal pages
 
-- Privacy Policy: `https://www.editingapp.live/privacy`
-- Terms of Service: `https://www.editingapp.live/terms`
+- Privacy Policy: `https://createaivideos.app/privacy`
+- Terms of Service: `https://createaivideos.app/terms`
 
 These routes are server-rendered public pages with canonical metadata, navigation,
 and sitemap entries. The homepage footer and Google/email account form link to
@@ -13,14 +13,14 @@ This is a product-specific starting draft, not legal advice or a compliance
 certification. Have qualified counsel review the text for the actual operator,
 markets and practices before launch. In particular:
 
-- The operator has only been identified as ETA. Confirm and add the legal person
+- The operator has only been identified as Create AI Videos. Confirm and add the legal person
   or company name, business address and other disclosures required for its country
   and customers. Do not invent a company identity, jurisdiction or address.
 - Confirm an adults-only service is appropriate, and that operational practices
   match the stated eligibility and content rules.
 - Confirm actual provider contracts, retention, international transfers, Google
   data restrictions, refund handling and any tracking enabled outside this repo.
-- Ensure `support@editingapp.live` is monitored for access, export, deletion,
+- Ensure `support@createaivideos.app` is monitored for access, export, deletion,
   refunds and infringement reports. Account deletion is a support process, not
   an implemented self-service control or a fixed deletion SLA.
 - No numerical retention schedule, arbitration provision or liability cap was

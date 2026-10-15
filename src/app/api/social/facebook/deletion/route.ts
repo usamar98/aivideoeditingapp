@@ -8,5 +8,5 @@ export async function GET(request: Request) {
   if (!admin) return Response.json({ error: "Service unavailable" }, { status: 503 });
   const result = await admin.from("facebook_deletions").select("confirmation_code").eq("confirmation_code", code.data).maybeSingle();
   if (result.error) return Response.json({ error: "Service unavailable" }, { status: 503 });
-  return Response.json(result.data ? { status: "complete", message: "ETA's stored Facebook connection, tokens and publishing records have been removed. Already published Facebook content is unchanged." } : { status: "not_found", message: "Confirmation code not found or expired. Contact support@editingapp.live." }, { status: result.data ? 200 : 404, headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
+  return Response.json(result.data ? { status: "complete", message: "Create AI Videos’ stored Facebook connection, tokens and publishing records have been removed. Already published Facebook content is unchanged." } : { status: "not_found", message: "Confirmation code not found or expired. Contact support@createaivideos.app." }, { status: result.data ? 200 : 404, headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" } });
 }

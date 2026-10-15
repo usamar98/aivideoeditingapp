@@ -64,7 +64,7 @@ export async function runFacebookPost(db: SupabaseClient, id: string, prepare = 
     const state = facebookRemoteOutcome(remote);
     await save({ status: state === "published" ? "published" : state === "failed" || post.attempts >= 15 ? "needs_attention" : "publishing",
       attempts: state === "published" ? 0 : post.attempts + 1, next_check_at: new Date(Date.now() + 120_000).toISOString(),
-      error_message: state === "published" ? null : state === "failed" ? "Facebook could not process this Reel. Check Meta Business Suite; ETA will not create a replacement automatically." : post.attempts >= 15 ? "Publication is not confirmed. Check Meta Business Suite before creating another post. Check status only reconciles this existing Reel." : null });
+      error_message: state === "published" ? null : state === "failed" ? "Facebook could not process this Reel. Check Meta Business Suite; Create AI Videos will not create a replacement automatically." : post.attempts >= 15 ? "Publication is not confirmed. Check Meta Business Suite before creating another post. Check status only reconciles this existing Reel." : null });
   }
   try {
     let post = await current();
@@ -76,7 +76,7 @@ export async function runFacebookPost(db: SupabaseClient, id: string, prepare = 
     if (!post.finish_started_at && post.scheduled_at) {
       const delta = Date.parse(post.scheduled_at) - Date.now();
       if (delta > 0) { await save({ status: "scheduled", next_check_at: post.scheduled_at, error_message: null }); return; }
-      if (delta < -15 * 60_000) { await save({ status: "needs_attention", error_message: "The scheduled time was missed by more than 15 minutes. ETA has not requested publication. Cancel and choose another time." }); return; }
+      if (delta < -15 * 60_000) { await save({ status: "needs_attention", error_message: "The scheduled time was missed by more than 15 minutes. Create AI Videos has not requested publication. Cancel and choose another time." }); return; }
     }
     const linked = await facebookConnection(db, post.user_id);
     if (!linked || linked.id !== post.connection_id || linked.status !== "connected") throw new FacebookError("reconnect", "Reconnect the original Facebook Page.");
@@ -103,7 +103,7 @@ export async function runFacebookPost(db: SupabaseClient, id: string, prepare = 
     if (facebookRemoteOutcome(remote) === "failed") throw new FacebookError("rejected", "Facebook rejected the media transfer. Cancel this attempt and check the source video.");
     if (remote.status.uploading_phase?.status !== "complete") {
       await save({ status: post.attempts >= 15 ? "needs_attention" : "processing", attempts: post.attempts + 1, next_check_at: new Date(Date.now() + 120_000).toISOString(),
-        error_message: post.attempts >= 15 ? "Facebook has not confirmed transfer. Check Meta Business Suite. ETA will not resend an uncertain upload automatically." : null }); return;
+        error_message: post.attempts >= 15 ? "Facebook has not confirmed transfer. Check Meta Business Suite. Create AI Videos will not resend an uncertain upload automatically." : null }); return;
     }
     post = await current(); if (post.status === "cancelled") return;
     if (!facebookPublishingEnabled()) throw new FacebookError("rejected", "Facebook publishing was paused before publication.");

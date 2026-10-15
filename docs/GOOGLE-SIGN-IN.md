@@ -1,6 +1,6 @@
 # Google sign-up and sign-in
 
-ETA's `/login` page has **Continue with Google** in both authentication modes.
+Create AI Videos’ `/login` page has **Continue with Google** in both authentication modes.
 Supabase handles Google OAuth and PKCE; `/auth/callback` exchanges the one-use code,
 establishes the session cookie, calls the existing `api.ensure_personal_workspace`
 function, and redirects to a validated same-site destination. The same button
@@ -13,13 +13,13 @@ No new database migration, Google API key, service account, or dependency is nee
 ## 1. Google Cloud: create an OAuth client (not an API key)
 
 1. Open <https://console.cloud.google.com/auth/overview> and select/create a project.
-2. Configure **Branding** with ETA, its logo, `https://www.editingapp.live`, the actual
+2. Configure **Branding** with Create AI Videos, its logo, `https://createaivideos.app`, the actual
    public privacy/terms URLs below, and an eligible support email offered by Google.
-   Use `support@editingapp.live` on the website. Complete domain/brand verification
+   Use `support@createaivideos.app` on the website. Complete domain/brand verification
    if requested; do not invent legal-page URLs that have not been published.
    After deploying these pages, use:
-   - Privacy Policy: `https://www.editingapp.live/privacy`
-   - Terms of Service: `https://www.editingapp.live/terms`
+   - Privacy Policy: `https://createaivideos.app/privacy`
+   - Terms of Service: `https://createaivideos.app/terms`
    Both pages are public without sign-in and linked in the homepage footer and
    account form. Verify they return HTTP 200 on production before submitting.
 3. Set **Audience → External**. While Testing, add your own Google account as a test
@@ -28,9 +28,9 @@ No new database migration, Google API key, service account, or dependency is nee
 4. In **Data Access**, configure only `openid`,
    `https://www.googleapis.com/auth/userinfo.email`, and
    `https://www.googleapis.com/auth/userinfo.profile`. No Gmail, Drive, or YouTube scopes.
-5. Open **Clients → Create client → Web application**. Name it `ETA Google Login`.
+5. Open **Clients → Create client → Web application**. Name it `Create AI Videos Google Login`.
 6. Authorized JavaScript origins:
-   - `https://www.editingapp.live`
+   - `https://createaivideos.app`
    - `http://localhost:3001` for local Next.js testing (prefer separate development credentials).
 7. Authorized redirect URI: copy the **Callback URL (for OAuth)** shown in your
    Supabase project's **Authentication → Sign In / Providers → Google** settings.
@@ -41,7 +41,7 @@ No new database migration, Google API key, service account, or dependency is nee
    ```
 
    Use the dashboard's exact value, especially with a custom auth domain. Do NOT
-   enter ETA's `/auth/callback` or `/api/social/youtube/callback` here. Running
+   enter Create AI Videos’ `/auth/callback` or `/api/social/youtube/callback` here. Running
    Next.js locally against hosted Supabase still uses the hosted callback above.
 8. Create the client and securely save its **Client ID** and **Client secret**.
 
@@ -54,15 +54,15 @@ No new database migration, Google API key, service account, or dependency is nee
 5. Under **Authentication → URL Configuration**, set:
 
    ```text
-   Site URL: https://www.editingapp.live
+   Site URL: https://createaivideos.app
    ```
 
 6. Add these Redirect URLs. The scoped wildcard covers `next`, `provider`, and any
    SDK-added `sb_flow_id` query parameters; it does not allow arbitrary hosts:
 
    ```text
-   https://www.editingapp.live/auth/callback
-   https://www.editingapp.live/auth/callback?**
+   https://createaivideos.app/auth/callback
+   https://createaivideos.app/auth/callback?**
    http://localhost:3001/auth/callback
    http://localhost:3001/auth/callback?**
    ```
@@ -73,7 +73,7 @@ No new database migration, Google API key, service account, or dependency is nee
 The two redirects are different:
 
 ```text
-ETA → Supabase → Google → Supabase /auth/v1/callback → ETA /auth/callback → Studio
+Create AI Videos → Supabase → Google → Supabase /auth/v1/callback → Create AI Videos /auth/callback → Studio
 ```
 
 ## 3. Vercel
@@ -83,7 +83,7 @@ Keep the existing production settings:
 ```dotenv
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_SUPABASE_PROJECT_REF.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_EXISTING_PUBLISHABLE_KEY
-NEXT_PUBLIC_SITE_URL=https://www.editingapp.live
+NEXT_PUBLIC_SITE_URL=https://createaivideos.app
 NEXT_PUBLIC_DEMO_MODE=false
 ```
 
@@ -95,10 +95,10 @@ No Trigger.dev deployment or additional worker variables are needed for login.
 
 - In a fresh browser session, open `/login?next=/studio/jobs`, click **Create account**,
   and choose **Continue with Google**. No email/password fields need filling.
-- Authorize your test Google account yourself. Confirm that ETA opens Jobs,
+- Authorize your test Google account yourself. Confirm that Create AI Videos opens Jobs,
   the session persists on refresh, and the correct account/workspace appears.
 - Sign out and repeat with **Sign in**. Confirm the same workspace is reused.
-- Cancel the Google screen and confirm ETA shows a recoverable message.
+- Cancel the Google screen and confirm Create AI Videos shows a recoverable message.
 - Test email/password sign-in and email confirmation too.
 - In Supabase, verify the new user's Google identity and one owned workspace.
   Do not use an admin/service key to bypass workspace authorization.
@@ -113,7 +113,7 @@ the production Google credentials, redirect allowlist, or user consent are confi
 | Symptom | Check |
 | --- | --- |
 | Provider is not enabled | Google enabled and saved in the same Supabase project as the website |
-| `redirect_uri_mismatch` | Google client contains Supabase's exact OAuth callback, not ETA's callback |
+| `redirect_uri_mismatch` | Google client contains Supabase's exact OAuth callback, not Create AI Videos’ callback |
 | Redirected to homepage / callback missing | Supabase Redirect URLs include the exact app origin and callback query variants |
 | PKCE/code exchange failure | Start again in the same browser; allow cookies; do not reuse a consumed code |
 | Access blocked while Testing | Add your Google account under Audience → Test users |

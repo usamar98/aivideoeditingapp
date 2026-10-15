@@ -27,7 +27,7 @@ No audio-only sources, YouTube/link importing, silent-video understanding, socia
 
 **Face-follow is assisted, not automatic active-speaker recognition.** Voice labels do not identify faces. For multi-person shots, the user listens to each label and maps a horizontal position. The renderer follows a face near that position, with the crop anchor as fallback. Profiles, overlapping speakers, occlusion and camera/layout changes need review. Use manual crop or full-frame fit with a blurred background when appropriate. The offline frontal-face detector does not identify people or persist face identity embeddings.
 
-The repeated upload → AI shortlist → editable clips → captioned exports pattern was informed by the public workflows of [OpusClip](https://www.opus.pro/) and [Vizard](https://vizard.ai/). Their broader marketing claims, usage figures and proprietary tracking quality are not claimed for ETA. ETA's implementation uses its own existing fal/Trigger pipeline, not either vendor's API.
+The repeated upload → AI shortlist → editable clips → captioned exports pattern was informed by the public workflows of [OpusClip](https://www.opus.pro/) and [Vizard](https://vizard.ai/). Their broader marketing claims, usage figures and proprietary tracking quality are not claimed for Create AI Videos. Create AI Videos’ implementation uses its own existing fal/Trigger pipeline, not either vendor's API.
 
 ## Required rollout — not applied by the local implementation
 
@@ -36,7 +36,7 @@ The repeated upload → AI shortlist → editable clips → captioned exports pa
 3. Deploy the Trigger worker with `npx trigger.dev@4.6.4 deploy`. The updated config installs FFmpeg, `python3-opencv`, `opencv-data` and caption fonts, and bundles `trigger/shorts-faces.py`. Confirm **`shorts-pipeline`** appears in **Production → Tasks** before publishing the website. Node 22 is already selected. The task uses `medium-2x`, a two-run queue limit and a 90-minute timeout; compute is billed by Trigger.
 4. Deploy the website to Vercel. Use the existing **production** Trigger key. A `tr_dev_` key only works with a connected local development worker; it is not a production fallback.
 5. Test one recording you have permission to process: upload → analyze → edit → export → playback/download. Check the Jobs view, cancellation, credits, voice mapping and caption accuracy. A real paid end-to-end provider test still requires approval and a spending cap; none was run during this implementation.
-6. Inspect `https://www.editingapp.live/features/podcast-to-shorts` in Google Search Console after deploying. It enters the existing `https://www.editingapp.live/sitemap.xml`; do not submit private studio URLs. Metadata/structured data do not guarantee rankings or AI citations.
+6. Inspect `https://createaivideos.app/features/podcast-to-shorts` in Google Search Console after deploying. It enters the existing `https://createaivideos.app/sitemap.xml`; do not submit private studio URLs. Metadata/structured data do not guarantee rankings or AI citations.
 
 ### Environment variables
 

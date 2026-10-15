@@ -94,7 +94,7 @@ export async function uploadPart(token: string, session: string, total: number, 
     if (next < 0 || next >= total) throw new YouTubeError("session", "YouTube returned an invalid upload offset.");
     return { offset: next, videoId: null };
   }
-  if (result.status === 404 || result.status === 410) { await result.body?.cancel(); throw new YouTubeError("session", "The upload session expired. Check YouTube Studio before starting another upload; ETA will not risk uploading a duplicate."); }
+  if (result.status === 404 || result.status === 410) { await result.body?.cancel(); throw new YouTubeError("session", "The upload session expired. Check YouTube Studio before starting another upload; Create AI Videos will not risk uploading a duplicate."); }
   await check(result); const video = await result.json();
   if (!/^[\w-]{11}$/.test(video.id)) throw new YouTubeError("session", "YouTube did not confirm a video ID. Retry this upload to reconcile it.");
   return { offset: total, videoId: video.id };

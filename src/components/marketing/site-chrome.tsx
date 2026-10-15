@@ -6,7 +6,7 @@ import { heroStockCredits } from "./hero-media";
 
 export function SiteHeader() {
   return <header className="mx-auto flex min-h-24 max-w-7xl flex-wrap items-center justify-between gap-x-5 gap-y-2 px-6 py-4 lg:px-10">
-    <Link href="/" aria-label="ETA home"><BrandMark /></Link>
+    <Link href="/" aria-label="Create AI Videos home"><BrandMark /></Link>
     <nav aria-label="Main navigation" className="order-3 flex w-full flex-wrap gap-x-6 text-sm sm:order-none sm:w-auto"><Link className="py-2" href="/features">Features</Link><Link className="py-2" href="/pricing">Pricing</Link><Link className="py-2" href="/guides">Guides</Link></nav>
     <Button asChild className="rounded-full"><Link href="/studio">Open studio</Link></Button>
   </header>;
@@ -14,12 +14,12 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return <footer className="mx-auto mt-8 flex max-w-7xl flex-wrap items-center justify-between gap-6 border-t border-border px-6 py-8 text-sm lg:px-10">
-    <Link href="/" aria-label="ETA home"><BrandMark /></Link>
-    <nav aria-label="Footer navigation" className="flex flex-wrap gap-x-5 gap-y-3"><Link href="/features">Features</Link><Link href="/pricing">Pricing</Link><Link href="/guides">Guides</Link><Link href="/about">About ETA</Link><Link href="/contact">Contact</Link><Link href="/privacy">Privacy Policy</Link><Link href="/terms">Terms of Service</Link></nav>
+    <Link href="/" aria-label="Create AI Videos home"><BrandMark /></Link>
+    <nav aria-label="Footer navigation" className="flex flex-wrap gap-x-5 gap-y-3"><Link href="/features">Features</Link><Link href="/pricing">Pricing</Link><Link href="/guides">Guides</Link><Link href="/about">About Create AI Videos</Link><Link href="/contact">Contact</Link><Link href="/privacy">Privacy Policy</Link><Link href="/terms">Terms of Service</Link></nav>
     <a className="break-all text-muted-foreground" href={`mailto:${brand.supportEmail}`}>{brand.supportEmail}</a>
     <details className="w-full text-xs leading-6 text-muted-foreground" data-testid="media-credits">
       <summary className="w-fit cursor-pointer underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-primary">About the example media</summary>
-      <p className="mt-3 max-w-3xl">AI-generated stock and original concept artwork, not ETA exports, customer results or live account data. Stock portraits are not cloning or speaking demos. The digital-clone tool animates authorized photos; it does not clone voices. TikTok publishing is coming soon. Platform icons do not imply endorsement.</p>
+      <p className="mt-3 max-w-3xl">AI-generated stock and original concept artwork, not Create AI Videos exports, customer results or live account data. Stock portraits are not cloning or speaking demos. The digital-clone tool animates authorized photos; it does not clone voices. TikTok publishing is coming soon. Platform icons do not imply endorsement.</p>
       <ul className="my-2 flex flex-wrap gap-x-5 gap-y-1">{heroStockCredits.map((credit) => <li key={credit.href}><a href={credit.href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{credit.name}</a></li>)}</ul>
       <a href="https://pixabay.com/service/license-summary/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Pixabay Content License</a>
     </details>

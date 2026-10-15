@@ -8,7 +8,7 @@ import type { FacebookDashboardData } from "@/lib/social/facebook-types";
 
 export const metadata = { title: "Facebook Page publishing", robots: { index: false, follow: false } };
 const notices: Record<string, string> = {
-  choose_page: "Choose the Page you want ETA to publish to. Nothing has been posted.",
+  choose_page: "Choose the Page you want Create AI Videos to publish to. Nothing has been posted.",
   denied: "Facebook connection cancelled. Nothing was posted.",
   no_pages: "No eligible Pages were returned. Use a Facebook account with permission to create content on a Page and allow all three requested permissions.",
   connection_failed: "Facebook could not connect. Try again, allow the requested permissions, and check the Meta app configuration if this continues.",

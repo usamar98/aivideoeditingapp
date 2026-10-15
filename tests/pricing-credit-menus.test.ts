@@ -19,7 +19,7 @@ describe("reference-style pricing cards", () => {
     expect($.text()).not.toContain("Then $15");
   });
 
-  it("puts the full-width popular header only on Growth while preserving ETA's theme", () => {
+  it("puts the full-width popular header only on Growth while preserving Create AI Videos’ theme", () => {
     const $ = render({ selectedTier: "growth" });
     const growth = $("[data-pricing-tier='growth']");
     expect(growth.text()).toContain("MOST POPULAR");

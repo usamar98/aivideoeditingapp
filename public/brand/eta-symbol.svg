@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
-  <title>ETA</title>
+  <title>Create AI Videos</title>
   <defs>
-    <linearGradient id="eta-blue" x1="8" y1="0" x2="58" y2="64" gradientUnits="userSpaceOnUse">
+    <linearGradient id="cav-blue" x1="8" y1="0" x2="58" y2="64" gradientUnits="userSpaceOnUse">
       <stop stop-color="#3977FF"/>
       <stop offset="1" stop-color="#204BD6"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="18" fill="url(#eta-blue)"/>
+  <rect width="64" height="64" rx="18" fill="url(#cav-blue)"/>
   <rect x=".75" y=".75" width="62.5" height="62.5" rx="17.25" stroke="#fff" stroke-opacity=".18" stroke-width="1.5"/>
-  <path d="M16 16h30v8H25v5h12v7H25v5h21v8H16V16Z" fill="#FAF7EF"/>
-  <path d="M42 27.5c0-.8.9-1.3 1.6-.9l8 4.5c.7.4.7 1.4 0 1.8l-8 4.5c-.7.4-1.6-.1-1.6-.9v-9Z" fill="#BFD9FF"/>
+  <path d="M43 18a19 19 0 1 0 0 28" stroke="#FAF7EF" stroke-width="7" stroke-linecap="round"/>
+  <path d="M29 23c0-1.5 1.7-2.4 3-1.6l15 9c1.2.7 1.2 2.5 0 3.2l-15 9c-1.3.8-3-.1-3-1.6V23Z" fill="#FAF7EF"/>
 </svg>

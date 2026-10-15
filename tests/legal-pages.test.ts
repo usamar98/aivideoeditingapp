@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("@/lib/supabase/client", () => ({ createClient: vi.fn() }));
 vi.mock("@/config/brand", () => ({ brand: {
-  name: "ETA", shortName: "ETA", siteUrl: "https://www.editingapp.live", supportEmail: "support@editingapp.live",
+  name: "Create AI Videos", shortName: "Create AI Videos", siteUrl: "https://createaivideos.app", supportEmail: "support@createaivideos.app",
 } }));
 
 import PrivacyPage, { metadata as privacyMetadata } from "@/app/privacy/page";
@@ -24,10 +24,10 @@ describe("public legal pages", () => {
     expect($("main h1").length).toBe(1);
     expect($("main h1").text()).toBe(title);
     expect($("main section").length).toBeGreaterThanOrEqual(10);
-    expect($("time").attr("datetime")).toBe("2026-09-27");
-    expect($("main a[href='mailto:support@editingapp.live']").length).toBeGreaterThan(0);
-    expect(metadata.alternates?.canonical).toBe(`https://www.editingapp.live${path}`);
-    expect(metadata.title).toEqual({ absolute: `${title} | ETA` });
+    expect($("time").attr("datetime")).toBe("2026-10-15");
+    expect($("main a[href='mailto:support@createaivideos.app']").length).toBeGreaterThan(0);
+    expect(metadata.alternates?.canonical).toBe(`https://createaivideos.app${path}`);
+    expect(metadata.title).toEqual({ absolute: `${title} | Create AI Videos` });
     expect(publicPages.some((page) => page.path === path)).toBe(true);
     const toc = $("nav[aria-label='On this page'] a");
     expect(toc.length).toBe($("main section").length);
@@ -39,12 +39,12 @@ describe("public legal pages", () => {
     const ids = $("[id]").map((_, element) => $(element).attr("id")).get();
     expect(new Set(ids).size).toBe(ids.length);
     const schemas = $("script[type='application/ld+json']").map((_, element) => JSON.parse($(element).text())).get();
-    expect(schemas).toEqual(expect.arrayContaining([expect.objectContaining({ "@type": "WebPage", url: `https://www.editingapp.live${path}` })]));
+    expect(schemas).toEqual(expect.arrayContaining([expect.objectContaining({ "@type": "WebPage", url: `https://createaivideos.app${path}` })]));
   });
 
   it("explains Google scope limits, AI processing and support-based deletion", () => {
     const $ = load(renderToStaticMarkup(createElement(PrivacyPage)));
-    expect($("#google").text()).toContain("does not give ETA access to your Gmail");
+    expect($("#google").text()).toContain("does not give Create AI Videos access to your Gmail");
     expect($("#google").text()).toContain("not for advertising or AI model training");
     expect($("#google a").attr("href")).toBe("https://myaccount.google.com/connections");
     for (const provider of ["Supabase", "Vercel", "Trigger.dev", "fal.ai", "Gemini", "ElevenLabs", "Stripe"]) {

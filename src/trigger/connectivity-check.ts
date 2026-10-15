@@ -8,7 +8,7 @@ export const connectivityCheck = task({
   run: async (payload: { message?: string }) => {
     const message = typeof payload?.message === "string"
       ? payload.message.slice(0, 200)
-      : "FrameFoundry development worker is connected.";
+      : "Create AI Videos development worker is connected.";
     logger.info("Trigger.dev connectivity check completed");
     return {
       ok: true,

@@ -7,7 +7,7 @@ import { facebookAuthorizationUrl } from "@/lib/social/facebook";
 export async function POST(request: Request) {
   try {
     const config = facebookConfig();
-    if (request.headers.get("origin") !== config.origin) return Response.json({ error: "Connect from the configured ETA website." }, { status: 403 });
+    if (request.headers.get("origin") !== config.origin) return Response.json({ error: "Connect from the configured Create AI Videos website." }, { status: 403 });
     if ((await request.formData()).get("policy") !== "agree") return Response.json({ error: "Accept the Facebook data policy before connecting." }, { status: 400 });
     const { admin, user } = await requireAccount(), { state } = oauthSecrets();
     const result = await admin.rpc("begin_facebook_oauth", { owner_id: user.id, state_digest: hash(state) });

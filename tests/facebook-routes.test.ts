@@ -11,7 +11,7 @@ import { POST as connect } from "@/app/api/social/facebook/connect/route";
 import { GET as callback } from "@/app/api/social/facebook/callback/route";
 import { POST as deletion, GET as deletionStatus } from "@/app/api/social/facebook/deletion/route";
 
-const user = randomUUID(), receipt = randomUUID(), origin = "https://www.editingapp.live";
+const user = randomUUID(), receipt = randomUUID(), origin = "https://createaivideos.app";
 let rpc: ReturnType<typeof vi.fn>, query: Record<string, ReturnType<typeof vi.fn>>;
 beforeEach(() => {
   vi.resetAllMocks();

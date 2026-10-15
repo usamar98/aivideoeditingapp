@@ -146,7 +146,7 @@ export async function runYouTubePost(db: SupabaseClient, postId: string) {
     if (!p.visibility_applied) {
       p = await current(); if (p.cancel_requested) { await cancel(p); return; }
       if (p.visibility !== "private" && !publicPublishingEnabled()) throw new YouTubeError("rejected", "Public publishing is not enabled for this app. Review the video’s current visibility in YouTube Studio.");
-      if (p.scheduled_at && Date.parse(p.scheduled_at) < Date.now() + 60_000) throw new YouTubeError("rejected", "The selected publication time passed before ETA could confirm the schedule. Check YouTube Studio, then cancel this request and choose a later time if needed.");
+      if (p.scheduled_at && Date.parse(p.scheduled_at) < Date.now() + 60_000) throw new YouTubeError("rejected", "The selected publication time passed before Create AI Videos could confirm the schedule. Check YouTube Studio, then cancel this request and choose a later time if needed.");
       await setVisibility(token, video, p.scheduled_at ? "private" : p.visibility, p.scheduled_at);
       await checkpoint({ visibility_applied: true });
       video = await getVideo(token, video.id); verifyOwner(video);

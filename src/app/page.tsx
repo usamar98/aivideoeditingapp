@@ -17,7 +17,7 @@ import { publicMetadata } from "@/lib/seo/metadata";
 import { pageSchema } from "@/lib/seo/structured-data";
 import { getPublishedFeaturesData } from "@/lib/features/repository";
 
-export const metadata = publicMetadata({ title: "AI Video Generator for Stories, Cartoons & UGC Ads", description: brand.description, path: "/" });
+export const metadata = publicMetadata({ title: "AI Video Generator & Creative Studio", description: brand.description, path: "/" });
 
 export const dynamic = "force-dynamic";
 
@@ -31,11 +31,11 @@ export default async function Home() {
       <div className="flex items-center gap-3"><Link href="/login" className="hidden text-sm sm:block">Log in</Link><Button asChild className="rounded-full"><Link href="/studio">Open studio <ArrowRight /></Link></Button></div>
     </header>
     <HeroShowcase>
-      <h1 className="text-5xl leading-[1.02] tracking-[-.055em] sm:text-7xl xl:text-[5.25rem]">Your imagination.<br /><span className="editorial italic text-primary">Made to move.</span></h1>
+      <h1 className="text-5xl leading-[1.02] tracking-[-.055em] sm:text-7xl xl:text-[5.25rem]">Create AI videos.<br /><span className="editorial italic text-primary">Made to move.</span></h1>
       <HeroPrompt />
     </HeroShowcase>
     <section id="tools" className="mx-auto max-w-7xl scroll-mt-6 px-6 py-20 lg:px-10"><div className="flex flex-wrap items-end justify-between gap-5"><div><p className="eyebrow text-primary">One studio. More ways to create.</p><h2 className="editorial mt-4 text-4xl tracking-tight sm:text-5xl">What will you make today?</h2></div><p className="max-w-xs text-sm leading-6 text-muted-foreground">Create something new, or turn an existing recording into captioned Shorts.</p></div>
-      <FeatureGrid published={[...published]} desktopColumns={4}><PlannedFeatureCards /></FeatureGrid>
+      <FeatureGrid published={[...published]} desktopColumns={4}><PlannedFeatureCards published={[...published]} /></FeatureGrid>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-primary/25 p-6"><div className="flex items-center gap-4"><Film className="size-6 text-primary" /><div><h3 className="font-semibold">One account. A growing creative toolkit.</h3><p className="mt-1 text-sm text-muted-foreground">Use the same workspace and credits across the available tools. Planned features are not available yet.</p></div></div><Link href="/features" className="text-sm text-primary underline underline-offset-4">Compare all tools →</Link></div>
     </section>
     <ChannelShowcase />

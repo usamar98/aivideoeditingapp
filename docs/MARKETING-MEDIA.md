@@ -12,14 +12,14 @@ Updated: 2026-09-28.
 
 - Removed the hero caption panel, four-benefit strip and shared social-publishing coming-soon card. Detailed source credits now live in the public footer's "About the example media" disclosure. Individual hero reels remain labeled AI concepts; a compact, accessible icon button still pauses all background motion.
 - Added a responsive channel-dashboard concept between the hero and feature grid with the requested "Connect and Grow your channel on automation" title. YouTube and TikTok selectors change the preview and CTA. YouTube links to the existing publishing workspace; TikTok remains explicitly coming soon. The dashboard is illustrative, uses empty analytics placeholders and does not invent views, followers, account connections or growth promises.
-- The three dashboard videos reuse `hero-ugc`, `ai-portrait` and `hero-cartoon`, with their existing local posters, WebM/MP4 alternatives and provenance below. They are silent stock inspiration, not ETA exports. Playback is user-initiated with native controls and `preload="none"`.
+- The three dashboard videos reuse `hero-ugc`, `ai-portrait` and `hero-cartoon`, with their existing local posters, WebM/MP4 alternatives and provenance below. They are silent stock inspiration, not Create AI Videos exports. Playback is user-initiated with native controls and `preload="none"`.
 - Shared homepage, feature-directory and studio cards use the existing original WebP images for "Viral faceless Video" and "Viral Cartoon videos". The titles are creative labels, not performance guarantees. Existing tool URLs and entry points are unchanged.
 
 The sections below retain the original asset provenance and implementation history; the newest dated update takes precedence where presentation descriptions differ.
 
 ## Presentation and provenance
 
-The homepage hero, homepage feature cards, studio tool cards, and shared UGC preview use AI-generated inspiration. These are **not ETA exports, customer work, testimonials, or guarantees of output quality**. Concept labels and the hero credit are intentionally visible. The fictional presenter is not a real endorser; products are unbranded.
+The homepage hero, homepage feature cards, studio tool cards, and shared UGC preview use AI-generated inspiration. These are **not Create AI Videos exports, customer work, testimonials, or guarantees of output quality**. Concept labels and the hero credit are intentionally visible. The fictional presenter is not a real endorser; products are unbranded.
 
 All media is served locally from `public/examples/`. No external media embeds, trackers, provider keys, database migrations, or paid API calls are needed for this change. Do not add these example assets to paid downloadable outputs or represent them as a user's generated work.
 
@@ -61,7 +61,7 @@ Use case: ads-marketing. Asset type: AI-generated product-ad concept image for a
 - Source preview URL: https://cdn.pixabay.com/video/2024/03/09/203486-921629628_tiny.jpg (replaced locally with a sharper frame extracted from the video).
 - Local files: `public/examples/fantasy-forest.mp4` (1,085,854 bytes), `public/examples/fantasy-forest.webm` (approximately 306 KB), and `public/examples/fantasy-forest-poster.jpg` (1280 × 720).
 - Video: original 1920 × 1080 H.264 MP4, approximately 6.13 seconds, silent (no audio track). Also encoded as 1280 × 720 VP9 WebM (CRF 33), offered first for broader embedded-browser compatibility. Poster extracted at 0.3 seconds. No narrative/content edits to the stock footage. Integrated into the designed hero with original concept images, captions and website copy; not offered as standalone stock for resale/download.
-- The license permits free commercial use and adaptation, subject to restrictions on standalone distribution, misleading attribution/endorsement, trademarks, and other third-party rights. The fictional forest clip shows no identifiable people or branding. Keep the visible source credit and the “not ETA exports” disclosure when reusing it.
+- The license permits free commercial use and adaptation, subject to restrictions on standalone distribution, misleading attribution/endorsement, trademarks, and other third-party rights. The fictional forest clip shows no identifiable people or branding. Keep the visible source credit and the “not Create AI Videos exports” disclosure when reusing it.
 
 ## AI portrait video for the hero and coming-soon preview
 
@@ -73,7 +73,7 @@ Use case: ads-marketing. Asset type: AI-generated product-ad concept image for a
 - Download URL observed on the source page: https://cdn.pixabay.com/video/2025/08/01/294774_large.mp4
 - The clip was capped at six seconds (approximately 5.21 seconds of available footage) and resized to 540 × 968, with audio removed, encoded as H.264 MP4 (688,566 bytes) and VP9 WebM (1,039,038 bytes). The JPEG poster is extracted at 0.3 seconds (59,718 bytes).
 - Local files: `ai-portrait.mp4`, `ai-portrait.webm`, and `ai-portrait-poster.jpg` in `public/examples/`.
-- Visible disclosure: **AI portrait inspiration, not an ETA clone or a speaking demo**. It is not a generated customer result, a real digital-cloning demonstration, an endorsement or a promise that the planned feature is available.
+- Visible disclosure: **AI portrait inspiration, not a Create AI Videos clone or a speaking demo**. It is not a generated customer result, a real digital-cloning demonstration, an endorsement or a promise that the planned feature is available.
 - The four social publishing cards are static, explicitly coming soon; brand icons identify planned destinations without implying affiliation or a working integration.
 
 ## Performance and accessibility
@@ -104,4 +104,4 @@ Observed source downloads:
 
 Adaptations: first six seconds, cover-scaled and center-cropped to **360 × 640**, square pixels, 24 fps, audio removed. H.264 MP4 (CRF 27 / fast-start) plus VP9 WebM (CRF 36); JPEG poster extracted at 0.3 seconds. Each new video rendition is under 200 KB and each poster under 60 KB. Raw downloads stay in ignored `.seo-cache/`, not in Git. Existing forest and portrait files remain unchanged and are reused in the rows.
 
-The beauty close-up is labeled **AI ad inspiration**, not a real UGC testimonial. The original fictional presenter/product artwork supplies the UGC and product concepts. No clearly licensed actual digital-clone demo was selected: the existing AI portrait stands in as explicitly labeled inspiration with **Digital clone · Soon**. The coming-soon feature card retains its own opt-in preview and disclosure. The hero's expandable **Media credits · Pixabay** lists every stock creator/source and the license; the "not ETA exports" notice stays visible when credits are collapsed.
+The beauty close-up is labeled **AI ad inspiration**, not a real UGC testimonial. The original fictional presenter/product artwork supplies the UGC and product concepts. No clearly licensed actual digital-clone demo was selected: the existing AI portrait stands in as explicitly labeled inspiration with **Digital clone · Soon**. The coming-soon feature card retains its own opt-in preview and disclosure. The hero's expandable **Media credits · Pixabay** lists every stock creator/source and the license; the "not Create AI Videos exports" notice stays visible when credits are collapsed.

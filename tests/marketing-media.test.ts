@@ -111,7 +111,7 @@ describe("AI marketing media", () => {
 
   it("keeps source credits in the footer instead of the removed hero caption box", () => {
     const $ = load(renderToStaticMarkup(createElement(SiteFooter)));
-    expect($.text()).toContain("not ETA exports");
+    expect($.text()).toContain("not Create AI Videos exports");
     expect($.text()).toContain("not cloning or speaking demos");
     const credit = $("a[href^='https://pixabay.com/videos/']");
     expect(credit.length).toBe(6);
@@ -135,7 +135,7 @@ describe("AI marketing media", () => {
     expect($("a[href='/features/ai-digital-clone-presenter']").length).toBe(1);
     expect($("video[controls]").length).toBe(0);
     expect($("video").length).toBe(0);
-    expect($("img").attr("alt")).toContain("not an ETA clone or speaking demo");
+    expect($("img").attr("alt")).toContain("not a Create AI Videos clone or speaking demo");
     expect($("[data-feature='social-publishing']").length).toBe(0);
     expect($("a[href^='/studio']").length).toBe(0);
     expect($("button, article p").length).toBe(0);
@@ -194,6 +194,14 @@ describe("AI marketing media", () => {
     const $ = load(renderToStaticMarkup(await Home()));
     expect($("#tools a[href^='/features/']").length).toBe(0);
     expect($("#tools article").length).toBe(plannedCards.length);
+  });
+
+  it("does not advertise the published Ad Remake tool as coming soon", async () => {
+    mocks.published.mockResolvedValue([{ slug: "ai-ad-remake" }]);
+    const $ = load(renderToStaticMarkup(await Home()));
+    expect($("#tools a[href='/features/ai-ad-remake']").length).toBe(1);
+    expect($("#tools article[data-feature='ad-remake'][data-availability='coming-soon']").length).toBe(0);
+    expect($("main h1").text()).toContain("Create AI videos");
   });
 
   it("uses the studio's shared card design and order on the public feature directory", async () => {
@@ -325,7 +333,7 @@ describe("AI marketing media", () => {
     expect($("a[href='/studio/social']").text()).toContain("Open YouTube publishing");
     expect($("dl dd").map((_, el) => $(el).text()).get()).toEqual(["—", "—", "—"]);
     expect($.text()).toContain("Illustrative activity · Not live analytics");
-    expect($.text()).toContain("not ETA exports");
+    expect($.text()).toContain("not Create AI Videos exports");
     expect($("iframe").length).toBe(0);
     expect($("video[controls]").length).toBe(0);
     expect($("video[loop][muted][playsinline]").length).toBe(3);

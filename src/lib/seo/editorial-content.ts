@@ -22,8 +22,8 @@ const cancellationAnswer = "Open Jobs to view waiting, running, completed, faile
 
 export const homeFaqs: Answer[] = [
   {
-    question: "What can I create with ETA?",
-    answer: "ETA includes cinematic short films, narrated faceless videos, character-led AI cartoons, AI UGC product ads, digital-clone presenters and podcast-to-Shorts editing. Shorts repurpose your recordings into selected highlights with framing controls and animated captions. All workflows have a review step before rendering and export private MP4 files.",
+    question: "What can I create with Create AI Videos?",
+    answer: "Create AI Videos includes cinematic short films, narrated faceless videos, character-led AI cartoons, AI UGC product ads, digital-clone presenters and podcast-to-Shorts editing. Shorts repurpose your recordings into selected highlights with framing controls and animated captions. All workflows have a review step before rendering and export private MP4 files.",
   },
   {
     question: "What is the difference between faceless videos and cartoons?",
@@ -34,7 +34,7 @@ export const homeFaqs: Answer[] = [
     answer: `Yes. Review and edit the plan before starting the separate rendering stage. Faceless AI script writing costs 2 credits, or use your own script without that writing charge. Cartoon reference-mode cast and story creation costs ${CARTOON_PLAN_CREDITS} credits; direct-prompt story planning costs 2 credits. UGC presenter and hook planning costs ${UGC_PLAN_CREDITS} credits. Completed planning stages remain charged even if you choose not to render.`,
   },
   {
-    question: "How much does ETA cost?",
+    question: "How much does Create AI Videos cost?",
     answer: `Monthly plans start at ${formatUsd(starter.monthlyAmount)} for ${starter.monthlyCredits.toLocaleString("en-US")} credits. Creator yearly billing is ${formatUsd(starterAnnual.amount)} upfront, equivalent to ${formatUsd(starterAnnual.monthlyEquivalent)} per month, with ${starterAnnual.credits.toLocaleString("en-US")} credits issued upfront. Growth starts at $49 per month; Enterprise pricing is agreed individually. Faceless rendering costs 20 credits; cartoon costs depend on length and model. Prices are in USD; any applicable taxes are shown at checkout.`,
   },
   {
@@ -47,8 +47,8 @@ export const homeFaqs: Answer[] = [
   },
   { question: "Can I cancel a running generation?", answer: cancellationAnswer },
   {
-    question: "Does ETA post videos to my social accounts?",
-    answer: "ETA has a YouTube publishing workspace where eligible users can connect their channel, review a completed video and upload or schedule it. Public posting depends on Google approval and account configuration. TikTok publishing is coming soon. The homepage dashboard is a design preview, not live analytics or a growth guarantee. You can also download your MP4 and post it yourself. Always review AI output before publishing.",
+    question: "Does Create AI Videos post videos to my social accounts?",
+    answer: "Create AI Videos offers separate Facebook Page and YouTube publishing connections. Authorize a Page you can publish to or your YouTube channel, then review the video and settings before confirming an upload or schedule. Facebook publishes public Page Reels, not personal-profile posts. YouTube public posting depends on Google approval and deployment settings. TikTok publishing is coming soon. The homepage dashboard is a design preview, not live analytics or a growth guarantee.",
   },
 ];
 
@@ -58,32 +58,32 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
   "podcast-to-shorts": shortsEditorial,
   "ai-ugc-product-ads": {
     updatedAt: "2026-09-25",
-    summary: "ETA’s AI UGC ad generator combines a fictional talking presenter with your actual product photos. Start from a public product page or upload the images yourself. Review the imported facts, define your audience and approved benefits, then create a presenter and three hook options. Edit the shared script and choose which variants to render. Product photos remain separate from generated footage to preserve the original packaging and appearance. This is a guided ad-creation workflow, not a real customer testimonial service or an ad-buying platform.",
+    summary: "Create AI Videos’ AI UGC ad generator combines a fictional talking presenter with your actual product photos. Start from a public product page or upload the images yourself. Review the imported facts, define your audience and approved benefits, then create a presenter and three hook options. Edit the shared script and choose which variants to render. Product photos remain separate from generated footage to preserve the original packaging and appearance. This is a guided ad-creation workflow, not a real customer testimonial service or an ad-buying platform.",
     steps: [
       { title: "Add the product and verify its facts", text: "Import a public HTTPS product page or upload one to four PNG, JPG or WebP photos up to 8 MB each. Page metadata can be incomplete or wrong, so review the name, description and images. Add your intended audience, supported benefits, optional offer and call to action. If a store blocks imports, use manual photos and details instead." },
-      { title: "Choose a presenter and create three hooks", text: "Choose a warm, confident, upbeat or calm presenter direction. ETA generates a new fictional adult portrait and writes a shared body and CTA with three different opening lines. The English narration uses the studio’s configured voice. The presenter is not a celebrity, a cloned customer or a real person claiming to have used your product." },
+      { title: "Choose a presenter and create three hooks", text: "Choose a warm, confident, upbeat or calm presenter direction. Create AI Videos generates a new fictional adult portrait and writes a shared body and CTA with three different opening lines. The English narration uses the studio’s configured voice. The presenter is not a celebrity, a cloned customer or a real person claiming to have used your product." },
       { title: "Edit and approve your selected variants", text: "Review the presenter, correct every product claim, and edit the hook and body copy. Keep each complete script within the displayed word limit. Select one, two or all three openings. You see the exact reserved-credit cost before rendering; saving a brief does not start paid generation." },
-      { title: "Download, review and test your ads", text: "Kling AI Avatar v2 Pro animates the presenter from the approved narration. ETA combines that clip with original product photos, a brand-color accent, an on-screen CTA and optional burned-in captions. Download the MP4 and separate SRT captions from the private project. Watch every version before uploading it to your advertising platform, and judge performance using your own campaign data." },
+      { title: "Download, review and test your ads", text: "Kling AI Avatar v2 Pro animates the presenter from the approved narration. Create AI Videos combines that clip with original product photos, a brand-color accent, an on-screen CTA and optional burned-in captions. Download the MP4 and separate SRT captions from the private project. Watch every version before uploading it to your advertising platform, and judge performance using your own campaign data." },
     ],
     useCases: [
       { title: "A product launch with several openings", text: "Introduce one product to a defined audience. Compare a question-led hook with a benefit-led hook while keeping the presenter, core message and CTA consistent. Changing fewer creative elements can make the differences easier to interpret in your own tests." },
-      { title: "Existing product photos, a new presentation", text: "Reuse approved catalogue images in a presenter-led composition. Original images appear beside or below the presenter and cycle through the ad; ETA does not redraw labels or pretend the presenter is physically handling the product." },
+      { title: "Existing product photos, a new presentation", text: "Reuse approved catalogue images in a presenter-led composition. Original images appear beside or below the presenter and cycle through the ad; Create AI Videos does not redraw labels or pretend the presenter is physically handling the product." },
       { title: "A concise paid-social creative", text: "Choose a 15- or 30-second ad in 9:16, 1:1 or 16:9. Use short, substantiated copy and readable captions. Exports include a visible AI-presenter label. Platform review, required disclosures and final publishing remain your responsibility." },
     ],
     faqs: [
-      { question: "What is an AI UGC ad?", answer: "An AI UGC ad is an advertisement styled like creator-led content but made using an AI presenter. It is not authentic user-generated testimony. ETA generates a fictional adult spokesperson and labels the video as featuring an AI presenter. Do not imply that this spokesperson bought, tested or personally recommends the product." },
-      { question: "Can I turn a product link into a video ad?", answer: "Yes, for accessible public HTTPS pages. ETA imports available product metadata and supported photos, which you review before generation. It does not bypass logins, anti-bot protection or paywalls. If a page needs JavaScript or does not expose suitable images, upload photos and enter the product details yourself." },
+      { question: "What is an AI UGC ad?", answer: "An AI UGC ad is an advertisement styled like creator-led content but made using an AI presenter. It is not authentic user-generated testimony. Create AI Videos generates a fictional adult spokesperson and labels the video as featuring an AI presenter. Do not imply that this spokesperson bought, tested or personally recommends the product." },
+      { question: "Can I turn a product link into a video ad?", answer: "Yes, for accessible public HTTPS pages. Create AI Videos imports available product metadata and supported photos, which you review before generation. It does not bypass logins, anti-bot protection or paywalls. If a page needs JavaScript or does not expose suitable images, upload photos and enter the product details yourself." },
       { question: "How many hooks and ad variants can I create?", answer: "Each planning stage produces three editable opening hooks with a shared body and CTA. Render one, two or all three selected hooks. You can edit the plan and render again as a new paid job. Existing exports retain the script used when they were generated." },
       { question: "How much do UGC ads cost in credits?", answer: `Presenter and three-hook planning costs ${UGC_PLAN_CREDITS} credits. Each 15-second ad costs ${ugcRenderCredits(15, 1)} credits, and each 30-second ad costs ${ugcRenderCredits(30, 1)} credits. A new plan plus three 15-second variants costs ${UGC_PLAN_CREDITS + ugcRenderCredits(15, 3)} credits. Failed or confirmed cancelled jobs refund their own reservation; completed planning stays charged.` },
-      { question: "Which model, voice and export formats does ETA use?", answer: "Presenter animation uses Kling AI Avatar v2 Pro on fal. Planning uses Gemini through fal and portrait generation uses GPT Image 2.5 Sunburst. English narration uses the configured ElevenLabs studio voice. Export 15- or 30-second MP4s at 720×1280, 720×720 or 1280×720, with separate timed SRT files and optional burned-in captions." },
+      { question: "Which model, voice and export formats does Create AI Videos use?", answer: "Presenter animation uses Kling AI Avatar v2 Pro on fal. Planning uses Gemini through fal and portrait generation uses GPT Image 2.5 Sunburst. English narration uses the configured ElevenLabs studio voice. Export 15- or 30-second MP4s at 720×1280, 720×720 or 1280×720, with separate timed SRT files and optional burned-in captions." },
       { question: "Will the AI presenter hold or demonstrate my product?", answer: "Not in this workflow. The original product photos are composed beside or below the talking presenter. This preserves your imagery without promising accurate AI-generated packaging, hand interactions or unboxing footage. Describe only functions or benefits you can substantiate." },
-      { question: "Can ETA publish the ads or guarantee conversions?", answer: "No. ETA creates downloadable assets; it does not connect ad accounts, buy media, publish automatically or guarantee approvals, clicks or sales. Review claims, rights, AI disclosure and platform requirements before publishing." },
+      { question: "Can Create AI Videos publish the ads or guarantee conversions?", answer: "No. Create AI Videos creates downloadable assets; it does not connect ad accounts, buy media, publish automatically or guarantee approvals, clicks or sales. Review claims, rights, AI disclosure and platform requirements before publishing." },
       { question: "Can I cancel an ad job?", answer: cancellationAnswer },
     ],
   },
   "faceless-video-generator": {
     updatedAt: "2026-09-25",
-    summary: "ETA’s faceless video generator turns an idea or your own script into a narrated short without filming yourself. It creates AI still images for each scene, adds voiceover and optional timed captions, and assembles a downloadable MP4. You review the narration and visual prompts before rendering. This is a guided scene-based workflow, not a stock-footage editor or a moving-video generation model.",
+    summary: "Create AI Videos’ faceless video generator turns an idea or your own script into a narrated short without filming yourself. It creates AI still images for each scene, adds voiceover and optional timed captions, and assembles a downloadable MP4. You review the narration and visual prompts before rendering. This is a guided scene-based workflow, not a stock-footage editor or a moving-video generation model.",
     steps: [
       {
         title: "Choose an idea or bring a script",
@@ -95,7 +95,7 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
       },
       {
         title: "Confirm the render and follow progress",
-        text: "Start rendering only when the storyboard is ready. ETA generates the scene images and narration, then assembles the video with captions if selected. Jobs run in the background, so you can leave the page and return. Queue time and provider availability affect how long a generation takes.",
+        text: "Start rendering only when the storyboard is ready. Create AI Videos generates the scene images and narration, then assembles the video with captions if selected. Jobs run in the background, so you can leave the page and return. Queue time and provider availability affect how long a generation takes.",
       },
       {
         title: "Watch the result before sharing",
@@ -113,7 +113,7 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
       },
       {
         title: "A vertical social video",
-        text: "Choose 9:16 for a Shorts- or Reels-style layout. Keep each scene focused on one message and enable captions when useful. Publishing, music selection and social scheduling happen outside ETA.",
+        text: "Choose 9:16 for a Shorts- or Reels-style layout. Keep each scene focused on one message and enable captions when useful. Publishing, music selection and social scheduling happen outside Create AI Videos.",
       },
     ],
     faqs: [
@@ -142,7 +142,7 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
   },
   "ai-cartoon-series": {
     updatedAt: "2026-09-26",
-    summary: "ETA’s AI cartoon studio creates a short animated film from a story prompt or your own character artwork. AI prepares up to three characters and an editable scene plan with actions, camera directions and dialogue. Choose character-reference animation to review portraits first, or a direct-prompt model that skips image generation. Review the text storyboard and approve animation separately. Exact appearance, spoken words and cross-scene voice consistency are not guaranteed.",
+    summary: "Create AI Videos’ AI cartoon studio creates a short animated film from a story prompt or your own character artwork. AI prepares up to three characters and an editable scene plan with actions, camera directions and dialogue. Choose character-reference animation to review portraits first, or a direct-prompt model that skips image generation. Review the text storyboard and approve animation separately. Exact appearance, spoken words and cross-scene voice consistency are not guaranteed.",
     steps: [
       {
         title: "Describe a small, clear story",
@@ -158,7 +158,7 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
       },
       {
         title: "Animate, review and download",
-        text: "Confirm the separate animation cost. ETA generates scenes from character references or text descriptions, preserves audio when selected and joins them into an MP4. Follow progress in Jobs and return when it finishes. Watch the complete film for visual drift, pronunciation and lip sync before you publish it elsewhere.",
+        text: "Confirm the separate animation cost. Create AI Videos generates scenes from character references or text descriptions, preserves audio when selected and joins them into an MP4. Follow progress in Jobs and return when it finishes. Watch the complete film for visual drift, pronunciation and lip sync before you publish it elsewhere.",
       },
     ],
     useCases: [

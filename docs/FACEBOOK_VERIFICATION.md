@@ -2,7 +2,7 @@
 
 Local implementation: 2026-09-27. Production release preparation: 2026-10-01. Live Facebook connection/publication is not yet activated.
 
-User story: a signed-in ETA user explicitly connects/selects a managed Facebook Page, selects their own completed vertical export, authorizes a public Reel now or later, and sees provider-confirmed progress in the queue.
+User story: a signed-in Create AI Videos user explicitly connects/selects a managed Facebook Page, selects their own completed vertical export, authorizes a public Reel now or later, and sees provider-confirmed progress in the queue.
 
 ## Results
 
@@ -22,9 +22,9 @@ Screenshots are local, Git-ignored files: `facebook-verification.png` and `faceb
 
 ## Unverified activation boundary
 
-The user has since created Meta app **Editing App** (`1068695029206042`) and a managed test Page **Editing App** (`1385211061339485`), and reports business verification completed. User-provided Graph API Explorer results show successful Page listing and reading an existing Page post. These do not verify ETA's own OAuth or publishing flow, and are not App Review approval.
+The user has since created Meta app **Create AI Videos** (`1068695029206042`) and a managed test Page **Create AI Videos** (`1385211061339485`), and reports business verification completed. User-provided Graph API Explorer results show successful Page listing and reading an existing Page post. These do not verify Create AI Videos’ own OAuth or publishing flow, and are not App Review approval.
 
-Real ETA OAuth, version-specific upload/processing, scheduled timing and Meta callback delivery remain unverified. Follow [FACEBOOK_SETUP.md](FACEBOOK_SETUP.md), configure the matching production environments, and obtain separate explicit permission for a harmless **public** test Reel on the user's eligible test Page. No live post is authorized by the deployment request.
+Real Create AI Videos OAuth, version-specific upload/processing, scheduled timing and Meta callback delivery remain unverified. Follow [FACEBOOK_SETUP.md](FACEBOOK_SETUP.md), configure the matching production environments, and obtain separate explicit permission for a harmless **public** test Reel on the user's eligible test Page. No live post is authorized by the deployment request.
 
 ## Production release preparation — 2026-10-01
 

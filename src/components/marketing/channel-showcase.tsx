@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ArrowRight, CalendarDays, Check, ChevronDown, CircleHelp, Clapperboard, LayoutGrid, LockKeyhole, Sparkles } from "lucide-react";
 import { SocialPlatformIcon } from "./social-platform-icon";
 import { PreviewVideo } from "./preview-video";
+import { BrandMark } from "@/components/studio/brand-mark";
 import styles from "./channel-showcase.module.css";
 
 const channels = ["YouTube", "TikTok"] as const;
@@ -33,7 +34,7 @@ export function ChannelShowcase() {
 
       <div className={styles.workspace}>
         <aside className={styles.sidebar} aria-label="Channel preview options">
-          <div className={styles.workspaceName}><span className={styles.workspaceAvatar}>E</span><div><strong>Your creative space</strong><span>Workspace preview</span></div><ChevronDown aria-hidden size={14} /></div>
+          <div className={styles.workspaceName}><span className={styles.workspaceAvatar}><BrandMark compact className="[&_img]:size-8" /></span><div><strong>Your creative space</strong><span>Workspace preview</span></div><ChevronDown aria-hidden size={14} /></div>
           <p className={styles.sidebarLabel}>Your channels <span>02</span></p>
           <div className={styles.channelOptions}>
             {channels.map((name) => <button type="button" key={name} aria-pressed={channel === name} aria-controls="channel-preview-panel" onClick={() => setChannel(name)} className={styles.channelButton}>
@@ -92,7 +93,7 @@ export function ChannelShowcase() {
         </div>
       </div>
 
-      <footer className={styles.footer}><p id="channel-media-note"><CircleHelp aria-hidden size={14} /> AI stock inspiration, not ETA exports. Dashboard is a design preview; no real account statistics or growth guarantees.</p><span><LockKeyhole aria-hidden size={13} /> You stay in control</span></footer>
+      <footer className={styles.footer}><p id="channel-media-note"><CircleHelp aria-hidden size={14} /> AI stock inspiration, not Create AI Videos exports. Dashboard is a design preview; no real account statistics or growth guarantees.</p><span><LockKeyhole aria-hidden size={13} /> You stay in control</span></footer>
     </div>
   </section>;
 }

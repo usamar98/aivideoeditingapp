@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ published: vi.fn() }));
 vi.mock("@/lib/features/repository", () => ({ getPublishedFeaturesData: mocks.published }));
 vi.mock("@/config/brand", () => ({ brand: {
-  name: "ETA", shortName: "ETA", siteUrl: "https://www.editingapp.live",
-  description: "Create faceless videos and AI cartoons with ETA.",
-  supportEmail: "support@editingapp.live",
+  name: "Create AI Videos", shortName: "Create AI Videos", siteUrl: "https://createaivideos.app",
+  description: "Create faceless videos and AI cartoons with Create AI Videos.",
+  supportEmail: "support@createaivideos.app",
 } }));
 
 import { featureCatalog, featureDefinitionSchema, getPublishedFeatures, isPublicMediaPath, type FeatureDefinition } from "@/lib/features/catalog";
@@ -17,7 +17,7 @@ import robots from "@/app/robots";
 import sitemap, { dynamic as sitemapMode } from "@/app/sitemap";
 import { GET as getLlms, dynamic as llmsMode } from "@/app/llms.txt/route";
 
-const origin = "https://www.editingapp.live";
+const origin = "https://createaivideos.app";
 const cartoon = featureCatalog.find((feature) => feature.slug === "ai-cartoon-series")!;
 
 function storedFeature(slug: string, status: FeatureDefinition["status"], developmentOnly = false): FeatureDefinition {
@@ -44,11 +44,11 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("canonical origins and public paths", () => {
-  it.each([undefined, "", "  ", "invalid", "http://www.editingapp.live", "https://localhost", "https://child.localhost", "https://worker.local", "https://preview.vercel.app", "https://intranet", "https://127.0.0.1", "https://[::1]", "https://user:secret@example.com", "https://example.com:444"])("uses the production origin for unsafe configuration %s", (value) => {
+  it.each([undefined, "", "  ", "invalid", "http://createaivideos.app", "https://localhost", "https://child.localhost", "https://worker.local", "https://preview.vercel.app", "https://intranet", "https://127.0.0.1", "https://[::1]", "https://user:secret@example.com", "https://example.com:444"])("uses the production origin for unsafe configuration %s", (value) => {
     expect(normalizeSiteUrl(value)).toBe(productionSiteUrl);
   });
 
-  it.each(["https://editingapp.live", "https://editingapp.live/subpage?search=1#anchor", " https://WWW.EDITINGAPP.LIVE/ ", "https://www.editingapp.live///"])("normalizes the canonical website variant %s", (value) => {
+  it.each(["https://createaivideos.app", "https://createaivideos.app/subpage?search=1#anchor", " https://createaivideos.app/ ", "https://createaivideos.app///"])("normalizes the canonical website variant %s", (value) => {
     expect(normalizeSiteUrl(value)).toBe(origin);
   });
 
@@ -108,9 +108,9 @@ describe("indexability and social metadata", () => {
 
   it("uses page-specific canonical, Open Graph and Twitter content with an absolute image", () => {
     const metadata = publicMetadata({ title: "Video tools", description: "Compare supported video tools", path: "/features" });
-    expect(metadata.title).toEqual({ absolute: "Video tools | ETA" });
+    expect(metadata.title).toEqual({ absolute: "Video tools | Create AI Videos" });
     expect(metadata.alternates?.canonical).toBe(`${origin}/features`);
-    expect(metadata.openGraph).toMatchObject({ title: "Video tools", description: "Compare supported video tools", url: `${origin}/features`, siteName: "ETA", locale: "en_US", images: [{ url: `${origin}/opengraph-image`, width: 1200, height: 630, alt: "Video tools — ETA" }] });
+    expect(metadata.openGraph).toMatchObject({ title: "Video tools", description: "Compare supported video tools", url: `${origin}/features`, siteName: "Create AI Videos", locale: "en_US", images: [{ url: `${origin}/opengraph-image`, width: 1200, height: 630, alt: "Video tools — Create AI Videos" }] });
     expect(metadata.twitter).toMatchObject({ card: "summary_large_image", title: "Video tools", description: "Compare supported video tools", images: [{ url: `${origin}/opengraph-image` }] });
   });
 
@@ -134,11 +134,11 @@ describe("structured data", () => {
     expect(JSON.parse(serialized)).toEqual(input);
   });
 
-  it("connects real ETA organization and website identities using stable absolute IDs", () => {
+  it("connects real Create AI Videos organization and website identities using stable absolute IDs", () => {
     const identity = identitySchema();
     expect(identity["@context"]).toBe("https://schema.org");
     expect(identity["@graph"].map((node) => node["@type"])).toEqual(["Organization", "WebSite"]);
-    expect(identity["@graph"][0]).toMatchObject({ "@id": organizationId, name: "ETA", url: `${origin}/`, logo: { url: `${origin}/brand/eta-logo.png` }, contactPoint: { email: "support@editingapp.live", url: `${origin}/contact` } });
+    expect(identity["@graph"][0]).toMatchObject({ "@id": organizationId, name: "Create AI Videos", url: `${origin}/`, logo: { url: `${origin}/brand/create-ai-videos-logo.png` }, contactPoint: { email: "support@createaivideos.app", url: `${origin}/contact` } });
     expect(identity["@graph"][1]).toMatchObject({ "@id": websiteId, publisher: { "@id": organizationId } });
     expect(organizationId).toBe(`${origin}/#organization`);
     expect(websiteId).toBe(`${origin}/#website`);
@@ -146,7 +146,7 @@ describe("structured data", () => {
 
   it("connects each page to the same organization and website", () => {
     expect(pageSchema("/features", "Video tools", "Supported workflows", "CollectionPage")).toMatchObject({ "@type": "CollectionPage", "@id": `${origin}/features#webpage`, url: `${origin}/features`, name: "Video tools", description: "Supported workflows", isPartOf: { "@id": websiteId }, publisher: { "@id": organizationId } });
-    expect(pageSchema("/about", "About", "About ETA")["@type"]).toBe("WebPage");
+    expect(pageSchema("/about", "About", "About Create AI Videos")["@type"]).toBe("WebPage");
     expect(absoluteUrl("/pricing")).toBe(`${origin}/pricing`);
   });
 
@@ -274,7 +274,7 @@ describe("feature canonical and media validation", () => {
     expect(featureDefinitionSchema.safeParse({ ...cartoon, seo: { ...cartoon.seo, canonicalPath } }).success).toBe(false);
   });
 
-  it.each(["/demo/weather-workshop.png", "/brand/eta-logo.svg", "/examples/first-film.mp4", "/media/thumbs/frame_01.webp", "/examples/animation.webm"])("accepts local public media %s", (path) => {
+  it.each(["/demo/weather-workshop.png", "/brand/create-ai-videos-logo.svg", "/examples/first-film.mp4", "/media/thumbs/frame_01.webp", "/examples/animation.webm"])("accepts local public media %s", (path) => {
     expect(isPublicMediaPath(path)).toBe(true);
   });
 

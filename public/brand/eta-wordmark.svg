@@ -1,8 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="124" height="40" viewBox="0 0 124 40" fill="none">
-  <title>ETA</title>
-  <g fill="#182D4E">
-    <path d="M0 0h32v8H9v8h20v8H9v8h23v8H0V0Z"/>
-    <path d="M39 0h37v8H62v32h-9V8H39V0Z"/>
-    <path fill-rule="evenodd" d="M98 0h10l16 40h-10l-3-8H95l-3 8H82L98 0Zm0 24h10l-5-14-5 14Z" clip-rule="evenodd"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="246" height="64" viewBox="0 0 246 64" fill="none">
+  <title>Create AI Videos</title>
+  <text x="0" y="39" fill="#082D55" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="700" letter-spacing="-.9">Create AI Videos</text>
+  <text x="1" y="57" fill="#526686" font-family="Arial, Helvetica, sans-serif" font-size="8.5" font-weight="600" letter-spacing="2.4">YOUR AI VIDEO STUDIO</text>
 </svg>

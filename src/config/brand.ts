@@ -1,16 +1,16 @@
-import { normalizeSiteUrl } from "@/lib/seo/site";
+import { appSiteUrl, normalizeSiteUrl } from "@/lib/seo/site";
 
 const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim();
 
 export const brand = {
-  name: "ETA",
-  shortName: "ETA",
+  name: "Create AI Videos",
+  shortName: "Create AI",
   description:
-    "Create faceless videos, AI cartoons, UGC product ads and podcast Shorts with ETA. Review your content, edit captions and export private videos.",
+    "Create AI videos, short films, cartoons and product ads in one studio. Review your story, choose a model and export videos with Create AI Videos.",
   siteUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
   // Preserve the configured local/preview origin for operational billing returns.
-  appUrl: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  appUrl: appSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
   googleSiteVerification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   bingSiteVerification: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION,
-  supportEmail: supportEmail && !supportEmail.endsWith("@example.com") ? supportEmail : "support@editingapp.live",
+  supportEmail: supportEmail && !supportEmail.endsWith("@example.com") && supportEmail.toLowerCase() !== "support@editingapp.live" ? supportEmail : "support@createaivideos.app",
 } as const;

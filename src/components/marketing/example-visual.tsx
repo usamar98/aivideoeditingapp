@@ -16,7 +16,7 @@ export const exampleVisuals = {
   },
 } as const;
 
-/** Original AI concept artwork, not a customer project or an ETA video export. */
+/** Original AI concept artwork, not a customer project or a Create AI Videos video export. */
 export function ExampleVisual({
   variant,
   label,

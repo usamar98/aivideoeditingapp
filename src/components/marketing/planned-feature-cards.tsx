@@ -11,8 +11,8 @@ const plannedFeatures = [
 ] as const;
 
 /** Roadmap previews only: no routes, generation actions, or paid entitlements. */
-export function PlannedFeatureCards() {
-  return plannedFeatures.map(({ slug, title, icon: Icon, background, accent }) => (
+export function PlannedFeatureCards({ published = [] }: { published?: string[] }) {
+  return plannedFeatures.filter(({ slug }) => !(slug === "ad-remake" && published.includes("ai-ad-remake"))).map(({ slug, title, icon: Icon, background, accent }) => (
     <article key={slug} data-feature={slug} data-availability="coming-soon" className="overflow-hidden rounded-2xl border border-border bg-card">
       <div className={`relative isolate flex aspect-video items-center justify-center overflow-hidden bg-linear-to-br ${background}`}>
         <div aria-hidden="true" className="absolute inset-0 opacity-20 [background-image:linear-gradient(#fff3_1px,transparent_1px),linear-gradient(90deg,#fff3_1px,transparent_1px)] [background-size:24px_24px]" />

@@ -1,4 +1,7 @@
-export const productionSiteUrl = "https://www.editingapp.live";
+export const productionSiteUrl = "https://createaivideos.app";
+
+export const legacySiteHosts = ["editingapp.live", "www.editingapp.live"] as const;
+export const canonicalAliasHosts = [...legacySiteHosts, "www.createaivideos.app"] as const;
 
 /** Marketing URLs must never point at localhost, a preview, or an arbitrary path. */
 export function normalizeSiteUrl(value?: string): string {
@@ -7,11 +10,22 @@ export function normalizeSiteUrl(value?: string): string {
     if (url.protocol !== "https:" || url.username || url.password || url.port) return productionSiteUrl;
     const hostname = url.hostname.toLowerCase();
     if (hostname === "localhost" || hostname.endsWith(".localhost") || hostname.endsWith(".local") || hostname.endsWith(".vercel.app") || !hostname.includes(".") || /^[\d.:\[\]]+$/.test(hostname)) return productionSiteUrl;
-    if (hostname === "editingapp.live" || hostname === "www.editingapp.live") return productionSiteUrl;
+    if (hostname === "createaivideos.app" || canonicalAliasHosts.some((host) => hostname === host)) return productionSiteUrl;
     return url.origin;
   } catch {
     return productionSiteUrl;
   }
+}
+
+/** Billing returns may use local/preview origins, but never send users back to the retired site. */
+export function appSiteUrl(value?: string): string {
+  try {
+    const url = new URL(value?.trim() || productionSiteUrl);
+    if (url.username || url.password || url.search || url.hash) return productionSiteUrl;
+    if (url.hostname === "createaivideos.app" || canonicalAliasHosts.some((host) => host === url.hostname)) return productionSiteUrl;
+    if (url.protocol === "https:" || (url.protocol === "http:" && url.hostname === "localhost")) return url.origin;
+  } catch { /* Fall through to the production origin. */ }
+  return productionSiteUrl;
 }
 
 export function indexableDeployment(env: { VERCEL_ENV?: string; NODE_ENV?: string; NEXT_PUBLIC_DEMO_MODE?: string } = process.env): boolean {
@@ -29,13 +43,13 @@ export function isPublicPath(path: string): boolean {
 
 // Change these only when the corresponding public content is materially edited.
 export const publicPages = [
-  { path: "/", title: "AI video generator", description: "Create AI short films, faceless videos, cartoons and UGC product ads with ETA.", modifiedAt: "2026-10-03" },
-  { path: "/features", title: "AI video creation tools", description: "Compare ETA's short film, faceless video, cartoon, UGC ad and podcast Shorts workflows.", modifiedAt: "2026-10-03" },
-  { path: "/pricing", title: "Plans and credits", description: "Monthly and annual prices, credits and billing questions.", modifiedAt: "2026-09-25" },
-  { path: "/guides", title: "Video creation guides", description: "Practical guidance for choosing and reviewing AI video workflows.", modifiedAt: "2026-09-25" },
-  { path: "/guides/faceless-videos-vs-ai-cartoons", title: "Faceless videos vs AI cartoons", description: "Compare narrated image-based shorts with character-led AI animation.", modifiedAt: "2026-09-25" },
-  { path: "/about", title: "About ETA", description: "What ETA creates, how it works and its current limitations.", modifiedAt: "2026-09-25" },
-  { path: "/contact", title: "Contact ETA", description: "Get help with your account, billing or a video job.", modifiedAt: "2026-09-25" },
-  { path: "/privacy", title: "Privacy Policy", description: "How ETA handles accounts, Google sign-in, creative content and privacy requests.", modifiedAt: "2026-09-25" },
-  { path: "/terms", title: "Terms of Service", description: "Rules for accounts, subscriptions, credits, cancellations and AI content.", modifiedAt: "2026-09-25" },
+  { path: "/", title: "AI video generator", description: "Create AI short films, faceless videos, cartoons and UGC product ads with Create AI Videos.", modifiedAt: "2026-10-15" },
+  { path: "/features", title: "AI video creation tools", description: "Compare Create AI Videos’ short film, faceless video, cartoon, UGC ad and podcast Shorts workflows.", modifiedAt: "2026-10-15" },
+  { path: "/pricing", title: "Plans and credits", description: "Monthly and annual prices, credits and billing questions.", modifiedAt: "2026-10-15" },
+  { path: "/guides", title: "Video creation guides", description: "Practical guidance for choosing and reviewing AI video workflows.", modifiedAt: "2026-10-15" },
+  { path: "/guides/faceless-videos-vs-ai-cartoons", title: "Faceless videos vs AI cartoons", description: "Compare narrated image-based shorts with character-led AI animation.", modifiedAt: "2026-10-15" },
+  { path: "/about", title: "About Create AI Videos", description: "What Create AI Videos creates, how it works and its current limitations.", modifiedAt: "2026-10-15" },
+  { path: "/contact", title: "Contact Create AI Videos", description: "Get help with your account, billing or a video job.", modifiedAt: "2026-10-15" },
+  { path: "/privacy", title: "Privacy Policy", description: "How Create AI Videos handles accounts, Google sign-in, creative content and privacy requests.", modifiedAt: "2026-10-15" },
+  { path: "/terms", title: "Terms of Service", description: "Rules for accounts, subscriptions, credits, cancellations and AI content.", modifiedAt: "2026-10-15" },
 ] as const;

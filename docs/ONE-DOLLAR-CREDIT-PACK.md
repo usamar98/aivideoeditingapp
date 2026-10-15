@@ -2,7 +2,7 @@
 
 **Status: retired.** `creditPack.enabled` is `false`. Deploy this version to remove the offer from the homepage, pricing page and account billing, and block new checkout requests. Historical purchase validation, credit delivery and receipt verification remain enabled. Removing the offer does not remove any purchased credits.
 
-This is a genuine **USD $1.00 one-time purchase of 10 ETA credits**, not a subscription, donation, or fake transaction. It does not renew or change an existing plan. The normal monthly/yearly plans are unchanged. Most complete video workflows need more than 10 credits; their studio estimates remain the source of truth.
+This is a genuine **USD $1.00 one-time purchase of 10 Create AI Videos credits**, not a subscription, donation, or fake transaction. It does not renew or change an existing plan. The normal monthly/yearly plans are unchanged. Most complete video workflows need more than 10 credits; their studio estimates remain the source of truth.
 
 ## Where it appeared before retirement
 
@@ -22,15 +22,15 @@ Stripe-hosted Checkout creates the one-time line item server-side at exactly 100
 
 ## Verifying a real purchase
 
-For an existing purchase, sign in with the **ETA account used during checkout** and visit **My account → Billing → Available credits**, then choose **Refresh status**. A pack adds 10 credits to the existing balance; it does not create a subscription, so "No active plan" can still be correct. Do not pay again if credits are missing.
+For an existing purchase, sign in with the **Create AI Videos account used during checkout** and visit **My account → Billing → Available credits**, then choose **Refresh status**. A pack adds 10 credits to the existing balance; it does not create a subscription, so "No active plan" can still be correct. Do not pay again if credits are missing.
 
-If credits are missing, inspect the live Stripe endpoint's delivery of `checkout.session.completed` to `https://www.editingapp.live/api/webhooks/stripe`. It must reach the current deployment, verify against that endpoint's `STRIPE_WEBHOOK_SECRET`, and persist the credit ledger entry. Correct the failed delivery/configuration and resend the original event; the session-level idempotency key prevents duplicate credit grants. Do not manually add a second purchase with a different key.
+If credits are missing, inspect the live Stripe endpoint's delivery of `checkout.session.completed` to `https://createaivideos.app/api/webhooks/stripe`. It must reach the current deployment, verify against that endpoint's `STRIPE_WEBHOOK_SECRET`, and persist the credit ledger entry. Correct the failed delivery/configuration and resend the original event; the session-level idempotency key prevents duplicate credit grants. Do not manually add a second purchase with a different key.
 
 The following describes the original purchase flow (new purchases are now disabled):
 
 1. Sign in and open **My account → Billing → Mini credit pack**.
 2. Choose **Buy 10 credits · $1.00** and review the one-time amount in Stripe Checkout. The account owner/customer must complete the payment themselves.
-3. On return, ETA retrieves the Checkout Session from Stripe and verifies account ownership, amount, currency and paid status. It reports whether the webhook has added the 10 credits. A `success` URL alone never grants credits.
+3. On return, Create AI Videos retrieves the Checkout Session from Stripe and verifies account ownership, amount, currency and paid status. It reports whether the webhook has added the 10 credits. A `success` URL alone never grants credits.
 4. Check **Stripe Dashboard → Payments** in the same live account for the completed $1 payment. Stripe payment receipt is not proof that a bank payout has arrived. Check Stripe's balance/payout records separately; processing fees and payout timing apply.
 5. If Stripe confirms payment but credits are pending, use **Refresh status** and inspect webhook delivery. Do not pay again to fix a delayed webhook.
 

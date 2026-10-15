@@ -63,7 +63,7 @@ export function HeroShowcase({ children }: { children?: ReactNode }) {
     };
   }, [active]);
 
-  return <section ref={ref} className="hero-canvas" data-motion={active ? "on" : "off"} aria-label="Create with ETA">
+  return <section ref={ref} className="hero-canvas" data-motion={active ? "on" : "off"} aria-label="Create with Create AI Videos">
     <div className="hero-reels" aria-hidden="true">
       {heroMediaRows.map((row, rowIndex) => <div className="hero-reel-row" key={rowIndex} data-direction={rowIndex === 0 ? "left" : "right"}>
         <div className="hero-reel-track">

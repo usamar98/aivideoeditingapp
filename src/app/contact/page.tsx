@@ -5,12 +5,12 @@ import { JsonLd } from "@/components/marketing/json-ld";
 import { publicMetadata } from "@/lib/seo/metadata";
 import { pageSchema, breadcrumbSchema } from "@/lib/seo/structured-data";
 
-const title = "Contact ETA Support — Accounts, Billing and Video Jobs";
-const description = "Contact ETA support for account access, subscriptions, credits or video generation issues. Learn which job details to include and how to manage billing.";
+const title = "Support for Accounts, Billing & Video Jobs";
+const description = "Contact Create AI Videos for account, billing, credit or video generation help. Find the support email and which job details to include in your request.";
 export const metadata = publicMetadata({ title, description, path: "/contact" });
 
 export default function ContactPage() {
-  return <MarketingPage title="How can we help with your studio?" description="For questions about ETA, your account, a subscription or a video job, email our support address. Include enough detail to identify the issue without sharing sensitive credentials." eyebrow="Contact ETA">
+  return <MarketingPage title="How can we help with your studio?" description="For questions about Create AI Videos, your account, a subscription or a video job, email our support address. Include enough detail to identify the issue without sharing sensitive credentials." eyebrow="Contact Create AI Videos">
     <JsonLd data={pageSchema("/contact", title, description, "ContactPage")} />
     <JsonLd data={breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Contact", path: "/contact" }])} />
     <a className="inline-block break-all rounded-2xl border border-primary/20 bg-accent px-5 py-5 text-lg font-semibold text-primary sm:text-2xl" href={`mailto:${brand.supportEmail}`}>{brand.supportEmail}</a>

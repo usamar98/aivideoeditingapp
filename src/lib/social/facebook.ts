@@ -65,7 +65,7 @@ export async function loadFacebookGrant(token: string) {
     pages.push(...result.data.filter((page) => page.tasks.some((task) => ["CREATE_CONTENT", "MANAGE", "PROFILE_PLUS_CREATE_CONTENT", "PROFILE_PLUS_FULL_CONTROL"].includes(task))));
     if (!result.paging?.next) return { userId: me.id, token, pages };
     after = result.paging.cursors?.after;
-    if (!after || batch === 4) throw new FacebookError("rejected", "Too many Pages were returned. Reconnect and grant ETA access to fewer Pages.");
+    if (!after || batch === 4) throw new FacebookError("rejected", "Too many Pages were returned. Reconnect and grant Create AI Videos access to fewer Pages.");
   }
   return { userId: me.id, token, pages };
 }

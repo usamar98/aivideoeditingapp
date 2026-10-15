@@ -1,6 +1,6 @@
 import { socialImage } from "@/lib/seo/social-image";
 
-export const alt = "ETA — AI videos, cartoons and UGC product ads";
+export const alt = "Create AI Videos — AI videos, cartoons and UGC product ads";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

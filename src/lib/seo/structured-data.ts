@@ -12,7 +12,7 @@ export function serializeJsonLd(data: unknown) {
 export function identitySchema() {
   return { "@context": "https://schema.org", "@graph": [
     { "@type": "Organization", "@id": organizationId, name: brand.name, url: absoluteUrl("/"), description: brand.description,
-      logo: { "@type": "ImageObject", url: absoluteUrl("/brand/eta-logo.png"), width: 864, height: 256 },
+      logo: { "@type": "ImageObject", url: absoluteUrl("/brand/create-ai-videos-logo.png"), width: 1320, height: 256 },
       contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: brand.supportEmail, url: absoluteUrl("/contact") } },
     { "@type": "WebSite", "@id": websiteId, name: brand.name, url: absoluteUrl("/"), description: brand.description, inLanguage: "en", publisher: { "@id": organizationId } },
   ] };

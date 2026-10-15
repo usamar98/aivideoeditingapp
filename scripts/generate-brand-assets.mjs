@@ -6,23 +6,30 @@ import { fileURLToPath } from "node:url";
 const requireNext = createRequire(import.meta.resolve("next/package.json"));
 const sharp = requireNext("sharp");
 const root = new URL("../", import.meta.url);
-const symbol = await readFile(new URL("public/brand/eta-symbol.svg", root), "utf8");
-const wordmark = await readFile(new URL("public/brand/eta-wordmark.svg", root), "utf8");
+const symbol = await readFile(new URL("public/brand/create-ai-videos-symbol.svg", root), "utf8");
+const wordmark = await readFile(new URL("public/brand/create-ai-videos-wordmark.svg", root), "utf8");
 const contents = (svg) => svg.replace(/<svg\b[^>]*>/, "").replace(/<\/svg>\s*$/, "").replace(/<title>.*?<\/title>/s, "").trim();
 
 // The same two master vectors produce the full lockup and every browser icon.
-const logo = `<svg xmlns="http://www.w3.org/2000/svg" width="216" height="64" viewBox="0 0 216 64" fill="none">
-  <title>ETA — AI video studio</title>
+const logo = `<svg xmlns="http://www.w3.org/2000/svg" width="330" height="64" viewBox="0 0 330 64" fill="none">
+  <title>Create AI Videos — AI video studio</title>
   <g>${contents(symbol)}</g>
-  <g transform="translate(84 3)">${contents(wordmark)}</g>
-  <text x="85" y="60" fill="#526686" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="600" letter-spacing="2.05">AI VIDEO STUDIO</text>
+  <g transform="translate(84 0)">${contents(wordmark)}</g>
 </svg>
 `;
 
-await writeFile(new URL("public/brand/eta-logo.svg", root), logo);
-await sharp(Buffer.from(logo)).resize(864, 256).png().toFile(fileURLToPath(new URL("public/brand/eta-logo.png", root)));
+await writeFile(new URL("public/brand/create-ai-videos-logo.svg", root), logo);
+await sharp(Buffer.from(logo)).resize(1320, 256).png().toFile(fileURLToPath(new URL("public/brand/create-ai-videos-logo.png", root)));
 await writeFile(new URL("src/app/icon.svg", root), symbol);
 await sharp(Buffer.from(symbol)).resize(180, 180).png().toFile(fileURLToPath(new URL("src/app/apple-icon.png", root)));
+await Promise.all([192, 512, 1024].map((size) => sharp(Buffer.from(symbol)).resize(size, size).png().toFile(fileURLToPath(new URL(`public/brand/create-ai-videos-icon-${size}.png`, root)))));
+
+// Compatibility URLs for saved links and previously cached social previews.
+// They show the new artwork; no retired E/ETA artwork remains publicly served.
+await writeFile(new URL("public/brand/eta-symbol.svg", root), symbol);
+await writeFile(new URL("public/brand/eta-wordmark.svg", root), wordmark);
+await writeFile(new URL("public/brand/eta-logo.svg", root), logo);
+await sharp(Buffer.from(logo)).resize(1320, 256).png().toFile(fileURLToPath(new URL("public/brand/eta-logo.png", root)));
 
 // ICO embeds a directory of PNG frames for small tabs and high-DPI shortcuts.
 const sizes = [16, 32, 48, 64, 256];
@@ -42,4 +49,4 @@ frames.forEach((frame, index) => {
   offset += frame.length;
 });
 await writeFile(new URL("src/app/favicon.ico", root), Buffer.concat([header, ...frames]));
-console.log("Generated ETA logo, SVG favicon, five-size ICO, and Apple touch icon.");
+console.log("Generated Create AI Videos logo, SVG favicon, five-size ICO, and Apple touch icon.");

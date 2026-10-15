@@ -7,7 +7,7 @@ type HeroMedia = {
   platform: SocialPlatform;
 } & ({ kind: "image"; src: string; position?: string } | { kind: "video"; name: string });
 
-/** Inspiration only: stock clips are not ETA exports or working clone demos. */
+/** Inspiration only: stock clips are not Create AI Videos exports or working clone demos. */
 export const heroMediaRows: readonly (readonly HeroMedia[])[] = [
   [
     { id: "space", kind: "video", name: "hero-space", label: "Faceless stories", detail: "A universe of ideas", platform: "YouTube" },

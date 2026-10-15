@@ -4,7 +4,7 @@ Research date: 2026-10-03. This is an implementation brief, not a quality leader
 
 ## Relevant competitors
 
-| Benchmark | Verified product direction | ETA design decision |
+| Benchmark | Verified product direction | Create AI Videos design decision |
 | --- | --- | --- |
 | [LTX Studio](https://ltx.io/studio) | Story development, storyboards and reusable visual elements | Plan a complete miniature story and lock a reference cast before rendering. |
 | [Higgsfield Cinema Studio](https://higgsfield.ai/cinema-studio) | Dedicated cinematic creation workspace | Put shot direction and model choice in the production workflow instead of a generic chat box. |
@@ -42,7 +42,7 @@ All 16 adapters accept six- and eight-second shots. Supported films are 24s (3 s
 
 ## Credits
 
-40 credits for planning/cast; rendering is model rate × duration + 10 credits per generated shot frame. These are ETA retail credit prices, not fal prices. Silent output has the same price. Test parity between the TypeScript and SQL rate cards before rollout.
+40 credits for planning/cast; rendering is model rate × duration + 10 credits per generated shot frame. These are Create AI Videos retail credit prices, not fal prices. Silent output has the same price. Test parity between the TypeScript and SQL rate cards before rollout.
 
 ## Release order
 
@@ -87,4 +87,4 @@ Final local regression: **931 tests passed across 67 files**; TypeScript, change
 
 Automated tests use real local PGlite SQL and mocked AI/encoder services: all duration/rate combinations, six/eight-second contracts for 16 endpoints, required film schemas, state/ID validation, reference order, 23-shot orchestration, interrupted-tail recovery, truncated exports, authorization and exactly-once credit settlement. Desktop and 390px mobile previews verify the 180s selection and estimate, continuity editing, overflow and browser errors. TypeScript, scoped lint and production build are checked separately.
 
-No paid three-minute generation or production migration/deployment has been performed as part of this change. References reduce drift; they cannot guarantee identical faces, hands, voices, lip sync or flawless plot interpretation. There is no automatic vision QA, voice cloning, individual-shot regeneration UI or separately mixed continuous soundtrack. Budget-approved visual validation is required before claiming production quality. Long movies are assembled by ETA automatically, not generated in one native 180s model call.
+No paid three-minute generation or production migration/deployment has been performed as part of this change. References reduce drift; they cannot guarantee identical faces, hands, voices, lip sync or flawless plot interpretation. There is no automatic vision QA, voice cloning, individual-shot regeneration UI or separately mixed continuous soundtrack. Budget-approved visual validation is required before claiming production quality. Long movies are assembled by Create AI Videos automatically, not generated in one native 180s model call.

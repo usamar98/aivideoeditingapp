@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { cache } from "react";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { rebrandFeatureSeo, rebrandPublicCopy } from "@/lib/seo/rebrand";
 
 import { canIndexFeature, featureDefinitionSchema, getPublishedFeatures, type FeatureDefinition } from "./catalog";
 
@@ -18,13 +19,13 @@ function createPublicClient() {
 }
 
 export function featureFromRow(row: Record<string, unknown>): FeatureDefinition | null {
-  const content = typeof row.content === "object" && row.content ? row.content : {};
+  const content = rebrandPublicCopy(typeof row.content === "object" && row.content ? row.content : {}) as Record<string, unknown>;
   const parsed = featureDefinitionSchema.safeParse({
     ...content,
     slug: row.slug,
-    name: row.name,
+    name: rebrandPublicCopy(row.name),
     status: row.status,
-    seo: row.seo,
+    seo: rebrandFeatureSeo(row.seo),
     developmentOnly: row.development_only,
     publishedAt: row.published_at,
     modifiedAt: row.modified_at,

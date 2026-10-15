@@ -7,7 +7,7 @@ import { GET } from "@/app/auth/callback/route";
 import { beginGoogleSignIn } from "@/lib/auth/google";
 import { authCallbackUrl, authErrorMessage, safeAuthNextPath } from "@/lib/auth/redirect";
 
-const origin = "https://www.editingapp.live";
+const origin = "https://createaivideos.app";
 
 beforeEach(() => {
   vi.resetAllMocks();

@@ -34,7 +34,7 @@ const includedFeatures = [
   "Generation cost shown before you confirm",
 ];
 const enterpriseFeatures = [
-  "The same ETA creative workflows",
+  "The same Create AI Videos creative workflows",
   "Discuss a custom credit allowance",
   "Plan for your generation volume",
   "Agree pricing and billing with our team",

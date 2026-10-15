@@ -70,7 +70,7 @@ export async function disconnectFacebook() {
     let warning: string | undefined;
     if (linked) {
       try { await revokeFacebookGrant(unseal(linked.user_token, `facebook-user:${user.id}:${linked.facebook_user_id}`)); }
-      catch { warning = "Local access removed. Facebook revocation was not confirmed; also remove ETA under Facebook Settings → Business integrations."; }
+      catch { warning = "Local access removed. Facebook revocation was not confirmed; also remove Create AI Videos under Facebook Settings → Business integrations."; }
       const result = await admin.from("facebook_connections").delete().eq("id", linked.id).eq("user_id", user.id).eq("status", "disconnecting");
       if (result.error) throw new Error("Access is paused, but local removal needs a retry. Press Disconnect again.");
     }

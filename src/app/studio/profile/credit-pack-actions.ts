@@ -35,8 +35,8 @@ export async function createCreditPackCheckout() {
         payment_method_types: ["card"], allow_promotion_codes: false,
         adaptive_pricing: { enabled: false }, automatic_tax: { enabled: false },
         line_items: [{ quantity: 1, price_data: { currency: creditPack.currency, unit_amount: creditPack.amount, product_data: {
-          name: `ETA ${creditPack.name} — ${creditPack.credits} credits`,
-          description: "One-time purchase of 10 ETA app credits. No subscription or automatic renewal.", metadata: { app: "framefoundry", credit_pack_id: creditPack.id },
+          name: `Create AI Videos ${creditPack.name} — ${creditPack.credits} credits`,
+          description: "One-time purchase of 10 Create AI Videos app credits. No subscription or automatic renewal.", metadata: { app: "framefoundry", credit_pack_id: creditPack.id },
         } } }],
         metadata, payment_intent_data: { metadata },
         expires_at: Math.floor(Date.now() / 1000) + 1860,

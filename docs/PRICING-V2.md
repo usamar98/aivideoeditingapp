@@ -1,8 +1,8 @@
 # Pricing cards and catalog v2 — 5 October 2026
 
-The reference layout is adapted to ETA's existing cream, navy and blue theme. Growth has the full-width Most Popular header. Creator and Growth each have an accessible range control and three clickable credit pills. Enterprise routes to Contact; it is not a zero-dollar subscription.
+The reference layout is adapted to Create AI Videos’ existing cream, navy and blue theme. Growth has the full-width Most Popular header. Creator and Growth each have an accessible range control and three clickable credit pills. Enterprise routes to Contact; it is not a zero-dollar subscription.
 
-The user's latest instruction sets regular monthly base prices to **$9 / $49 / Custom**. There is no $15 renewal or introductory discount. Included workflows remain based on ETA's existing pricing cards; no competitor-only tools, unlimited usage, API service, or invented enterprise promises are advertised.
+The user's latest instruction sets regular monthly base prices to **$9 / $49 / Custom**. There is no $15 renewal or introductory discount. Included workflows remain based on Create AI Videos’ existing pricing cards; no competitor-only tools, unlimited usage, API service, or invented enterprise promises are advertised.
 
 | Plan | Monthly credits | Monthly payment | Annual payment / credits upfront |
 | --- | --- | --- | --- |
@@ -10,7 +10,7 @@ The user's latest instruction sets regular monthly base prices to **$9 / $49 / C
 | Growth | 1,100 / 2,200 / 3,300 | $49 / $88.20 / $124.95 | $470.40 / 13,200; $846.72 / 26,400; $1,199.52 / 39,600 |
 | Enterprise | Agreed individually | Custom | Agreed individually |
 
-Allowances were selected to stay near ETA's prior Creator credit-to-price ratio, not copied from another platform whose model costs differ. The existing 2×/3× bundle discounts remain 10%/15%. Annual billing saves 20% against the corresponding monthly bundle and grants all twelve months of credits upfront. Generation credit charges have not changed.
+Allowances were selected to stay near Create AI Videos’ prior Creator credit-to-price ratio, not copied from another platform whose model costs differ. The existing 2×/3× bundle discounts remain 10%/15%. Annual billing saves 20% against the corresponding monthly bundle and grants all twelve months of credits upfront. Generation credit charges have not changed.
 
 ## Safe rollout
 

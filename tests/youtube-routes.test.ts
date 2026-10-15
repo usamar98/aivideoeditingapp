@@ -17,7 +17,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.stubEnv("SOCIAL_TOKEN_ENCRYPTION_KEY", "12".repeat(32));
   vi.stubEnv("YOUTUBE_OAUTH_CLIENT_ID", "test-client"); vi.stubEnv("YOUTUBE_OAUTH_CLIENT_SECRET", "test-secret");
-  vi.stubEnv("YOUTUBE_REDIRECT_URI", "https://www.editingapp.live/api/social/youtube/callback");
+  vi.stubEnv("YOUTUBE_REDIRECT_URI", "https://createaivideos.app/api/social/youtube/callback");
   rpc = vi.fn().mockResolvedValue({ error: null });
   query = Object.fromEntries(["update", "eq", "gt", "select"].map((key) => [key, vi.fn(() => query)]));
   query.maybeSingle = vi.fn().mockResolvedValue({ data: { verifier: seal("verifier", `oauth:${user}`) }, error: null });
@@ -28,10 +28,10 @@ beforeEach(() => {
   mocks.channel.mockResolvedValue({ id: channel, title: "My channel" });
 });
 afterEach(() => vi.unstubAllEnvs());
-function connectRequest(origin = "https://www.editingapp.live", consent = "agree") {
-  return new Request("https://www.editingapp.live/api/social/youtube/connect", { method: "POST", headers: { origin }, body: new URLSearchParams({ policy: consent }) });
+function connectRequest(origin = "https://createaivideos.app", consent = "agree") {
+  return new Request("https://createaivideos.app/api/social/youtube/connect", { method: "POST", headers: { origin }, body: new URLSearchParams({ policy: consent }) });
 }
-function callback(query = "state=state&code=code") { return new Request(`https://www.editingapp.live/api/social/youtube/callback?${query}`); }
+function callback(query = "state=state&code=code") { return new Request(`https://createaivideos.app/api/social/youtube/callback?${query}`); }
 describe("YouTube OAuth routes", () => {
   it("rejects cross-origin requests and missing policy consent before accessing credentials", async () => {
     expect((await POST(connectRequest("https://evil.example"))).status).toBe(403);
@@ -50,11 +50,11 @@ describe("YouTube OAuth routes", () => {
   });
   it("rejects mismatched browser state without exchanging a code", async () => {
     const response = await GET(callback("state=wrong&code=secret-code&next=https://evil.test"));
-    expect(response.headers.get("location")).toBe("https://www.editingapp.live/studio/social?youtube=connection_failed");
+    expect(response.headers.get("location")).toBe("https://createaivideos.app/studio/social?youtube=connection_failed");
     expect(mocks.exchange).not.toHaveBeenCalled(); expect(mocks.account).not.toHaveBeenCalled();
     expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
   });
-  it("requires unused, unexpired state bound to the current ETA user", async () => {
+  it("requires unused, unexpired state bound to the current Create AI Videos user", async () => {
     query.maybeSingle.mockResolvedValue({ data: null });
     const response = await GET(callback());
     expect(response.headers.get("location")).toContain("connection_failed");

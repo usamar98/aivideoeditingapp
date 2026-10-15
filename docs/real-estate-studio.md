@@ -6,12 +6,12 @@ Research and implementation: 4 October 2026. Route: `/studio/real-estate`. Publi
 
 This is a workflow-based shortlist, not a paid side-by-side quality ranking. Published examples and product documentation show capabilities; they do not establish independent performance guarantees.
 
-| Platform | Useful workflow / output pattern | Applied to ETA |
+| Platform | Useful workflow / output pattern | Applied to Create AI Videos |
 | --- | --- | --- |
 | [AutoReel](https://www.autoreelapp.com/) | Real-estate-specific photo import, photo animation, editor, narration and branding; short portrait/landscape listing tours | Real uploaded photos, explicit ordering, restrained camera motion, private review and contact card |
 | [Revid real estate marketing video](https://www.revid.ai/tools/real-estate-marketing-video) | Property details and photos become narrated marketing videos | User-approved room narration and a low-friction listing form |
 | [Invideo real estate marketing](https://invideo.io/make/real-estate-marketing/) | Template/editing-oriented real-estate marketing videos | Reusable brand treatment and landscape/portrait export |
-| [Styldod](https://www.styldod.com/real-estate-video-editing) | Human editing service, not an equivalent automated AI generator; polished property footage, pacing and branding | Editorial room sequencing and readable branding, without claiming its human-editing service exists in ETA |
+| [Styldod](https://www.styldod.com/real-estate-video-editing) | Human editing service, not an equivalent automated AI generator; polished property footage, pacing and branding | Editorial room sequencing and readable branding, without claiming its human-editing service exists in Create AI Videos |
 
 Recommended output strategy: factual listing first, cinematic motion second. Animated uploaded photos cannot prove a property's layout, dimensions or condition. No model is labelled as a guaranteed architectural-preservation winner. No claims about leads, sales uplift or MLS acceptance.
 
@@ -29,7 +29,7 @@ Recommended output strategy: factual listing first, cinematic motion second. Ani
 
 `scripts/verify-real-estate-models.mjs --snapshot` retrieves public OpenAPI metadata only. Captured contracts are in `tests/fixtures/real-estate-fal-schemas.json`; tests validate both durations and orientations. Schema verification does not establish output quality, account entitlement or a successful paid production render.
 
-| Model | fal endpoint | ETA credits per room-second |
+| Model | fal endpoint | Create AI Videos credits per room-second |
 | --- | --- | --- |
 | Faithful photo motion | Local FFmpeg; no inference | 1 |
 | Kling 3.0 Pro | `fal-ai/kling-video/v3/pro/image-to-video` | 15 |
@@ -52,7 +52,7 @@ Charge = 10 export credits + rooms × room seconds × model rate + (5 credits pe
 1. Apply all outstanding migrations in chronological order, including `supabase/migrations/20261004140532_real_estate_video_studio.sql`. It adds the private project table, RPCs and scoped storage policies; no existing account balances are edited.
 2. Deploy the Trigger.dev production worker using the project's established deployment process. The new `real-estate-pipeline` task is exported by `src/trigger/pipelines.ts`. A Vercel Git deployment does not deploy Trigger tasks.
 3. Existing Vercel configuration: Supabase public URL/publishable key, server `SUPABASE_SECRET_KEY`, and `TRIGGER_SECRET_KEY`. Existing Trigger configuration: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `FAL_KEY` for AI motion/narration. Keep secrets server-side. The existing build extension supplies FFmpeg 7 and fonts.
-4. Silent faithful mode requires the database, worker and ETA credits but no fal inference credentials. Verify provider balance/access before allowing paid AI modes in production.
+4. Silent faithful mode requires the database, worker and Create AI Videos credits but no fal inference credentials. Verify provider balance/access before allowing paid AI modes in production.
 5. Smoke-test one authorized listing end to end, including download, job cancellation and account balance, before announcing availability. No paid provider tests were run during implementation.
 
 ## Search implementation

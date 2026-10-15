@@ -1,6 +1,6 @@
-# ETA search-engine setup and owner handoff
+# Create AI Videos search-engine setup and owner handoff
 
-Updated: 2026-09-25. Production website: `https://www.editingapp.live`.
+Updated: 2026-09-25. Production website: `https://createaivideos.app`.
 
 This is a setup guide, not confirmation that ownership is verified or any sitemap has been submitted. No authenticated Search Console or Bing account was inspected. Publish and verify the SEO changes before submitting their new URLs.
 
@@ -12,8 +12,8 @@ If unverified, choose one route:
 
 | Property | Method | Where the provided value belongs |
 | --- | --- | --- |
-| Domain: `editingapp.live` | DNS verification | Add Google's exact TXT record at your authoritative DNS provider; follow its root-host instructions. Do not put the TXT record in an app environment variable. |
-| URL prefix: `https://www.editingapp.live/` | HTML tag | Expand the HTML-tag method. Put only the tag's `content` value into `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, deploy, then verify. |
+| Domain: `createaivideos.app` | DNS verification | Add Google's exact TXT record at your authoritative DNS provider; follow its root-host instructions. Do not put the TXT record in an app environment variable. |
+| URL prefix: `https://createaivideos.app/` | HTML tag | Expand the HTML-tag method. Put only the tag's `content` value into `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, deploy, then verify. |
 
 A Domain property uses DNS verification, not an HTML meta tag. The URL-prefix option is suitable when using this app's metadata integration. Never invent a token or copy a sample as your real value. [Google ownership-verification instructions](https://support.google.com/webmasters/answer/9008080)
 
@@ -24,9 +24,9 @@ If still stuck, share a screenshot showing the selected property and Ownership v
 Set/check these for the Vercel **Production** environment:
 
 ```dotenv
-NEXT_PUBLIC_SITE_URL=https://www.editingapp.live
+NEXT_PUBLIC_SITE_URL=https://createaivideos.app
 NEXT_PUBLIC_DEMO_MODE=false
-NEXT_PUBLIC_SUPPORT_EMAIL=support@editingapp.live
+NEXT_PUBLIC_SUPPORT_EMAIL=support@createaivideos.app
 ```
 
 `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` is optional. Set it only to the real HTML-tag `content` value issued to your selected URL-prefix property. It is not a Google API key, a full `<meta>` tag, or the DNS `google-site-verification=...` record. Leave it unset when already verified using another method.
@@ -39,9 +39,9 @@ After changing build-time public environment values, deploy again. Inspect the l
 
 | File | Exact production URL | What to do with it |
 | --- | --- | --- |
-| Sitemap | `https://www.editingapp.live/sitemap.xml` | Submit this URL in Google and Bing's Sitemaps tools. |
-| Robots | `https://www.editingapp.live/robots.txt` | Inspect it; crawlers discover it themselves. Do not submit as a sitemap. |
-| Optional AI guide | `https://www.editingapp.live/llms.txt` | Check public facts and links. Do not submit as a sitemap or verification file. |
+| Sitemap | `https://createaivideos.app/sitemap.xml` | Submit this URL in Google and Bing's Sitemaps tools. |
+| Robots | `https://createaivideos.app/robots.txt` | Inspect it; crawlers discover it themselves. Do not submit as a sitemap. |
+| Optional AI guide | `https://createaivideos.app/llms.txt` | Check public facts and links. Do not submit as a sitemap or verification file. |
 
 The baseline audit found double slashes in production discovery links and a missing llms.txt. Check the fresh deployed responses; do not assume a successful local build changed production.
 
@@ -49,9 +49,9 @@ Expected baseline after this SEO update: nine public sitemap URLs—home, featur
 
 ## 4. Submit the sitemap to Google
 
-1. Open [Google Search Console](https://search.google.com/search-console) and select the verified property covering `https://www.editingapp.live/`.
+1. Open [Google Search Console](https://search.google.com/search-console) and select the verified property covering `https://createaivideos.app/`.
 2. Open **Sitemaps**.
-3. Submit `https://www.editingapp.live/sitemap.xml`. If the field already displays the website prefix, enter only `sitemap.xml`.
+3. Submit `https://createaivideos.app/sitemap.xml`. If the field already displays the website prefix, enter only `sitemap.xml`.
 4. Review processing status and discovered URLs. Investigate a fetch/error status rather than repeatedly submitting.
 
 Do not submit robots.txt, llms.txt, source-code files, database migrations, private URLs, or a list of API keys. Sitemap submission helps discovery; it does not establish indexing or ranking. [Google Sitemaps report](https://support.google.com/webmasters/answer/7451001)
@@ -63,11 +63,11 @@ Use URL Inspection for the homepage, both feature pages, pricing, and the new gu
 Start with these exact URLs:
 
 ```text
-https://www.editingapp.live/
-https://www.editingapp.live/features/ai-cartoon-series
-https://www.editingapp.live/features/faceless-video-generator
-https://www.editingapp.live/pricing
-https://www.editingapp.live/guides/faceless-videos-vs-ai-cartoons
+https://createaivideos.app/
+https://createaivideos.app/features/ai-cartoon-series
+https://createaivideos.app/features/faceless-video-generator
+https://createaivideos.app/pricing
+https://createaivideos.app/guides/faceless-videos-vs-ai-cartoons
 ```
 
 Use the Pages/indexing report to distinguish expected exclusions (login/private/preview/retired content) from excluded pages intended for search. Never make private user content public just to resolve an indexing warning.
@@ -84,7 +84,7 @@ These controls are separate from training choices such as Google-Extended. No sp
 
 Open [Bing Webmaster Tools](https://www.bing.com/webmasters/). You can import an already-verified Google property with your approval or use Bing's offered manual verification method. Importing requires granting Bing access to the selected Google account's property information; choose the correct site. [Bing's import instructions](https://blogs.bing.com/webmaster/2019/9/Import-sites-from-Search-Console-to-Bing-Webmaster-Tools/)
 
-Submit the same `https://www.editingapp.live/sitemap.xml` in Bing's **Sitemaps** tool, then review URL Inspection and crawl diagnostics. [Bing Sitemaps documentation](https://www2.bing.com/webmasters/help/sitemaps-3b5cf6ed)
+Submit the same `https://createaivideos.app/sitemap.xml` in Bing's **Sitemaps** tool, then review URL Inspection and crawl diagnostics. [Bing Sitemaps documentation](https://www2.bing.com/webmasters/help/sitemaps-3b5cf6ed)
 
 IndexNow can later notify participating search engines of actual public URL additions, updates, or removals. It is optional; this document does not claim that a key or submission integration is configured. Do not send private generation/account URLs. Indexing and Copilot citations are not guaranteed. [Bing Webmaster Guidelines](https://www.bing.com/webmasters/help/bing-webmaster-guidelines-30fba23a)
 
@@ -116,7 +116,7 @@ For the observed baseline and technical limitations, read [GEO analysis](./GEO-A
 The project includes a read-only smoke checker. After deploying, run:
 
 ```powershell
-node scripts/check-seo.mjs https://www.editingapp.live --production
+node scripts/check-seo.mjs https://createaivideos.app --production
 ```
 
 It checks the current nine-page baseline, public metadata, JSON-LD parsing, social images, discovery files, private noindex headers and hidden-page 404s. Update its expected routes when adding genuinely published pages. It does not authenticate to Google, submit URLs, measure real-user performance or prove rich-result eligibility.

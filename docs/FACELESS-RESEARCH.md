@@ -2,7 +2,7 @@
 
 Reviewed September 22, 2026 using official product descriptions (not signed-in paid-product tests).
 
-| Example | Observed workflow | Applied to FrameFoundry |
+| Example | Observed workflow | Applied to Create AI Videos |
 | --- | --- | --- |
 | [Invideo](https://invideo.io/make/ai-faceless-video-generator/) | Topic/prompt becomes a script with media, voiceover, and editing controls | Idea-first entry and a separate review step |
 | [Fliki](https://fliki.ai/) | Text, stock/AI visuals, voiceover, and captions combine into faceless videos | Editable narration and image prompts per scene, language and format choices |

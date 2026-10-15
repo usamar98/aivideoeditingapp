@@ -38,7 +38,7 @@ describe("worker connectivity task", () => {
     expect(definition.maxDuration).toBe(30);
     expect(await definition.run({})).toEqual({
       ok: true,
-      message: "FrameFoundry development worker is connected.",
+      message: "Create AI Videos development worker is connected.",
       runtime: {
         node: process.versions.node,
         webSocketAvailable: typeof globalThis.WebSocket === "function",
