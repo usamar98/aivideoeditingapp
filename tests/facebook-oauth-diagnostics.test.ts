@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FACEBOOK_SCOPES } from "@/lib/social/facebook-config";
 import { facebookGrantDiagnostics, facebookOAuthNotice, logFacebookOAuthResult, recordFacebookPageTasks } from "@/lib/social/facebook-oauth-diagnostics";
+import { emptyFacebookPageGrantInspection } from "@/lib/social/facebook-page-grants";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -29,6 +30,21 @@ describe("Facebook OAuth diagnostics privacy and notices", () => {
         permissions: diagnostics.permissions, returnedPages: 2, eligiblePages: 0, pagesWithoutTasks: 1,
         unrecognizedTasks: 1, taskCounts: { ANALYZE: 1, PROFILE_PLUS_FACEBOOK_ACCESS: 1 },
       } });
+    expect(warning.mock.calls[0][0]).not.toContain("private-");
+  });
+  it("projects Page-specific grant diagnostics onto fixed labels and counts", () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const diagnostics = facebookGrantDiagnostics([]);
+    diagnostics.pageGrants = emptyFacebookPageGrantInspection("verified");
+    diagnostics.pageGrants.scopeTargets.pages_show_list = { selection: "selected", count: 2 };
+    Object.assign(diagnostics.pageGrants, { targets: ["private-page-id"], token: "private-token", error: "private-error" });
+    Object.assign(diagnostics.pageGrants.scopeTargets, { "private-scope": { count: 1 } });
+    Object.assign(diagnostics.pageGrants.scopeTargets.pages_show_list, { target_ids: ["private-page-id"] });
+    Object.assign(diagnostics.pageGrants.scopeTargets.pages_manage_posts, { selection: "private-selection", count: -1 });
+    logFacebookOAuthResult(randomUUID(), "pages_not_returned", "page_discovery", diagnostics);
+    const logged = JSON.parse(warning.mock.calls[0][0]).diagnostics.pageGrants;
+    expect(logged.scopeTargets.pages_show_list).toEqual({ selection: "selected", count: 2 });
+    expect(logged.scopeTargets.pages_manage_posts).toEqual({ selection: "unknown", count: 0 });
     expect(warning.mock.calls[0][0]).not.toContain("private-");
   });
   it("shows distinct instructions and a validated support reference only for failures", () => {

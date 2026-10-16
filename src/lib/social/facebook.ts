@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { FACEBOOK_SCOPES, facebookConfig } from "./facebook-config";
 import { FACEBOOK_CONTENT_TASKS, FACEBOOK_OAUTH_NOTICES, facebookGrantDiagnostics, recordFacebookPageTasks, type FacebookGrantDiagnostics, type FacebookGrantFailure } from "./facebook-oauth-diagnostics";
+import { emptyFacebookPageGrantInspection, inspectFacebookPageGrants } from "./facebook-page-grants";
 
 const idSchema = z.string().regex(/^\d{1,40}$/);
 const pageSchema = z.object({ id: idSchema, name: z.string().max(500), access_token: z.string().min(1), tasks: z.array(z.string()) });
@@ -18,8 +19,8 @@ export class FacebookGrantError extends FacebookError {
 export function facebookIdentityHash(id: string) { return createHmac("sha256", facebookConfig().appSecret).update(`facebook-user:${id}`).digest("hex"); }
 export function appSecretProof(token: string) { return createHmac("sha256", facebookConfig().appSecret).update(token).digest("hex"); }
 
-async function request(url: string, options: RequestInit = {}) {
-  const signal = AbortSignal.timeout(60_000);
+async function request(url: string, options: RequestInit = {}, timeoutMs = 60_000) {
+  const signal = AbortSignal.timeout(timeoutMs);
   try {
     const response = await fetch(url, { ...options, signal, redirect: "error", cache: "no-store" });
     const data = await response.json().catch(() => null);
@@ -36,11 +37,11 @@ async function request(url: string, options: RequestInit = {}) {
     throw new FacebookError("unavailable", "Facebook could not be reached. Check this post's status before retrying.");
   }
 }
-async function graph(path: string, token: string, values: Record<string, string> = {}, method = "GET") {
+async function graph(path: string, token: string, values: Record<string, string> = {}, method = "GET", timeoutMs = 60_000) {
   const config = facebookConfig(), url = new URL(`https://graph.facebook.com/${config.version}/${path}`);
   const params = new URLSearchParams({ ...values, appsecret_proof: appSecretProof(token) });
   if (method === "GET") url.search = params.toString();
-  return request(url.toString(), { method, headers: { Authorization: `Bearer ${token}` }, ...(method !== "GET" ? { body: params } : {}) });
+  return request(url.toString(), { method, headers: { Authorization: `Bearer ${token}` }, ...(method !== "GET" ? { body: params } : {}) }, timeoutMs);
 }
 export function facebookAuthorizationUrl(state: string) {
   const config = facebookConfig(), url = new URL(`https://www.facebook.com/${config.version}/dialog/oauth`);
@@ -57,6 +58,34 @@ export async function exchangeFacebookCode(code: string) {
   }
   const short = await exchange({ redirect_uri: config.redirectUri, code });
   return exchange({ grant_type: "fb_exchange_token", fb_exchange_token: short });
+}
+async function diagnoseEmptyFacebookPages(token: string, userId: string, diagnostics: FacebookGrantDiagnostics) {
+  try {
+    const config = facebookConfig();
+    // /debug_token requires app authentication. Both credentials remain server-side;
+    // this URL and its input_token must never be logged, persisted or sent to the UI.
+    const payload = await graph("debug_token", `${config.appId}|${config.appSecret}`, { input_token: token }, "GET", 10_000);
+    const { summary, targets } = inspectFacebookPageGrants(payload, config.appId, userId);
+    diagnostics.pageGrants = summary;
+    // Only intersected, provider-authorized IDs are probed, never user input or a
+    // public Page search. Read identity only; do not retrieve extra Page credentials.
+    const selected = targets.slice(0, 5);
+    summary.truncated = targets.length > selected.length;
+    await Promise.all(selected.map(async (id) => {
+      summary.inspectedTargets++;
+      try {
+        const page = z.object({ id: idSchema }).safeParse(await graph(id, token, { fields: "id" }, "GET", 10_000));
+        if (page.success && page.data.id === id) summary.readableTargets++;
+        else summary.unavailableTargets++;
+      } catch (error) {
+        if (error instanceof FacebookError && error.code === "rejected") summary.rejectedTargets++;
+        else summary.unavailableTargets++;
+      }
+    }));
+  } catch {
+    // Optional inspection cannot replace the original result or expose errors.
+    diagnostics.pageGrants = emptyFacebookPageGrantInspection("unavailable");
+  }
 }
 export async function loadFacebookGrant(token: string) {
   const me = z.object({ id: idSchema }).parse(await graph("me", token, { fields: "id" }));
@@ -78,6 +107,7 @@ export async function loadFacebookGrant(token: string) {
     after = result.paging.cursors?.after;
     if (!after || batch === 4) throw new FacebookError("rejected", "Too many Pages were returned. Reconnect and grant Create AI Videos access to fewer Pages.");
   }
+  if (!diagnostics.returnedPages) await diagnoseEmptyFacebookPages(token, me.id, diagnostics);
   if (!pages.length) throw new FacebookGrantError(diagnostics.returnedPages ? "page_content_access_missing" : "pages_not_returned", diagnostics);
   return { userId: me.id, token, pages, diagnostics };
 }

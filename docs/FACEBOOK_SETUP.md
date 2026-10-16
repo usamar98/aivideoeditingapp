@@ -101,6 +101,25 @@ The OAuth callback writes one structured `facebook.oauth` result per attempt to 
 
 Diagnostics contain no account/Page IDs or names, emails, tokens, OAuth codes/state, raw task values, request URLs or provider error payloads. They are operational logs, not a new database table or a browser-readable debug endpoint. Counts are aggregated across the authorized Pages, not stored with the pending grant. The existing publishing task allowlist, scopes, encryption, state expiry and one-time consumption are unchanged. No environment variable, migration or worker deployment is needed for this diagnostic-only change. Confirm the production deployment is Ready before asking the affected user to retry once and share only the displayed message/reference.
 
+### Empty-list Page-specific inspection
+
+When `/me/accounts` completes successfully with zero Pages, the server additionally inspects that same user token with Meta's `/debug_token` endpoint, using the existing server-side app credentials. Working Page connections and task-filtered (nonempty) results do not make these extra calls. This is diagnostic only; it does not repair a grant or make a Page publishable.
+
+The `pageGrants` summary checks token validity, app/user identity, expiry and the three scopes, then records each scope's target selection as `selected`, `all` or `unknown` plus a count. A present granular scope without `target_ids` means all; an absent or duplicate scope is treated as unknown, and an explicit empty array remains empty. `commonTargets` counts the intersection of explicit targets permitted by all three scopes. An all-Pages grant does not provide IDs to enumerate.
+
+At most five common target IDs receive parallel, read-only `GET /{page-id}?fields=id` probes. A matching identity increments `readableTargets`; an API denial increments `rejectedTargets`; transport failures, malformed responses and identity mismatches increment `unavailableTargets`. `truncated` means more targets existed than the bounded probe inspected. The token inspection and each probe have a ten-second timeout. No Page tokens are fetched by these probes, no provider IDs are logged or persisted, and no posts are created.
+
+Interpret results carefully:
+
+- A verified explicit empty/disjoint selection suggests the permissions did not authorize the same Page. Review the user's Page selection and business asset assignment.
+- Common targets with readable identities but an empty accounts edge isolate a Page-listing/discovery discrepancy. A readable Page ID is **not** evidence of a publishing task; publishing remains blocked.
+- Rejected probes indicate that Meta did not permit that identity read. Review Page restrictions, Page/business access and business-required two-factor authentication; do not assume one cause from a count alone.
+- `invalid`, `malformed`, `unavailable` or unknown selection is inconclusive. Optional inspection never replaces the original empty-list outcome with a fabricated success or a different provider error.
+
+The current implementation deliberately does not query business inventories or blindly substitute `/me/assigned_pages`: Meta documents that edge for a business-scoped user, whereas this app uses an ordinary user-token login. Do not add `business_management`, change token type, invent a business/user ID, loosen content-task checks or ask customers to paste tokens as a workaround. A separate business integration would require a supported design and explicit approval for any expanded permissions.
+
+Reference checked against Meta's v26.0 documentation on 2026-10-16: [token inspection](https://developers.facebook.com/docs/graph-api/reference/debug_token/), [user accounts](https://developers.facebook.com/docs/graph-api/reference/user/accounts/), [business-scoped assigned Pages](https://developers.facebook.com/docs/graph-api/reference/user/assigned_pages/) and [Page identity fields](https://developers.facebook.com/docs/graph-api/reference/page/). The runtime still uses the operator-configured supported API version, not a new hard-coded version.
+
 ## References
 
 - [Meta's official Facebook API/Reels collection](https://www.postman.com/meta/facebook/documentation/r56bjfd/facebook-api)

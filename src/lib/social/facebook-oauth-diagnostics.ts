@@ -1,4 +1,5 @@
 import { FACEBOOK_SCOPES } from "./facebook-config";
+import type { FacebookPageGrantInspection } from "./facebook-page-grants";
 
 export const FACEBOOK_CONTENT_TASKS = ["CREATE_CONTENT", "MANAGE", "PROFILE_PLUS_CREATE_CONTENT", "PROFILE_PLUS_FULL_CONTROL"] as const;
 // Diagnostic labels only. This list must not grant publishing access to additional roles.
@@ -14,6 +15,7 @@ export type FacebookGrantDiagnostics = {
   pagesWithoutTasks: number;
   unrecognizedTasks: number;
   taskCounts: Partial<Record<DiagnosticTask, number>>;
+  pageGrants?: FacebookPageGrantInspection;
 };
 export type FacebookGrantFailure = "permissions_missing" | "pages_not_returned" | "page_content_access_missing";
 export type FacebookOAuthStage = "configuration" | "validate_state" | "authenticate" | "consume_state" | "authorization" | "exchange_code" | "page_discovery" | "save_grant" | "complete";
@@ -73,6 +75,22 @@ export function logFacebookOAuthResult(reference: string, outcome: FacebookOAuth
     unrecognizedTasks: safeCount(diagnostics.unrecognizedTasks),
     taskCounts: Object.fromEntries(DIAGNOSTIC_TASKS.filter((task) => diagnostics.taskCounts[task] !== undefined)
       .map((task) => [task, safeCount(diagnostics.taskCounts[task]!)])),
+    ...(diagnostics.pageGrants ? { pageGrants: {
+      status: ["verified", "invalid", "unavailable", "malformed"].includes(diagnostics.pageGrants.status) ? diagnostics.pageGrants.status : "malformed",
+      scopeTargets: Object.fromEntries(FACEBOOK_SCOPES.map((scope) => {
+        const selection = diagnostics.pageGrants!.scopeTargets[scope];
+        return [scope, {
+          selection: ["all", "selected", "unknown"].includes(selection.selection) ? selection.selection : "unknown",
+          count: safeCount(selection.count),
+        }];
+      })),
+      commonTargets: safeCount(diagnostics.pageGrants.commonTargets),
+      inspectedTargets: safeCount(diagnostics.pageGrants.inspectedTargets),
+      readableTargets: safeCount(diagnostics.pageGrants.readableTargets),
+      rejectedTargets: safeCount(diagnostics.pageGrants.rejectedTargets),
+      unavailableTargets: safeCount(diagnostics.pageGrants.unavailableTargets),
+      truncated: diagnostics.pageGrants.truncated === true,
+    } } : {}),
   } : undefined;
   const entry = JSON.stringify({ event: "facebook.oauth", reference, outcome, stage, diagnostics: summary });
   if (outcome === "choose_page" || outcome === "denied") console.info(entry);

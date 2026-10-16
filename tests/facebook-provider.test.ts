@@ -93,6 +93,77 @@ describe("Facebook provider and request validation", () => {
     const malformed = await loadFacebookGrant("token").catch((failure: unknown) => failure);
     expect(malformed).not.toBeInstanceOf(FacebookGrantError);
   });
+  it("inspects only intersected Page-specific grants when the accounts edge is empty, without authorizing them", async () => {
+    fetcher.mockResolvedValueOnce(json({ id: "111" }))
+      .mockResolvedValueOnce(json({ data: FACEBOOK_SCOPES.map((permission) => ({ permission, status: "granted" })) }))
+      .mockResolvedValueOnce(json({ data: [] }))
+      .mockResolvedValueOnce(json({ data: {
+        app_id: "123", user_id: "111", is_valid: true, expires_at: 0, scopes: [...FACEBOOK_SCOPES],
+        granular_scopes: [
+          { scope: "pages_show_list", target_ids: ["222", "333"] },
+          { scope: "pages_read_engagement", target_ids: ["222", "333"] },
+          { scope: "pages_manage_posts", target_ids: ["222"] },
+        ],
+      } })).mockResolvedValueOnce(json({ id: "222", name: "private-page-name", access_token: "must-not-be-used" }));
+    const failure = await loadFacebookGrant("private-user-token").catch((error: unknown) => error) as FacebookGrantError;
+    expect(failure.outcome).toBe("pages_not_returned");
+    expect(failure.diagnostics.pageGrants).toMatchObject({ status: "verified", commonTargets: 1, inspectedTargets: 1, readableTargets: 1 });
+    expect(JSON.stringify(failure)).not.toMatch(/private-user-token|private-page-name|must-not-be-used|222|333/);
+    const [debugUrl, debugRequest] = fetcher.mock.calls[3];
+    expect(new URL(debugUrl).pathname).toBe("/v25.0/debug_token");
+    expect(new URL(debugUrl).searchParams.get("input_token")).toBe("private-user-token");
+    expect(debugRequest.headers.Authorization).toBe("Bearer 123|test-secret");
+    expect(debugUrl).not.toContain("test-secret");
+    const [pageUrl, pageRequest] = fetcher.mock.calls[4];
+    expect(new URL(pageUrl).pathname).toBe("/v25.0/222");
+    expect(new URL(pageUrl).searchParams.get("fields")).toBe("id");
+    expect(pageRequest.headers.Authorization).toBe("Bearer private-user-token");
+    for (const [, options] of fetcher.mock.calls) {
+      expect(options.method).toBe("GET"); expect(options.cache).toBe("no-store"); expect(options.redirect).toBe("error");
+    }
+    expect(fetcher).toHaveBeenCalledTimes(5);
+  });
+  it("limits empty-list Page probes to five and reports read rejections and identity mismatches honestly", async () => {
+    const targets = Array.from({ length: 6 }, (_, i) => String(i + 222));
+    fetcher.mockResolvedValueOnce(json({ id: "111" }))
+      .mockResolvedValueOnce(json({ data: FACEBOOK_SCOPES.map((permission) => ({ permission, status: "granted" })) }))
+      .mockResolvedValueOnce(json({ data: [] }))
+      .mockResolvedValueOnce(json({ data: { app_id: "123", user_id: "111", is_valid: true, expires_at: 0, scopes: [...FACEBOOK_SCOPES],
+        granular_scopes: FACEBOOK_SCOPES.map((scope) => ({ scope, target_ids: targets })) } }))
+      .mockResolvedValueOnce(json({ id: "222" }))
+      .mockResolvedValueOnce(json({ error: { code: 10, message: "private-provider-error" } }, 403))
+      .mockResolvedValueOnce(json({ id: "999" }))
+      .mockResolvedValueOnce(json({ error: { is_transient: true } }, 503))
+      .mockResolvedValueOnce(json({ id: "226" }));
+    await expect(loadFacebookGrant("token")).rejects.toMatchObject({ outcome: "pages_not_returned", diagnostics: { pageGrants: {
+      status: "verified", commonTargets: 6, inspectedTargets: 5, readableTargets: 2, rejectedTargets: 1, unavailableTargets: 2, truncated: true,
+    } } });
+    expect(fetcher).toHaveBeenCalledTimes(9);
+  });
+  it("never probes targets from an invalid token or makes empty-list inspection mandatory for working connections", async () => {
+    fetcher.mockResolvedValueOnce(json({ id: "111" }))
+      .mockResolvedValueOnce(json({ data: FACEBOOK_SCOPES.map((permission) => ({ permission, status: "granted" })) }))
+      .mockResolvedValueOnce(json({ data: [] }))
+      .mockResolvedValueOnce(json({ data: { app_id: "999", user_id: "111", is_valid: true, expires_at: 0, scopes: [...FACEBOOK_SCOPES],
+        granular_scopes: FACEBOOK_SCOPES.map((scope) => ({ scope, target_ids: ["222"] })) } }));
+    await expect(loadFacebookGrant("token")).rejects.toMatchObject({ diagnostics: { pageGrants: { status: "invalid", inspectedTargets: 0 } } });
+    expect(fetcher).toHaveBeenCalledTimes(4);
+    fetcher.mockReset();
+    fetcher.mockResolvedValueOnce(json({ id: "111" }))
+      .mockResolvedValueOnce(json({ data: FACEBOOK_SCOPES.map((permission) => ({ permission, status: "granted" })) }))
+      .mockResolvedValueOnce(json({ data: [{ id: "222", name: "Allowed", access_token: "page-token", tasks: ["CREATE_CONTENT"] }] }));
+    expect((await loadFacebookGrant("token")).diagnostics.pageGrants).toBeUndefined();
+    expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+  it("retains the empty-list result when optional token inspection is unavailable", async () => {
+    fetcher.mockResolvedValueOnce(json({ id: "111" }))
+      .mockResolvedValueOnce(json({ data: FACEBOOK_SCOPES.map((permission) => ({ permission, status: "granted" })) }))
+      .mockResolvedValueOnce(json({ data: [] }))
+      .mockRejectedValueOnce(new Error("private-request-url-and-token"));
+    const failure = await loadFacebookGrant("token").catch((error: unknown) => error) as FacebookGrantError;
+    expect(failure).toMatchObject({ outcome: "pages_not_returned", diagnostics: { pageGrants: { status: "unavailable", inspectedTargets: 0 } } });
+    expect(JSON.stringify(failure)).not.toContain("private-request");
+  });
   it("restricts upload URLs and sends only a same-storage short-lived media URL", async () => {
     fetcher.mockResolvedValueOnce(json({ video_id: "444", upload_url: "https://attacker.test/444" }));
     await expect(createFacebookReel("token", "222")).rejects.toThrow(/destination/);
