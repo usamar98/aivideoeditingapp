@@ -89,6 +89,18 @@ The recovery task is essential: scheduling is held in Create AI Videos’ databa
 - The AI option appends an explicit caption disclosure; it does **not** set Meta's native AI-label field. Users must apply any additional required native disclosure in Meta's tools. Don't describe this as automatic full Meta policy compliance.
 - No credentials were available during local implementation, so live OAuth, app review, real Page upload and schedule timing still require the acceptance test above.
 
+## Diagnosing Page connection failures
+
+The OAuth callback writes one structured `facebook.oauth` result per attempt to the server logs. Failed attempts show an opaque **Support reference** in the Facebook dashboard; search that reference in Vercel Production logs for `/api/social/facebook/callback`. Do not ask users for access tokens, App Secrets, authorization codes or full callback URLs.
+
+- `permissions_missing`: one or more of the three requested permissions was not granted. The log contains only fixed scope names and normalized statuses.
+- `pages_not_returned`: `/me/accounts` returned zero Pages across the completed pagination. A Page appearing in Meta's consent picker does not prove the API returned it. Investigate Page discovery/access before changing permissions.
+- `page_content_access_missing`: the API returned Pages, but none had a currently recognized content-publishing task. Check `returnedPages`, `eligiblePages`, `pagesWithoutTasks`, the fixed-label `taskCounts` and `unrecognizedTasks`. Unknown roles remain ineligible; do not weaken authorization to make this error disappear.
+- `connection_failed`: the `stage` identifies whether state validation, authentication, token exchange, Page discovery or saving the pending grant failed. Raw provider errors are intentionally not logged.
+- `choose_page`: discovery succeeded and an encrypted pending grant was saved. Connecting still does not publish anything.
+
+Diagnostics contain no account/Page IDs or names, emails, tokens, OAuth codes/state, raw task values, request URLs or provider error payloads. They are operational logs, not a new database table or a browser-readable debug endpoint. Counts are aggregated across the authorized Pages, not stored with the pending grant. The existing publishing task allowlist, scopes, encryption, state expiry and one-time consumption are unchanged. No environment variable, migration or worker deployment is needed for this diagnostic-only change. Confirm the production deployment is Ready before asking the affected user to retry once and share only the displayed message/reference.
+
 ## References
 
 - [Meta's official Facebook API/Reels collection](https://www.postman.com/meta/facebook/documentation/r56bjfd/facebook-api)

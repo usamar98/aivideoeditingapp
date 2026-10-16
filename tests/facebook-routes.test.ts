@@ -1,6 +1,8 @@
 import { createHmac, randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { unseal } from "@/lib/social/crypto";
+import { FacebookGrantError } from "@/lib/social/facebook";
+import { facebookGrantDiagnostics, recordFacebookPageTasks } from "@/lib/social/facebook-oauth-diagnostics";
 const mocks = vi.hoisted(() => ({ account: vi.fn(), cookies: vi.fn(), exchange: vi.fn(), grant: vi.fn(), admin: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/account", () => ({ requireAccount: mocks.account }));
@@ -15,6 +17,8 @@ const user = randomUUID(), receipt = randomUUID(), origin = "https://createaivid
 let rpc: ReturnType<typeof vi.fn>, query: Record<string, ReturnType<typeof vi.fn>>;
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  vi.spyOn(console, "info").mockImplementation(() => {});
   vi.stubEnv("SOCIAL_TOKEN_ENCRYPTION_KEY", "12".repeat(32)); vi.stubEnv("FACEBOOK_APP_ID", "123"); vi.stubEnv("FACEBOOK_APP_SECRET", "test-secret");
   vi.stubEnv("FACEBOOK_GRAPH_VERSION", "v25.0"); vi.stubEnv("FACEBOOK_REDIRECT_URI", `${origin}/api/social/facebook/callback`);
   rpc = vi.fn().mockResolvedValue({ data: receipt, error: null });
@@ -22,9 +26,11 @@ beforeEach(() => {
   query.maybeSingle = vi.fn().mockResolvedValue({ data: { user_id: user }, error: null });
   const admin = { from: () => query, rpc }; mocks.admin.mockReturnValue(admin); mocks.account.mockResolvedValue({ user: { id: user }, admin });
   mocks.cookies.mockResolvedValue({ get: () => ({ value: "state" }) }); mocks.exchange.mockResolvedValue("user-token");
-  mocks.grant.mockResolvedValue({ userId: "111", token: "user-token", pages: [{ id: "222", name: "Page", access_token: "page-token", tasks: ["CREATE_CONTENT"] }] });
+  const diagnostics = facebookGrantDiagnostics(["pages_show_list", "pages_read_engagement", "pages_manage_posts"].map((permission) => ({ permission, status: "granted" })));
+  recordFacebookPageTasks(diagnostics, ["CREATE_CONTENT"], true);
+  mocks.grant.mockResolvedValue({ userId: "111", token: "user-token", pages: [{ id: "222", name: "Page", access_token: "page-token", tasks: ["CREATE_CONTENT"] }], diagnostics });
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 const start = (from = origin, policy = "agree") => new Request(`${origin}/api/social/facebook/connect`, { method: "POST", headers: { origin: from }, body: new URLSearchParams({ policy }) });
 const back = (params = "state=state&code=authorization-code") => new Request(`${origin}/api/social/facebook/callback?${params}`);
 describe("Facebook OAuth and deletion routes", () => {
@@ -43,22 +49,53 @@ describe("Facebook OAuth and deletion routes", () => {
   });
   it("rejects mismatched, replayed or expired state and ignores arbitrary redirect targets", async () => {
     const response = await callback(back("state=wrong&code=secret&next=https://attacker.test"));
-    expect(response.headers.get("location")).toBe(`${origin}/studio/social/facebook?facebook=connection_failed`); expect(mocks.exchange).not.toHaveBeenCalled();
+    const destination = new URL(response.headers.get("location")!);
+    expect(destination.origin + destination.pathname).toBe(`${origin}/studio/social/facebook`);
+    expect(destination.searchParams.get("facebook")).toBe("connection_failed");
+    expect(destination.searchParams.get("facebook_ref")).toMatch(/^[a-f\d-]{36}$/);
+    expect(mocks.exchange).not.toHaveBeenCalled();
     query.maybeSingle.mockResolvedValue({ data: null }); await callback(back());
     expect(query.eq).toHaveBeenCalledWith("user_id", user); expect(query.eq).toHaveBeenCalledWith("consumed", false);
     expect(query.gt).toHaveBeenCalledWith("expires_at", expect.any(String)); expect(mocks.exchange).not.toHaveBeenCalled();
   });
   it("does not save denied grants or those without eligible Pages", async () => {
     expect((await callback(back("state=state&error=access_denied"))).headers.get("location")).toContain("facebook=denied");
-    expect(mocks.exchange).not.toHaveBeenCalled(); mocks.grant.mockResolvedValue({ pages: [] });
-    expect((await callback(back())).headers.get("location")).toContain("facebook=no_pages"); expect(rpc).not.toHaveBeenCalled();
+    expect(mocks.exchange).not.toHaveBeenCalled();
+    mocks.grant.mockRejectedValue(new FacebookGrantError("pages_not_returned", facebookGrantDiagnostics([])));
+    expect((await callback(back())).headers.get("location")).toContain("facebook=pages_not_returned"); expect(rpc).not.toHaveBeenCalled();
   });
   it("saves only an encrypted pending grant, requiring explicit Page selection afterwards", async () => {
     const response = await callback(back()); expect(response.headers.get("location")).toContain("facebook=choose_page");
     expect(rpc.mock.calls[0][0]).toBe("prepare_facebook_grant"); const saved = rpc.mock.calls[0][1];
     expect(saved.owner_id).toBe(user); expect(saved.encrypted_grant).toMatch(/^v1\./);
-    expect(JSON.parse(unseal(saved.encrypted_grant, `facebook-grant:${user}`)).token).toBe("user-token");
+    const grant = JSON.parse(unseal(saved.encrypted_grant, `facebook-grant:${user}`));
+    expect(grant.token).toBe("user-token"); expect(grant).not.toHaveProperty("diagnostics");
     expect(JSON.stringify(rpc.mock.calls)).not.toContain("page-token"); expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
+    expect(response.headers.get("location")).not.toContain("facebook_ref");
+    expect(JSON.parse(vi.mocked(console.info).mock.calls[0][0])).toMatchObject({ event: "facebook.oauth", outcome: "choose_page", stage: "complete", diagnostics: { returnedPages: 1, eligiblePages: 1 } });
+  });
+  it.each(["permissions_missing", "pages_not_returned", "page_content_access_missing"] as const)("returns %s and a matching opaque support reference without saving a connection", async (outcome) => {
+    const diagnostics = facebookGrantDiagnostics([]);
+    if (outcome === "page_content_access_missing") recordFacebookPageTasks(diagnostics, ["ANALYZE", "private-task-token\nsecret"], false);
+    mocks.grant.mockRejectedValue(new FacebookGrantError(outcome, diagnostics));
+    const response = await callback(back()), destination = new URL(response.headers.get("location")!);
+    const reference = destination.searchParams.get("facebook_ref");
+    expect(destination.searchParams.get("facebook")).toBe(outcome);
+    expect(reference).toMatch(/^[a-f\d-]{36}$/);
+    expect(JSON.parse(vi.mocked(console.warn).mock.calls[0][0])).toMatchObject({ reference, outcome, stage: "page_discovery", diagnostics });
+    expect(rpc).not.toHaveBeenCalled();
+    expect(response.headers.get("cache-control")).toBe("no-store"); expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
+    const publicOutput = JSON.stringify([...response.headers]) + JSON.stringify(vi.mocked(console.warn).mock.calls);
+    for (const secret of ["user-token", "page-token", "authorization-code", "test-secret", "private-task-token", user]) expect(publicOutput).not.toContain(secret);
+  });
+  it("logs only the failed stage for unexpected errors, never their message, stack or provider payload", async () => {
+    mocks.exchange.mockRejectedValue(new Error("private-code private-user-token https://example.test/?client_secret=private-secret"));
+    const response = await callback(back());
+    expect(response.headers.get("location")).toContain("facebook=connection_failed");
+    expect(JSON.parse(vi.mocked(console.warn).mock.calls[0][0])).toMatchObject({ outcome: "connection_failed", stage: "exchange_code" });
+    expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(/private-|client_secret|authorization-code|user-token/);
+    expect(mocks.grant).not.toHaveBeenCalled(); expect(rpc).not.toHaveBeenCalled();
   });
   it("rejects unsigned/oversized deletion, verifies signed requests, and returns an opaque receipt", async () => {
     const request = (value: string) => new Request(`${origin}/api/social/facebook/deletion`, { method: "POST", body: new URLSearchParams({ signed_request: value }) });

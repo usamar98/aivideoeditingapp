@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { FACEBOOK_SCOPES, facebookConfig } from "./facebook-config";
+import { FACEBOOK_CONTENT_TASKS, FACEBOOK_OAUTH_NOTICES, facebookGrantDiagnostics, recordFacebookPageTasks, type FacebookGrantDiagnostics, type FacebookGrantFailure } from "./facebook-oauth-diagnostics";
 
 const idSchema = z.string().regex(/^\d{1,40}$/);
 const pageSchema = z.object({ id: idSchema, name: z.string().max(500), access_token: z.string().min(1), tasks: z.array(z.string()) });
@@ -8,6 +9,11 @@ export type FacebookPage = z.infer<typeof pageSchema>;
 export const facebookGrantSchema = z.object({ userId: idSchema, token: z.string().min(1), pages: z.array(pageSchema).max(500) });
 export class FacebookError extends Error {
   constructor(public readonly code: "reconnect" | "unavailable" | "rejected" | "uncertain", message: string) { super(message); }
+}
+export class FacebookGrantError extends FacebookError {
+  constructor(public readonly outcome: FacebookGrantFailure, public readonly diagnostics: FacebookGrantDiagnostics) {
+    super("rejected", FACEBOOK_OAUTH_NOTICES[outcome]);
+  }
 }
 export function facebookIdentityHash(id: string) { return createHmac("sha256", facebookConfig().appSecret).update(`facebook-user:${id}`).digest("hex"); }
 export function appSecretProof(token: string) { return createHmac("sha256", facebookConfig().appSecret).update(token).digest("hex"); }
@@ -55,19 +61,25 @@ export async function exchangeFacebookCode(code: string) {
 export async function loadFacebookGrant(token: string) {
   const me = z.object({ id: idSchema }).parse(await graph("me", token, { fields: "id" }));
   const permissions = z.object({ data: z.array(z.object({ permission: z.string(), status: z.string() })) }).parse(await graph("me/permissions", token));
+  const diagnostics = facebookGrantDiagnostics(permissions.data);
   if (FACEBOOK_SCOPES.some((scope) => !permissions.data.some((permission) => permission.permission === scope && permission.status === "granted"))) {
-    throw new FacebookError("rejected", "Allow Page listing, Page read access and Page publishing, then reconnect.");
+    throw new FacebookGrantError("permissions_missing", diagnostics);
   }
   const pages: FacebookPage[] = []; let after: string | undefined;
   for (let batch = 0; batch < 5; batch++) {
     const result = z.object({ data: z.array(pageSchema), paging: z.object({ next: z.string().optional(), cursors: z.object({ after: z.string() }).optional() }).optional() })
       .parse(await graph("me/accounts", token, { fields: "id,name,access_token,tasks", limit: "100", ...(after ? { after } : {}) }));
-    pages.push(...result.data.filter((page) => page.tasks.some((task) => ["CREATE_CONTENT", "MANAGE", "PROFILE_PLUS_CREATE_CONTENT", "PROFILE_PLUS_FULL_CONTROL"].includes(task))));
-    if (!result.paging?.next) return { userId: me.id, token, pages };
+    for (const page of result.data) {
+      const eligible = page.tasks.some((task) => FACEBOOK_CONTENT_TASKS.includes(task as typeof FACEBOOK_CONTENT_TASKS[number]));
+      recordFacebookPageTasks(diagnostics, page.tasks, eligible);
+      if (eligible) pages.push(page);
+    }
+    if (!result.paging?.next) break;
     after = result.paging.cursors?.after;
     if (!after || batch === 4) throw new FacebookError("rejected", "Too many Pages were returned. Reconnect and grant Create AI Videos access to fewer Pages.");
   }
-  return { userId: me.id, token, pages };
+  if (!pages.length) throw new FacebookGrantError(diagnostics.returnedPages ? "page_content_access_missing" : "pages_not_returned", diagnostics);
+  return { userId: me.id, token, pages, diagnostics };
 }
 export async function verifyFacebookPage(token: string, id: string) {
   const page = z.object({ id: idSchema, name: z.string() }).parse(await graph("me", token, { fields: "id,name" }));
