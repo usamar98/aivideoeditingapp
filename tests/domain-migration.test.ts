@@ -68,7 +68,7 @@ describe("Create AI Videos domain migration", () => {
     const app = manifest();
     expect(app.name).toBe("Create AI Videos");
     expect(app.short_name).toBe("Create AI");
-    expect(app.icons?.map((icon) => icon.src)).toEqual(["/brand/create-ai-videos-icon-192.png", "/brand/create-ai-videos-icon-512.png"]);
+    expect(app.icons?.map((icon) => icon.src)).toEqual(["/brand/create-ai-videos-icon-192.png?v=cav-20261016", "/brand/create-ai-videos-icon-512.png?v=cav-20261016"]);
     expect(app.start_url).toBe("/studio");
   });
 });

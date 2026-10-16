@@ -1,12 +1,13 @@
 import Image from "next/image";
 import { brand } from "@/config/brand";
+import { brandAsset } from "@/config/brand-assets";
 import { cn } from "@/lib/utils";
 
 export function BrandMark({ compact = false, className }: { compact?: boolean; className?: string }) {
   return (
     <span className={cn("inline-flex shrink-0 items-center align-middle", className)}>
       <Image
-        src={compact ? "/brand/create-ai-videos-symbol.svg" : "/brand/create-ai-videos-logo.svg"}
+        src={brandAsset(compact ? "create-ai-videos-symbol.svg" : "create-ai-videos-logo.svg")}
         alt={`${brand.name} — AI video studio`}
         width={compact ? 64 : 330}
         height={64}

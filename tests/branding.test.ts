@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { brand } from "../src/config/brand";
+import { brandAsset } from "../src/config/brand-assets";
+import { createRequire } from "node:module";
+
+const sharp = createRequire(import.meta.resolve("next/package.json"))("sharp");
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url));
 
@@ -14,12 +18,37 @@ describe("Create AI Videos branding", () => {
     expect(read("src/app/icon.svg")).toEqual(read("public/brand/create-ai-videos-symbol.svg"));
   });
 
-  it("ships a labeled, self-contained vector logo", () => {
+  it("ships a labeled, self-contained logo using the approved CAV artwork", () => {
     const logo = read("public/brand/create-ai-videos-logo.svg").toString();
     expect(logo).toContain("<title>Create AI Videos — AI video studio</title>");
     expect(logo).toContain('viewBox="0 0 330 64"');
-    expect(logo).not.toMatch(/<script|<image|href=/);
+    expect(logo).not.toMatch(/<script|href="https?:|href="\//);
+    expect(logo).toContain('<image width="64" height="64" href="data:image/png;base64,');
     expect(logo).toContain('transform="translate(84 0)"');
+  });
+
+  it("embeds the approved master rather than the retired C/play icon", async () => {
+    const symbol = read("public/brand/create-ai-videos-symbol.svg").toString();
+    const image = symbol.match(/href="data:image\/png;base64,([A-Za-z0-9+/=]+)"/);
+    expect(image).not.toBeNull();
+    const expected = await sharp(read("public/brand/create-ai-videos-monogram.png"))
+      .resize(256, 256).flatten({ background: "#2457e6" }).png({ compressionLevel: 9 }).toBuffer();
+    expect(Buffer.from(image![1], "base64")).toEqual(expected);
+  });
+
+  it("versions website and installed-app artwork to invalidate old cached logos", () => {
+    expect(brandAsset("create-ai-videos-symbol.svg")).toBe("/brand/create-ai-videos-symbol.svg?v=cav-20261016");
+    expect(read("src/components/studio/brand-mark.tsx").toString()).toContain("src={brandAsset(");
+  });
+
+  it("provides an opaque 120px consent-screen PNG under 1MB", async () => {
+    const png = read("public/brand/create-ai-videos-oauth-120.png");
+    const meta = await sharp(png).metadata();
+    expect(meta.format).toBe("png");
+    expect(meta.width).toBe(120);
+    expect(meta.height).toBe(120);
+    expect(meta.hasAlpha).toBe(false);
+    expect(png.length).toBeLessThan(1_000_000);
   });
 
   it("includes valid favicon frames for tabs and high-DPI shortcuts", () => {
