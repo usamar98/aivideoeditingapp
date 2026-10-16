@@ -6,7 +6,7 @@ export const brand = {
   name: "Create AI Videos",
   shortName: "Create AI",
   description:
-    "Create AI videos, short films, cartoons and product ads in one studio. Review your story, choose a model and export videos with Create AI Videos.",
+    "Create AI videos from prompts, photos or scripts. Make short films, cartoons, real estate tours and product ads, review the plan and export your video.",
   siteUrl: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
   // Preserve the configured local/preview origin for operational billing returns.
   appUrl: appSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),

@@ -10,6 +10,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "seo:check": "node scripts/check-seo.mjs https://createaivideos.app --production",
+    "seo:export": "node scripts/export-search-console.mjs",
     "test": "vitest run",
     "billing:setup": "node scripts/setup-stripe-pricing.mjs",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build"

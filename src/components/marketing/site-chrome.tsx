@@ -8,7 +8,7 @@ export function SiteHeader() {
   return <header className="mx-auto flex min-h-24 max-w-7xl flex-wrap items-center justify-between gap-x-5 gap-y-2 px-6 py-4 lg:px-10">
     <Link href="/" aria-label="Create AI Videos home"><BrandMark /></Link>
     <nav aria-label="Main navigation" className="order-3 flex w-full flex-wrap gap-x-6 text-sm sm:order-none sm:w-auto"><Link className="py-2" href="/features">Features</Link><Link className="py-2" href="/pricing">Pricing</Link><Link className="py-2" href="/guides">Guides</Link></nav>
-    <Button asChild className="rounded-full"><Link href="/studio">Open studio</Link></Button>
+    <Button asChild className="min-h-11 rounded-full"><Link href="/studio">Open studio</Link></Button>
   </header>;
 }
 

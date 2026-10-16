@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { canIndexFeature } from "@/lib/features/catalog";
 import { getFeatureData } from "@/lib/features/repository";
-import { featureEditorial } from "@/lib/seo/editorial-content";
+import { featureEditorial, featureLastModified } from "@/lib/seo/editorial-content";
 import { publicMetadata } from "@/lib/seo/metadata";
 import { absoluteUrl, breadcrumbSchema, organizationId, pageSchema } from "@/lib/seo/structured-data";
 import { UgcPreview } from "@/components/studio/ugc-preview";
@@ -36,7 +36,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
   const media = feature.exampleMedia.filter((item) => item.published);
   const path = `/features/${slug}`;
   const jsonLd = { "@context": "https://schema.org", "@graph": [
-    pageSchema(path, feature.name, feature.description),
+    { ...pageSchema(path, feature.name, feature.description), dateModified: featureLastModified(feature) },
     { "@type": "SoftwareApplication", "@id": `${absoluteUrl(path)}#application`, name: feature.name, applicationCategory: "MultimediaApplication", operatingSystem: "Web", description: feature.description, url: absoluteUrl(path), featureList: feature.capabilities, provider: { "@id": organizationId } },
     breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Features", path: "/features" }, { name: feature.name, path }]),
     ...media.filter((item) => item.type === "video" && item.thumbnailUrl && item.publishedAt).map((video) => ({
@@ -66,7 +66,7 @@ export default async function FeaturePage({ params }: { params: Promise<{ slug: 
         <Card className="p-6"><div className="flex items-center gap-2 text-foreground"><TriangleAlert className="size-4 text-primary" /><h2 className="text-lg font-semibold">Know the limits before you generate</h2></div><ul className="mt-5 space-y-4">{feature.limitations.map((limitation) => <li key={limitation} className="flex gap-3 text-sm leading-7 text-muted-foreground"><Info className="mt-1 size-4 shrink-0" />{limitation}</li>)}</ul></Card>
       </section>
       {editorial && <div className="mx-auto max-w-6xl px-6 py-12"><section><h2 className="editorial text-3xl sm:text-4xl">Ideas to get you started</h2><div className="mt-8 grid gap-8 md:grid-cols-3">{editorial.useCases.map((useCase) => <div key={useCase.title}><h3 className="text-lg font-semibold">{useCase.title}</h3><p className="mt-3 text-sm leading-7 text-muted-foreground">{useCase.text}</p></div>)}</div></section><div className="mt-16"><AnswerSection answers={editorial.faqs} /></div></div>}
-      <section className="mx-auto max-w-6xl px-6 pb-20"><h2 className="text-xl font-semibold">Keep exploring</h2><div className="mt-5 flex flex-wrap gap-4">{related.map((item) => item && <Link key={item.slug} className="text-primary underline underline-offset-4" href={`/features/${item.slug}`}>{item.name}</Link>)}<Link className="text-primary underline underline-offset-4" href="/guides/faceless-videos-vs-ai-cartoons">Compare faceless videos and cartoons</Link><Link className="text-primary underline underline-offset-4" href="/contact">Ask a question</Link></div></section>
+      <section className="mx-auto max-w-6xl px-6 pb-20"><h2 className="text-xl font-semibold">Keep exploring</h2><div className="mt-5 flex flex-wrap gap-4">{related.map((item) => item && <Link key={item.slug} className="text-primary underline underline-offset-4" href={`/features/${item.slug}`}>{item.name}</Link>)}<Link className="text-primary underline underline-offset-4" href="/guides/how-to-make-ai-videos">How to make AI videos</Link><Link className="text-primary underline underline-offset-4" href="/guides/faceless-videos-vs-ai-cartoons">Compare faceless videos and cartoons</Link><Link className="text-primary underline underline-offset-4" href="/contact">Ask a question</Link></div></section>
     </main>
     <SiteFooter />
   </>;

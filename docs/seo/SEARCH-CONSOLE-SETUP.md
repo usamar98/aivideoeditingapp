@@ -1,8 +1,23 @@
 # Create AI Videos search-engine setup and owner handoff
 
-Updated: 2026-09-25. Production website: `https://createaivideos.app`.
+Updated: 2026-10-16. Production website: `https://createaivideos.app`.
 
 This is a setup guide, not confirmation that ownership is verified or any sitemap has been submitted. No authenticated Search Console or Bing account was inspected. Publish and verify the SEO changes before submitting their new URLs.
+
+## Start with these Google links
+
+| Purpose | Exact link or value |
+| --- | --- |
+| Search Console | [Open Google Search Console](https://search.google.com/search-console) |
+| Property to select | Domain `createaivideos.app` (recommended) or URL prefix `https://createaivideos.app/` |
+| Sitemaps for the Domain property | [Open Sitemaps](https://search.google.com/search-console/sitemaps?resource_id=sc-domain%3Acreateaivideos.app) |
+| Sitemap to submit | `https://createaivideos.app/sitemap.xml` |
+| Structured-data testing | [Google Rich Results Test](https://search.google.com/test/rich-results) |
+| Speed testing | [PageSpeed Insights](https://pagespeed.web.dev/) |
+
+If the Sitemaps link does not select your property, choose `createaivideos.app` in the property selector first. The owner previously reported successful DNS verification: if this property already says **Verified owner**, keep that TXT record and do not add a second verification method.
+
+Search Console is not Google Cloud OAuth branding or the YouTube API review. For the consent screen, use [Google Auth Platform branding](https://console.cloud.google.com/auth/branding?project=antigrivity-491910), select the existing project, and use app name **Create AI Videos**, homepage `https://createaivideos.app/`, privacy `https://createaivideos.app/privacy`, terms `https://createaivideos.app/terms`, authorized domain `createaivideos.app`, and the [approved 120px PNG](https://createaivideos.app/brand/create-ai-videos-oauth-120.png). A website deployment does not publish Google's new consent-screen branding.
 
 ## 1. If Ownership verification gives you no code
 
@@ -14,8 +29,11 @@ If unverified, choose one route:
 | --- | --- | --- |
 | Domain: `createaivideos.app` | DNS verification | Add Google's exact TXT record at your authoritative DNS provider; follow its root-host instructions. Do not put the TXT record in an app environment variable. |
 | URL prefix: `https://createaivideos.app/` | HTML tag | Expand the HTML-tag method. Put only the tag's `content` value into `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, deploy, then verify. |
+| URL prefix: `https://createaivideos.app/` | HTML file | Download Google's exact `google….html` file and place it unchanged in `public/`. Deploy and confirm `https://createaivideos.app/<exact-filename>.html` returns the original file without sign-in. |
 
 A Domain property uses DNS verification, not an HTML meta tag. The URL-prefix option is suitable when using this app's metadata integration. Never invent a token or copy a sample as your real value. [Google ownership-verification instructions](https://support.google.com/webmasters/answer/9008080)
+
+No HTML verification file is required when DNS verification already works. Google issues that account-specific file; this project cannot generate a substitute. Do not rename the downloaded file, invent its token, or replace your working TXT record. No Google API key is required to use Search Console manually.
 
 If still stuck, share a screenshot showing the selected property and Ownership verification panel. Hide personal account details; there is no need to share credentials. Do not change DNS or add a second verification method simply because no code was displayed.
 
@@ -43,9 +61,17 @@ After changing build-time public environment values, deploy again. Inspect the l
 | Robots | `https://createaivideos.app/robots.txt` | Inspect it; crawlers discover it themselves. Do not submit as a sitemap. |
 | Optional AI guide | `https://createaivideos.app/llms.txt` | Check public facts and links. Do not submit as a sitemap or verification file. |
 
-The baseline audit found double slashes in production discovery links and a missing llms.txt. Check the fresh deployed responses; do not assume a successful local build changed production.
+The retired-domain audit found malformed discovery links. Current release checks validate fresh new-domain responses rather than relying on that historical result.
 
-Expected baseline after this SEO update: nine public sitemap URLs—home, features, the two feature pages, pricing, guides, the faceless-versus-cartoons guide, about, and contact. No studio/account/API/private-media/preview URLs should appear. Every entry should resolve to a genuine public page with an intended production canonical. Future published features can legitimately increase the count.
+Expected after this SEO update: **18 public sitemap URLs**, including eight feature pages, two guides, pricing, support and policy pages. No studio/account/API/private-media/preview URLs should appear. Every entry should resolve to a genuine public page with an intended production canonical. Publication changes can legitimately alter the count.
+
+## Complete the old domain migration
+
+Keep `editingapp.live` and `www.editingapp.live` connected. Their public URLs must permanently redirect to the matching path on `createaivideos.app`, not all to the homepage. Do not block the old site in robots.txt or remove its ownership records.
+
+After checking redirects, verify old and new properties using the same owner account. Open **Settings → Change of address** in each applicable old-domain and www variant property and select the new site. Google's tool performs pre-move checks. A www-to-apex change within the same new domain needs redirects/canonicals, not another Change of Address request. [Google Change of Address](https://support.google.com/webmasters/answer/9370220)
+
+Keep the old domain and redirects for **at least one year**, preferably longer while links or visitors use them. Update public profile links and monitor the old and new Search Console reports. OAuth callbacks, webhooks and signed requests intentionally remain outside public-page redirects; SEO does not require credential changes. [Google site moves](https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes)
 
 ## 4. Submit the sitemap to Google
 
@@ -58,16 +84,29 @@ Do not submit robots.txt, llms.txt, source-code files, database migrations, priv
 
 ## 5. Inspect important public pages
 
-Use URL Inspection for the homepage, both feature pages, pricing, and the new guide. Check the live page, crawl/index eligibility, declared canonical, and Google's selected canonical when available. Request indexing after relevant pages are deployed and publicly accessible; it is a request, not a guarantee or an instant update.
+Use URL Inspection for the homepage, important feature pages, pricing and guides. Check the live page, crawl/index eligibility, declared canonical, and Google's selected canonical when available. Request indexing after relevant pages are deployed and publicly accessible; it is a request, not a guarantee or an instant update.
 
 Start with these exact URLs:
 
 ```text
 https://createaivideos.app/
+https://createaivideos.app/features
+https://createaivideos.app/features/ai-short-film-generator
 https://createaivideos.app/features/ai-cartoon-series
 https://createaivideos.app/features/faceless-video-generator
+https://createaivideos.app/features/ai-ugc-product-ads
+https://createaivideos.app/features/ai-real-estate-video-generator
+https://createaivideos.app/features/ai-ad-remake
+https://createaivideos.app/features/ai-digital-clone-presenter
+https://createaivideos.app/features/podcast-to-shorts
 https://createaivideos.app/pricing
+https://createaivideos.app/guides
+https://createaivideos.app/guides/how-to-make-ai-videos
 https://createaivideos.app/guides/faceless-videos-vs-ai-cartoons
+https://createaivideos.app/about
+https://createaivideos.app/contact
+https://createaivideos.app/privacy
+https://createaivideos.app/terms
 ```
 
 Use the Pages/indexing report to distinguish expected exclusions (login/private/preview/retired content) from excluded pages intended for search. Never make private user content public just to resolve an indexing warning.
@@ -117,6 +156,9 @@ The project includes a read-only smoke checker. After deploying, run:
 
 ```powershell
 node scripts/check-seo.mjs https://createaivideos.app --production
+npm run seo:export
 ```
 
-It checks the current nine-page baseline, public metadata, JSON-LD parsing, social images, discovery files, private noindex headers and hidden-page 404s. Update its expected routes when adding genuinely published pages. It does not authenticate to Google, submit URLs, measure real-user performance or prove rich-result eligibility.
+The checker validates 18 intended pages, public metadata, JSON-LD parsing, social images, internal links, discovery files, private noindex headers and hidden-page 404s. Update its expected routes when adding genuinely published pages. It does not authenticate to Google, submit URLs, measure real-user performance or prove rich-result eligibility.
+
+The export command fetches the live canonical sitemap and writes `output/seo/GOOGLE-CONSOLE-SETUP.txt`, `output/seo/search-console-urls.txt` and a reference `output/seo/sitemap.xml`. Submit the **live sitemap URL** in Google, not a Windows path or local file upload. The URL list is for inspecting public pages; no bulk Indexing API request is made. No new Supabase tables, Trigger variables or provider credentials are needed for this SEO release.

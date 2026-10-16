@@ -1,5 +1,17 @@
 # Create AI Videos SEO and AI-search action plan
 
+## Current new domain priorities
+
+Updated October 16, 2026. Follow the [new-domain review](./NEW-DOMAIN-AUDIT.md) and [current Search Console guide](./SEARCH-CONSOLE-SETUP.md). The older implementation plan below is retained as history, not the current publication state.
+
+1. Verify the tested SEO release is Ready on `https://createaivideos.app` and run `npm run seo:check`.
+2. Select the verified new-domain Search Console property and submit `https://createaivideos.app/sitemap.xml`. DNS verification needs no extra HTML file.
+3. Keep permanent old-domain redirects and ownership records; complete Google's Change of Address for applicable old variants.
+4. Run `npm run seo:export` for current public URLs and handoff files. Inspect important pages and resolve actionable exclusions; do not index account/private routes.
+5. Add approved first-hand product examples and real operator/profile details. Gather search data and measured performance before deciding on further content or speed work.
+
+## Historical September implementation plan
+
 Prepared: **2026-09-25**. This is a release and measurement checklist, not a promise of ranking or completion of owner-controlled tasks.
 
 Read the [full audit](./FULL-AUDIT-REPORT.md) for evidence, the [Search Console setup guide](./SEARCH-CONSOLE-SETUP.md) for verification/submission instructions, and the [GEO analysis](./GEO-ANALYSIS.md) for crawler and AI-search limitations.

@@ -4,6 +4,7 @@ import { getPublishedFeaturesData } from "@/lib/features/repository";
 import { canIndexFeature } from "@/lib/features/catalog";
 import { publicPages } from "@/lib/seo/site";
 import { absoluteUrl } from "@/lib/seo/structured-data";
+import { featureLastModified } from "@/lib/seo/editorial-content";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticPages,
     ...features.filter(canIndexFeature).map((feature) => ({
       url: absoluteUrl(`/features/${feature.slug}`),
-      lastModified: feature.modifiedAt,
+      lastModified: featureLastModified(feature),
     })),
   ];
 }

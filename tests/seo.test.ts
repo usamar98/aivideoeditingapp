@@ -10,7 +10,8 @@ vi.mock("@/config/brand", () => ({ brand: {
 
 import { featureCatalog, featureDefinitionSchema, getPublishedFeatures, isPublicMediaPath, type FeatureDefinition } from "@/lib/features/catalog";
 import { indexableDeployment, isPublicPath, normalizeSiteUrl, privateCrawlerPaths, productionSiteUrl, publicPages } from "@/lib/seo/site";
-import { publicMetadata, publicRobots } from "@/lib/seo/metadata";
+import { articleMetadata, publicMetadata, publicRobots } from "@/lib/seo/metadata";
+import { featureLastModified } from "@/lib/seo/editorial-content";
 import { absoluteUrl, breadcrumbSchema, identitySchema, organizationId, pageSchema, pricingOffers, serializeJsonLd, websiteId } from "@/lib/seo/structured-data";
 import { llmsDocument } from "@/lib/seo/llms";
 import robots from "@/app/robots";
@@ -119,6 +120,12 @@ describe("indexability and social metadata", () => {
     expect(metadata.robots).toEqual({ index: false, follow: false });
     expect(metadata.openGraph).toMatchObject({ url: `${origin}/features/preview`, images: [{ url: `${origin}/features/preview/opengraph-image` }] });
   });
+
+  it("gives guides article metadata with truthful dates and the canonical publisher", () => {
+    const metadata = articleMetadata({ title: "How to Make AI Videos", description: "A practical workflow guide", path: "/guides/how-to-make-ai-videos", publishedAt: "2026-10-16", modifiedAt: "2026-10-16" });
+    expect(metadata.alternates?.canonical).toBe(`${origin}/guides/how-to-make-ai-videos`);
+    expect(metadata.openGraph).toMatchObject({ type: "article", publishedTime: "2026-10-16", modifiedTime: "2026-10-16", authors: [`${origin}/about`] });
+  });
 });
 
 describe("structured data", () => {
@@ -224,6 +231,16 @@ describe("robots, sitemap and AI discovery", () => {
     const entries = await sitemap();
     expect(entries.at(-1)?.url).toBe(`${origin}/features/${cartoon.slug}`);
     expect(llmsDocument(await mocks.published())).not.toContain("outside.example");
+  });
+
+  it("uses actual public editorial edits for feature lastmod without masking newer CMS content", async () => {
+    const older = { ...cartoon, slug: "faceless-video-generator", modifiedAt: "2026-10-01T00:00:00.000Z" };
+    expect(featureLastModified(older)).toBe("2026-10-16");
+    const newer = { ...older, modifiedAt: "2026-10-20T12:00:00.000Z" };
+    expect(featureLastModified(newer)).toBe(newer.modifiedAt);
+    expect(featureLastModified({ slug: "custom-feature", modifiedAt: older.modifiedAt })).toBe(older.modifiedAt);
+    mocks.published.mockResolvedValue([older]);
+    expect((await sitemap()).find((page) => page.url.endsWith(older.slug))?.lastModified).toBe("2026-10-16");
   });
 
   it("never turns a failed publication lookup into a successful discovery response", async () => {

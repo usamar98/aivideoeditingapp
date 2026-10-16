@@ -4,11 +4,12 @@ import assert from "node:assert/strict";
 const origin = new URL(process.argv[2] || "http://localhost:3002");
 const production = process.argv.includes("--production");
 const canonicalOrigin = "https://createaivideos.app";
-const paths = ["/", "/features", "/features/ai-cartoon-series", "/features/faceless-video-generator", "/features/ai-ugc-product-ads", "/features/ai-short-film-generator", "/features/ai-real-estate-video-generator", "/features/ai-digital-clone-presenter", "/features/ai-ad-remake", "/features/podcast-to-shorts", "/pricing", "/guides", "/guides/faceless-videos-vs-ai-cartoons", "/about", "/contact", "/privacy", "/terms"];
+const paths = ["/", "/features", "/features/ai-cartoon-series", "/features/faceless-video-generator", "/features/ai-ugc-product-ads", "/features/ai-short-film-generator", "/features/ai-real-estate-video-generator", "/features/ai-digital-clone-presenter", "/features/ai-ad-remake", "/features/podcast-to-shorts", "/pricing", "/guides", "/guides/how-to-make-ai-videos", "/guides/faceless-videos-vs-ai-cartoons", "/about", "/contact", "/privacy", "/terms"];
 const titles = new Set();
 const descriptions = new Set();
 const results = [];
 const seenImages = new Set();
+const publicLinks = new Set();
 
 function attr(tag, name) {
   return tag.match(new RegExp(`\\b${name}="([^"]*)"`, "i"))?.[1]?.replaceAll("&amp;", "&");
@@ -25,6 +26,14 @@ for (const path of paths) {
   const response = await request(path);
   assert.equal(response.status, 200, `${path}: HTTP status`);
   const html = await response.text();
+  for (const [, tag] of html.matchAll(/(<a\b[^>]*>)/gi)) {
+    const href = attr(tag, "href");
+    if (!href) continue;
+    const target = new URL(href, new URL(path, origin));
+    if ([origin.origin, canonicalOrigin].includes(target.origin) && !/^\/(studio|admin|api|auth|login)(\/|$)/.test(target.pathname)) {
+      publicLinks.add(target.pathname);
+    }
+  }
   const title = html.match(/<title>([^<]+)<\/title>/)?.[1];
   const description = meta(html, "description");
   const canonical = [...html.matchAll(/<link\b[^>]*>/gi)].map(([tag]) => tag).find((tag) => attr(tag, "rel") === "canonical");
@@ -46,6 +55,12 @@ for (const path of paths) {
   const graphs = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(([, json]) => JSON.parse(json));
   assert.ok(graphs.length >= 2, `${path}: identity and page JSON-LD`);
   assert.ok(!JSON.stringify(graphs).includes("AggregateRating"), `${path}: no invented ratings`);
+  if (path.startsWith("/guides/")) {
+    assert.equal(meta(html, "og:type"), "article", `${path}: article social metadata`);
+    const article = graphs.flatMap((graph) => graph["@graph"] ?? [graph]).find((graph) => graph["@type"] === "Article");
+    assert.ok(article?.dateModified && article?.datePublished, `${path}: article dates`);
+    assert.equal(meta(html, "article:modified_time"), article.dateModified, `${path}: matching article dates`);
+  }
   const image = meta(html, "og:image");
   assert.ok(image && meta(html, "twitter:card") === "summary_large_image", `${path}: social metadata`);
   if (!seenImages.has(image)) {
@@ -65,6 +80,7 @@ const sitemap = await sitemapResponse.text();
 const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, url]) => url);
 assert.equal(new Set(urls).size, urls.length, "No duplicate sitemap entries");
 assert.deepEqual([...urls].sort(), paths.map((path) => `${canonicalOrigin}${path}`).sort(), "Expected public sitemap routes");
+for (const path of publicLinks) assert.ok(paths.includes(path), `Public internal link missing from checked routes: ${path}`);
 const robotsResponse = await request("/robots.txt");
 assert.equal(robotsResponse.status, 200);
 const robots = await robotsResponse.text();
@@ -91,4 +107,4 @@ for (const path of ["/features/ecommerce-product-videos", "/features/not-a-real-
   assert.equal((await request(path)).status, 404, `${path}: hidden/unknown content`);
 }
 
-console.log(JSON.stringify({ origin: origin.origin, production, pages: results, sitemapUrls: urls.length, socialImages: seenImages.size, checks: "passed" }, null, 2));
+console.log(JSON.stringify({ origin: origin.origin, production, pages: results, sitemapUrls: urls.length, publicInternalPaths: publicLinks.size, socialImages: seenImages.size, checks: "passed" }, null, 2));

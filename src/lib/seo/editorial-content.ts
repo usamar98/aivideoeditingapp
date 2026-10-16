@@ -4,6 +4,7 @@ import { UGC_PLAN_CREDITS, ugcRenderCredits } from "@/lib/ugc/schema";
 import { filmEditorial } from "@/lib/films/editorial";
 import { estateEditorial } from "@/lib/real-estate/editorial";
 import { shortsEditorial } from "@/lib/shorts/editorial";
+import type { FeatureDefinition } from "@/lib/features/catalog";
 
 export type Answer = { question: string; answer: string };
 
@@ -23,7 +24,7 @@ const cancellationAnswer = "Open Jobs to view waiting, running, completed, faile
 export const homeFaqs: Answer[] = [
   {
     question: "What can I create with Create AI Videos?",
-    answer: "Create AI Videos includes cinematic short films, narrated faceless videos, character-led AI cartoons, AI UGC product ads, digital-clone presenters and podcast-to-Shorts editing. Shorts repurpose your recordings into selected highlights with framing controls and animated captions. All workflows have a review step before rendering and export private MP4 files.",
+    answer: "Create AI Videos includes cinematic short films, narrated faceless videos, character-led cartoons, UGC product ads, real estate photo tours, Ad Remake, photo presenters and podcast-to-Shorts editing. Choose a workflow for your source material, review the plan and credit estimate, then render a private video. Model output, duration and editing controls differ by tool.",
   },
   {
     question: "What is the difference between faceless videos and cartoons?",
@@ -57,7 +58,7 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
   "ai-real-estate-video-generator": estateEditorial,
   "podcast-to-shorts": shortsEditorial,
   "ai-ugc-product-ads": {
-    updatedAt: "2026-09-25",
+    updatedAt: "2026-10-16",
     summary: "Create AI Videos’ AI UGC ad generator combines a fictional talking presenter with your actual product photos. Start from a public product page or upload the images yourself. Review the imported facts, define your audience and approved benefits, then create a presenter and three hook options. Edit the shared script and choose which variants to render. Product photos remain separate from generated footage to preserve the original packaging and appearance. This is a guided ad-creation workflow, not a real customer testimonial service or an ad-buying platform.",
     steps: [
       { title: "Add the product and verify its facts", text: "Import a public HTTPS product page or upload one to four PNG, JPG or WebP photos up to 8 MB each. Page metadata can be incomplete or wrong, so review the name, description and images. Add your intended audience, supported benefits, optional offer and call to action. If a store blocks imports, use manual photos and details instead." },
@@ -77,12 +78,12 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
       { question: "How much do UGC ads cost in credits?", answer: `Presenter and three-hook planning costs ${UGC_PLAN_CREDITS} credits. Each 15-second ad costs ${ugcRenderCredits(15, 1)} credits, and each 30-second ad costs ${ugcRenderCredits(30, 1)} credits. A new plan plus three 15-second variants costs ${UGC_PLAN_CREDITS + ugcRenderCredits(15, 3)} credits. Failed or confirmed cancelled jobs refund their own reservation; completed planning stays charged.` },
       { question: "Which model, voice and export formats does Create AI Videos use?", answer: "Presenter animation uses Kling AI Avatar v2 Pro on fal. Planning uses Gemini through fal and portrait generation uses GPT Image 2.5 Sunburst. English narration uses the configured ElevenLabs studio voice. Export 15- or 30-second MP4s at 720×1280, 720×720 or 1280×720, with separate timed SRT files and optional burned-in captions." },
       { question: "Will the AI presenter hold or demonstrate my product?", answer: "Not in this workflow. The original product photos are composed beside or below the talking presenter. This preserves your imagery without promising accurate AI-generated packaging, hand interactions or unboxing footage. Describe only functions or benefits you can substantiate." },
-      { question: "Can Create AI Videos publish the ads or guarantee conversions?", answer: "No. Create AI Videos creates downloadable assets; it does not connect ad accounts, buy media, publish automatically or guarantee approvals, clicks or sales. Review claims, rights, AI disclosure and platform requirements before publishing." },
+      { question: "Can Create AI Videos publish the ads or guarantee conversions?", answer: "Create AI Videos does not connect paid-ad accounts, buy media or guarantee approvals, clicks or sales. Supported completed videos can be reviewed in the separate Facebook Page or YouTube publishing workspace after you authorize the account. Each upload or schedule needs confirmation; YouTube visibility depends on platform approval and deployment settings. Review claims, rights and AI disclosures before publishing." },
       { question: "Can I cancel an ad job?", answer: cancellationAnswer },
     ],
   },
   "faceless-video-generator": {
-    updatedAt: "2026-09-25",
+    updatedAt: "2026-10-16",
     summary: "Create AI Videos’ faceless video generator turns an idea or your own script into a narrated short without filming yourself. It creates AI still images for each scene, adds voiceover and optional timed captions, and assembles a downloadable MP4. You review the narration and visual prompts before rendering. This is a guided scene-based workflow, not a stock-footage editor or a moving-video generation model.",
     steps: [
       {
@@ -99,7 +100,7 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
       },
       {
         title: "Watch the result before sharing",
-        text: "Review image details, narration, pacing and caption readability in the finished MP4. Download it from your project and upload it yourself. Rendering an edited project is a new generation with another credit charge; there is no promise of a particular audience, view count or social-platform result.",
+        text: "Review image details, narration, pacing and caption readability in the finished MP4. Download it, or open the separate publishing workspace to review a supported video for an authorized Facebook Page or YouTube channel. Rendering an edited project is a new generation with another credit charge; there is no promise of an audience size or platform result.",
       },
     ],
     useCases: [
@@ -113,7 +114,7 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
       },
       {
         title: "A vertical social video",
-        text: "Choose 9:16 for a Shorts- or Reels-style layout. Keep each scene focused on one message and enable captions when useful. Publishing, music selection and social scheduling happen outside Create AI Videos.",
+        text: "Choose 9:16 for a Shorts- or Reels-style layout. Keep each scene focused on one message and enable captions when useful. Supported Facebook Page and YouTube uploads or schedules use a separate authorization and confirmation step; generation never posts by itself. This workflow does not add background music.",
       },
     ],
     faqs: [
@@ -210,3 +211,11 @@ export const comparisonRows: { label: string; faceless: string; cartoons: string
   { label: "Generation credits", faceless: "20 to render; 2 more for AI script writing", cartoons: "2 for direct-prompt story planning, or 40 for reference cast and story; animation varies by model and settings" },
   { label: "Download", faceless: "Private 720p MP4 in 9:16 or 16:9", cartoons: "Private MP4 in 9:16 or 16:9; model-dependent resolution" },
 ];
+
+/** Public editorial changes count even when the stored feature record is older. */
+export function featureLastModified(feature: Pick<FeatureDefinition, "slug" | "modifiedAt">) {
+  const editorialDate = featureEditorial[feature.slug]?.updatedAt;
+  return editorialDate && Date.parse(editorialDate) > Date.parse(feature.modifiedAt)
+    ? editorialDate
+    : feature.modifiedAt;
+}

@@ -20,3 +20,19 @@ export function publicMetadata({ title, description, path, indexable = true, ima
     twitter: { card: "summary_large_image", title, description, images },
   };
 }
+
+export function articleMetadata(options: {
+  title: string; description: string; path: string; publishedAt: string; modifiedAt: string;
+}): Metadata {
+  const metadata = publicMetadata(options);
+  return {
+    ...metadata,
+    openGraph: {
+      ...metadata.openGraph,
+      type: "article",
+      publishedTime: options.publishedAt,
+      modifiedTime: options.modifiedAt,
+      authors: [new URL("/about", brand.siteUrl).toString()],
+    },
+  };
+}

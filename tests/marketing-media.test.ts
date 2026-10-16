@@ -280,7 +280,7 @@ describe("AI marketing media", () => {
     expect($("[data-feature='social-publishing']").length).toBe(0);
   });
 
-  it("replaces the old hero copy with a fixed, preview-only white prompt and four feature anchors", async () => {
+  it("uses a preview-only prompt and descriptive links to published feature pages", async () => {
     const $ = load(renderToStaticMarkup(await Home()));
     const hero = $(".hero-copy");
     const prompt = hero.find("[data-testid='hero-prompt']");
@@ -290,12 +290,19 @@ describe("AI marketing media", () => {
     expect(prompt.find("textarea").attr("readonly")).toBeDefined();
     expect(prompt.find("textarea").attr("class")).toContain("resize-none");
     expect(prompt.find("form, button, input[type='file']").length).toBe(0);
-    expect(prompt.find("nav a").map((_, el) => $(el).text()).get()).toEqual(["Create a viral faceless video", "Create a viral cartoon", "Create UGC", "Explore"]);
-    expect(prompt.find("nav a[href='#tools']").length).toBe(4);
+    expect(prompt.find("nav a").map((_, el) => $(el).text()).get()).toEqual(["Create a faceless video", "Create an AI cartoon", "Create UGC ads", "Explore all tools"]);
+    expect(prompt.find("nav a").map((_, el) => $(el).attr("href")).get()).toEqual(["/features/faceless-video-generator", "/features/ai-cartoon-series", "/features/ai-ugc-product-ads", "/features"]);
     expect($("#tools").length).toBe(1);
     for (const oldCopy of ["An idea is all it takes.", "Bring the idea. Make every frame yours.", "Start creating", "Explore the tools", "Your script. Your style. Your next story."]) {
       expect(hero.text()).not.toContain(oldCopy);
     }
+  });
+
+  it("does not advertise a hero shortcut for a hidden feature", async () => {
+    mocks.published.mockResolvedValue([{ slug: "ai-cartoon-series" }]);
+    const $ = load(renderToStaticMarkup(await Home()));
+    const links = $("[data-testid='hero-prompt'] nav a").map((_, el) => $(el).attr("href")).get();
+    expect(links).toEqual(["/features/ai-cartoon-series", "/features"]);
   });
 
   it.each([Home, FeaturesPage, StudioLibraryPage])("makes each compact feature card one whole-card link with no descriptions or nested controls", async (Page) => {

@@ -1,4 +1,10 @@
-# ETA SEO, answer-engine and AI-search audit
+# Create AI Videos SEO audit
+
+## Current new domain review
+
+The October 16, 2026 review and current release evidence are in [the new-domain SEO review](./NEW-DOMAIN-AUDIT.md). Use [the current Search Console guide](./SEARCH-CONSOLE-SETUP.md) for `createaivideos.app`, its sitemap and all current public URLs. The September observations below are historical and must not be treated as the current website state.
+
+## Historical review of the retired domain
 
 Audit date: **2026-09-25**. Intended production origin: **https://www.editingapp.live**.
 
