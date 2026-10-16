@@ -69,6 +69,9 @@ describe("Create AI Videos branding", () => {
       expect(png.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
       expect(png.readUInt32BE(16)).toBe(size);
       expect(png.readUInt32BE(20)).toBe(size);
+      // ICO PNG frames must be 8-bit RGBA for Next.js/Turbopack decoding.
+      expect(png[24]).toBe(8);
+      expect(png[25]).toBe(6);
       expectedOffset += length;
     });
     expect(expectedOffset).toBe(ico.length);

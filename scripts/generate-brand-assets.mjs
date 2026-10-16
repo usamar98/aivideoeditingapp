@@ -44,7 +44,8 @@ await sharp(Buffer.from(logo)).resize(1320, 256).png().toFile(fileURLToPath(new 
 
 // ICO embeds a directory of PNG frames for small tabs and high-DPI shortcuts.
 const sizes = [16, 32, 48, 64, 256];
-const frames = await Promise.all(sizes.map((size) => iconPng(size).toBuffer()));
+// Turbopack's ICO decoder requires RGBA PNG frames, even for opaque artwork.
+const frames = await Promise.all(sizes.map((size) => iconPng(size).ensureAlpha().toBuffer()));
 const header = Buffer.alloc(6 + sizes.length * 16);
 header.writeUInt16LE(1, 2);
 header.writeUInt16LE(sizes.length, 4);
