@@ -256,9 +256,11 @@ describe("AI marketing media", () => {
     expect(grid.parent().attr("class")).toContain("@container");
     expect(grid.attr("class")).toContain("@xl:grid-cols-2");
     expect(grid.attr("class")).toContain("@4xl:grid-cols-3");
-    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual(["ai-ad-remake", "ai-real-estate-video-generator", ...slugs, "ai-short-film-generator", "podcast-to-shorts", "digital-clone"]);
+    expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual(["ai-ad-remake", "ai-real-estate-video-generator", ...slugs, "ai-short-film-generator", "podcast-to-shorts", "digital-clone", "anime-studio-preview"]);
     expect(grid.find('[class*="col-span"]').length).toBe(0);
-    expect(grid.find("h2").length).toBe(8);
+    expect(grid.find("h2").length).toBe(9);
+    expect(grid.find("[data-feature='anime-studio-preview']").attr("data-availability")).toBe("static-preview");
+    expect(grid.find("a[href='/studio/anime']").length).toBe(1);
     expect(grid.find("h3").length).toBe(0);
     expect(grid.find("a[href^='/features/']").length).toBe(0);
     for (const feature of ["digital-clone"]) {
