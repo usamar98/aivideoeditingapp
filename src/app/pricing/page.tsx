@@ -8,10 +8,12 @@ import { pricingTiers, formatUsd, planTerms } from "@/lib/billing/pricing";
 
 const title = "AI Video Generator Pricing and Credits";
 const description = "Compare Create AI Videos plans: Creator from $9/month, Growth from $49/month and custom Enterprise. Choose credits and monthly or annual billing.";
+const startingMonthlyPrice = formatUsd(Math.min(...pricingTiers.map((tier) => tier.monthlyAmount))).replace(/\.00$/, "");
+const heading = `Create AI Videos pricing: plans and credits from ${startingMonthlyPrice}/month`;
 export const metadata = publicMetadata({ title, description, path: "/pricing" });
 
 export default function PricingPage() {
-  return <MarketingPage title="A plan for every kind of creator." description="Start small, find your rhythm, or create at scale. Choose your credit budget — the creative tools come with you." eyebrow="Create AI Videos plans and pricing">
+  return <MarketingPage title={heading} description="Start small, find your rhythm, or create at scale. Choose your credit budget — the creative tools come with you." eyebrow="Create AI Videos plans and pricing">
     <JsonLd data={{ ...pageSchema("/pricing", title, description), mainEntity: { "@type": "OfferCatalog", name: "Create AI Videos subscriptions", itemListElement: pricingOffers() } }} />
     <JsonLd data={breadcrumbSchema([{ name: "Home", path: "/" }, { name: "Pricing", path: "/pricing" }])} />
     <section aria-label="Subscription plans"><PricingCards /></section>
