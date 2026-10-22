@@ -2,7 +2,17 @@
 
 Updated: 2026-10-22. Production website: `https://createaivideos.app`.
 
-This is a setup guide, not confirmation that ownership is verified or any sitemap has been submitted. Owner-account Search Console access is still required; the currently available Google session did not show the website properties. No Bing property was inspected. Publish and verify the SEO changes before submitting their new URLs.
+Owner-account Search Console checks on October 22, 2026 confirmed verified ownership of `createaivideos.app` and `editingapp.live`. The canonical sitemap was resubmitted successfully after the production release passed its 20-page SEO checks. No Bing property was inspected.
+
+## Verified release and migration status
+
+- Production serves the requested homepage title and H1, a separate slogan, twelve descriptive hero image alts and FAQ JSON-LD matching the eight visible answers. The live sitemap contains 20 public URLs, including four guides.
+- `http://createaivideos.app/` already redirects permanently to HTTPS; direct checks passed for 14 HTTP, www and retired-domain path/query combinations. No domain, DNS or email settings were changed.
+- Google accepted `https://createaivideos.app/sitemap.xml` on October 22, 2026. Its report still showed the previous October 21 read and 18 discovered pages immediately afterward. The live count of 20 does not mean Google has indexed all 20.
+- Change of Address for `https://www.editingapp.live/` to the `createaivideos.app` Domain property passed Google's checks and was confirmed. Search Console shows **This site is currently moving**, started October 22, 2026. Do not cancel or submit that same move again.
+- The separate `editingapp.live` Domain-property precheck initially reported **Couldn't fetch the page** for `http://editingapp.live/`, while direct public checks passed. A later Google recheck passed without DNS or routing changes. That move was also confirmed: Search Console shows **This site is currently moving** to `createaivideos.app`, started October 22, 2026. Neither move should be cancelled or submitted again.
+
+These observations establish deployment and submission status, not completed indexing, transferred rankings or a guaranteed migration deadline.
 
 ## Start with these Google links
 
@@ -143,8 +153,9 @@ Robots access does not prove indexing, actual AI citations, or firewall access f
 
 ## 9. Remaining owner actions and measurement
 
-- Sign in with the account that owns both old and new Google properties, and confirm verified ownership before migration. Do not share passwords or tokens. The available session did not expose the owner properties.
-- Finish deployment, then inspect production—not only localhost.
+- Keep the working ownership records for both domains. Ownership was confirmed in the owner session; do not share passwords or tokens or add a second verification method unnecessarily.
+- Both the bare-domain and www migrations are now in progress. Preserve the old domains, matching-path redirects and ownership records, and review migration/indexing reports as Google recrawls. Do not cancel or resubmit either confirmed move.
+- This release passed live production checks for all 20 public pages after deployment, in addition to the local build and regression suite. Re-run the checks after future changes.
 - Supply genuine business/operator details, approved legal policies, real public profiles, and authorized product examples. Do not fabricate testimonials, review stars, or legal claims.
 - Retry PageSpeed Insights after the HTTP 429 rate limit clears; review Search Console Core Web Vitals when field data is available. No measured performance score is claimed here.
 - Record deployment date, submitted sitemap, important URL inspection outcomes, search/AI impressions, and meaningful product signups over time. Allow data to accumulate before judging results.
