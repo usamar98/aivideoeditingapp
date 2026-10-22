@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 const origin = new URL(process.argv[2] || "http://localhost:3002");
 const production = process.argv.includes("--production");
 const canonicalOrigin = "https://createaivideos.app";
-const paths = ["/", "/features", "/features/ai-cartoon-series", "/features/faceless-video-generator", "/features/ai-ugc-product-ads", "/features/ai-short-film-generator", "/features/ai-real-estate-video-generator", "/features/ai-digital-clone-presenter", "/features/ai-ad-remake", "/features/podcast-to-shorts", "/pricing", "/guides", "/guides/how-to-make-ai-videos", "/guides/faceless-videos-vs-ai-cartoons", "/about", "/contact", "/privacy", "/terms"];
+const paths = ["/", "/features", "/features/ai-cartoon-series", "/features/faceless-video-generator", "/features/ai-ugc-product-ads", "/features/ai-short-film-generator", "/features/ai-real-estate-video-generator", "/features/ai-digital-clone-presenter", "/features/ai-ad-remake", "/features/podcast-to-shorts", "/pricing", "/guides", "/guides/how-to-make-ai-videos", "/guides/faceless-videos-vs-ai-cartoons", "/guides/how-to-write-a-faceless-video-script", "/guides/ai-ugc-ad-script-and-hooks", "/about", "/contact", "/privacy", "/terms"];
 const titles = new Set();
 const descriptions = new Set();
 const results = [];
@@ -55,6 +55,19 @@ for (const path of paths) {
   const graphs = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(([, json]) => JSON.parse(json));
   assert.ok(graphs.length >= 2, `${path}: identity and page JSON-LD`);
   assert.ok(!JSON.stringify(graphs).includes("AggregateRating"), `${path}: no invented ratings`);
+  if (path === "/") {
+    const { load } = await import("cheerio");
+    const $ = load(html);
+    assert.equal($("h1").text(), "Create faceless videos, AI cartoons and UGC ads", "Homepage H1 has exact readable text");
+    assert.equal($("title").text(), "AI Video Generator for Faceless Videos, Cartoons & UGC Ads | Create AI Videos", "Homepage title");
+    assert.equal($("h1").next("p").text(), "Made to move.", "Slogan is outside the H1");
+    assert.equal($(".hero-reels img").length, 12, "Twelve hero images");
+    $(".hero-reels img").each((_, image) => assert.ok($(image).attr("alt")?.trim(), "Descriptive hero alt"));
+    const faq = graphs.find((graph) => graph["@type"] === "FAQPage");
+    const visible = $("#questions section > div > div").map((_, item) => ({ question: $(item).find("h3").text(), answer: $(item).find("p").text() })).get();
+    assert.ok(visible.length > 0, "Visible FAQ content");
+    assert.deepEqual(faq?.mainEntity.map((item) => ({ question: item.name, answer: item.acceptedAnswer.text })), visible, "FAQ markup matches visible answers exactly");
+  }
   if (path.startsWith("/guides/")) {
     assert.equal(meta(html, "og:type"), "article", `${path}: article social metadata`);
     const article = graphs.flatMap((graph) => graph["@graph"] ?? [graph]).find((graph) => graph["@type"] === "Article");

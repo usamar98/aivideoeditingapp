@@ -43,12 +43,14 @@ export function isPublicPath(path: string): boolean {
 
 // Change these only when the corresponding public content is materially edited.
 export const publicPages = [
-  { path: "/", title: "AI video generator", description: "Create AI short films, faceless videos, cartoons, property tours and product ads with Create AI Videos.", modifiedAt: "2026-10-16" },
+  { path: "/", title: "AI video generator", description: "Create AI short films, faceless videos, cartoons, property tours and product ads with Create AI Videos.", modifiedAt: "2026-10-22" },
   { path: "/features", title: "AI video creation tools", description: "Compare short films, faceless videos, cartoons, real estate tours, Ad Remake, photo presenters, UGC ads and podcast Shorts.", modifiedAt: "2026-10-16" },
   { path: "/pricing", title: "Plans and credits", description: "Monthly and annual prices, credits and billing questions.", modifiedAt: "2026-10-15" },
-  { path: "/guides", title: "Video creation guides", description: "Practical guidance for choosing and reviewing AI video workflows.", modifiedAt: "2026-10-16" },
+  { path: "/guides", title: "Video creation guides", description: "Practical guidance for choosing and reviewing AI video workflows.", modifiedAt: "2026-10-22" },
   { path: "/guides/how-to-make-ai-videos", title: "How to make AI videos", description: "Choose a workflow, write a focused brief, understand credits and review an AI video before export.", modifiedAt: "2026-10-16" },
   { path: "/guides/faceless-videos-vs-ai-cartoons", title: "Faceless videos vs AI cartoons", description: "Compare narrated image-based shorts with character-led AI animation.", modifiedAt: "2026-10-16" },
+  { path: "/guides/how-to-write-a-faceless-video-script", title: "How to write a faceless video script", description: "Build a focused narrated short with a worked script, scene prompts, pacing checks and a reusable review checklist.", modifiedAt: "2026-10-22" },
+  { path: "/guides/ai-ugc-ad-script-and-hooks", title: "AI UGC ad scripts and hooks", description: "Write a product-ad brief, compare three opening hooks and review a disclosed fictional-presenter ad before export.", modifiedAt: "2026-10-22" },
   { path: "/about", title: "About Create AI Videos", description: "What Create AI Videos creates, how it works and its current limitations.", modifiedAt: "2026-10-15" },
   { path: "/contact", title: "Contact Create AI Videos", description: "Get help with your account, billing or a video job.", modifiedAt: "2026-10-15" },
   { path: "/privacy", title: "Privacy Policy", description: "How Create AI Videos handles accounts, Google sign-in, creative content and privacy requests.", modifiedAt: "2026-10-15" },

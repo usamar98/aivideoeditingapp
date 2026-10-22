@@ -101,7 +101,8 @@ describe("AI marketing media", () => {
     });
     expect($("img").length).toBe(12);
     $("img").each((_, element) => {
-      expect($(element).attr("alt")).toBe("");
+      expect($(element).attr("alt")!.length).toBeGreaterThan(20);
+      expect($(element).attr("alt")!.length).toBeLessThanOrEqual(125);
       expect($(element).attr("loading")).toBe("lazy");
       // A 16:9 source needs a wider rendition for a sharp 9:16 cover crop.
       expect($(element).attr("sizes")).toContain("610px");
@@ -201,7 +202,7 @@ describe("AI marketing media", () => {
     const $ = load(renderToStaticMarkup(await Home()));
     expect($("#tools a[href='/features/ai-ad-remake']").length).toBe(1);
     expect($("#tools article[data-feature='ad-remake'][data-availability='coming-soon']").length).toBe(0);
-    expect($("main h1").text()).toContain("Create AI videos");
+    expect($("main h1").text()).toBe("Create faceless videos, AI cartoons and UGC ads");
   });
 
   it("uses the studio's shared card design and order on the public feature directory", async () => {

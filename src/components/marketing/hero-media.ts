@@ -5,25 +5,25 @@ type HeroMedia = {
   label: string;
   detail: string;
   platform: SocialPlatform;
-} & ({ kind: "image"; src: string; position?: string } | { kind: "video"; name: string });
+} & ({ kind: "image"; src: string; alt: string; position?: string } | { kind: "video"; name: string });
 
 /** Inspiration only: stock clips are not Create AI Videos exports or working clone demos. */
 export const heroMediaRows: readonly (readonly HeroMedia[])[] = [
   [
     { id: "space", kind: "video", name: "hero-space", label: "Faceless stories", detail: "A universe of ideas", platform: "YouTube" },
-    { id: "presenter", kind: "image", src: "/examples/presenter-product.webp", position: "22% center", label: "AI UGC", detail: "A fresh face for your ideas", platform: "Instagram" },
+    { id: "presenter", kind: "image", src: "/examples/presenter-product.webp", alt: "AI-generated fictional presenter in a blue shirt beside skincare bottles", position: "22% center", label: "AI UGC", detail: "A fresh face for your ideas", platform: "Instagram" },
     { id: "sloth", kind: "video", name: "hero-cartoon", label: "Cartoon clips", detail: "Little characters. Big stories.", platform: "TikTok" },
-    { id: "astronaut", kind: "image", src: "/examples/faceless-space.webp", label: "AI images", detail: "Beyond the everyday", platform: "Facebook" },
+    { id: "astronaut", kind: "image", src: "/examples/faceless-space.webp", alt: "AI-generated astronaut overlooking a snowy alien landscape beneath a blue planet", label: "AI images", detail: "Beyond the everyday", platform: "Facebook" },
     { id: "portrait", kind: "video", name: "ai-portrait", label: "Photo-based presenter", detail: "AI portrait inspiration only", platform: "Instagram" },
-    { id: "characters", kind: "image", src: "/examples/cartoon-forest.webp", label: "Character worlds", detail: "Meet your next story", platform: "YouTube" },
+    { id: "characters", kind: "image", src: "/examples/cartoon-forest.webp", alt: "AI-generated cartoon fox and small robot watching a glowing butterfly in a forest", label: "Character worlds", detail: "Meet your next story", platform: "YouTube" },
   ],
   [
     { id: "forest", kind: "video", name: "fantasy-forest", label: "Dream in motion", detail: "A little cinematic magic", platform: "Facebook" },
-    { id: "product", kind: "image", src: "/examples/presenter-product.webp", position: "82% center", label: "Product-ad ideas", detail: "Put your product in the frame", platform: "Instagram" },
+    { id: "product", kind: "image", src: "/examples/presenter-product.webp", alt: "Blue pump and dropper bottles on a stone display in an AI-generated product-ad concept", position: "82% center", label: "Product-ad ideas", detail: "Put your product in the frame", platform: "Instagram" },
     { id: "anime", kind: "video", name: "hero-anime", label: "Animated Shorts", detail: "Small screen. Big atmosphere.", platform: "TikTok" },
-    { id: "cinematic", kind: "image", src: "/examples/faceless-space.webp", position: "65% center", label: "Visual storytelling", detail: "Start somewhere unexpected", platform: "YouTube" },
+    { id: "cinematic", kind: "image", src: "/examples/faceless-space.webp", alt: "A huge blue planet above snowy mountains in an AI-generated space-story concept", position: "65% center", label: "Visual storytelling", detail: "Start somewhere unexpected", platform: "YouTube" },
     { id: "beauty", kind: "video", name: "hero-ugc", label: "AI ad inspiration", detail: "Beauty, reimagined", platform: "Instagram" },
-    { id: "fox", kind: "image", src: "/examples/cartoon-forest.webp", position: "40% center", label: "Cartoon inspiration", detail: "Make room for wonder", platform: "Facebook" },
+    { id: "fox", kind: "image", src: "/examples/cartoon-forest.webp", alt: "Orange fox with a blue scarf beside a friendly robot in an AI-generated woodland cartoon", position: "40% center", label: "Cartoon inspiration", detail: "Make room for wonder", platform: "Facebook" },
   ],
 ];
 

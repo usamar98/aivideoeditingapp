@@ -71,7 +71,7 @@ export function HeroShowcase({ children }: { children?: ReactNode }) {
             {row.map((media) => <div className="hero-reel" key={media.id}>
               {media.kind === "video" ? <video muted loop playsInline preload="none" tabIndex={-1} poster={`/examples/${media.name}-poster.jpg`} className="size-full object-cover" aria-hidden="true">
                 <source src={`/examples/${media.name}.webm`} type="video/webm" /><source src={`/examples/${media.name}.mp4`} type="video/mp4" />
-              </video> : <Image src={media.src} alt="" fill sizes="(max-width: 639px) 420px, (max-width: 1023px) 510px, 610px" className="object-cover" style={{ objectPosition: media.position }} />}
+              </video> : <Image src={media.src} alt={media.alt} fill sizes="(max-width: 639px) 420px, (max-width: 1023px) 510px, 610px" className="object-cover" style={{ objectPosition: media.position }} />}
               <span className="hero-reel-tag"><span className="block text-[8px] uppercase tracking-wider opacity-70">AI concept</span>{media.label}</span>
               <div className="hero-reel-footer"><span>{media.detail}</span><SocialPlatformIcon platform={media.platform} className="size-7 rounded-lg shadow-sm" /></div>
             </div>)}

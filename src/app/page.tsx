@@ -14,10 +14,10 @@ import { SiteFooter } from "@/components/marketing/site-chrome";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { homeFaqs } from "@/lib/seo/editorial-content";
 import { publicMetadata } from "@/lib/seo/metadata";
-import { pageSchema } from "@/lib/seo/structured-data";
+import { faqSchema, pageSchema } from "@/lib/seo/structured-data";
 import { getPublishedFeaturesData } from "@/lib/features/repository";
 
-export const metadata = publicMetadata({ title: "AI Video Generator & Creative Studio", description: brand.description, path: "/" });
+export const metadata = publicMetadata({ title: "AI Video Generator for Faceless Videos, Cartoons & UGC Ads", description: brand.description, path: "/" });
 
 export const dynamic = "force-dynamic";
 
@@ -25,13 +25,15 @@ export default async function Home() {
   const published = new Set((await getPublishedFeaturesData()).map((feature) => feature.slug));
   return <main id="main-content">
     <JsonLd data={pageSchema("/", "AI video generator for stories, cartoons and UGC ads", brand.description)} />
+    <JsonLd data={faqSchema(homeFaqs)} />
     <header className="mx-auto flex h-24 max-w-7xl items-center justify-between gap-4 px-6 lg:px-10">
       <Link href="/" aria-label={`${brand.name} home`}><BrandMark /></Link>
       <nav aria-label="Main navigation" className="hidden items-center gap-8 text-sm md:flex"><Link href="/features">Creative tools</Link><a href="#how-it-works">How it works</a><Link href="/pricing">Pricing</Link><Link href="/guides">Guides</Link></nav>
       <div className="flex items-center gap-3"><Link href="/login" className="hidden text-sm sm:block">Log in</Link><Button asChild className="min-h-11 rounded-full"><Link href="/studio">Open studio <ArrowRight /></Link></Button></div>
     </header>
     <HeroShowcase>
-      <h1 className="text-5xl leading-[1.02] tracking-[-.055em] sm:text-7xl xl:text-[5.25rem]">Create AI videos.<br /><span className="editorial italic text-primary">Made to move.</span></h1>
+      <h1 className="text-balance text-[2.5rem] leading-[1.08] tracking-[-.045em] sm:text-5xl xl:text-[3.5rem]">Create faceless videos, AI cartoons and UGC ads</h1>
+      <p className="editorial mt-4 text-3xl italic text-primary sm:text-4xl">Made to move.</p>
       <HeroPrompt published={[...published]} />
     </HeroShowcase>
     <section id="tools" className="mx-auto max-w-7xl scroll-mt-6 px-6 py-20 lg:px-10"><div className="flex flex-wrap items-end justify-between gap-5"><div><p className="eyebrow text-primary">One studio. More ways to create.</p><h2 className="editorial mt-4 text-4xl tracking-tight sm:text-5xl">What will you make today?</h2></div><p className="max-w-md text-sm leading-6 text-muted-foreground">Turn prompts into AI short films and cartoons, listing photos into property tours, or product images into ads. You can also repurpose a recording into captioned Shorts.</p></div>
@@ -45,7 +47,7 @@ export default async function Home() {
       <PricingCards />
       <p className="mt-6 text-center text-sm"><Link href="/pricing" className="text-primary underline underline-offset-4">Compare full annual charges, credits and billing details</Link></p>
     </section>
-    <div className="mx-auto max-w-6xl px-6"><AnswerSection answers={homeFaqs} /><p className="mt-6 text-sm"><Link href="/guides/how-to-make-ai-videos" className="text-primary underline underline-offset-4">Learn how to make AI videos, from a brief to a reviewed export.</Link></p><p className="mt-4 text-sm"><Link href="/guides/faceless-videos-vs-ai-cartoons" className="text-primary underline underline-offset-4">Faceless video or AI cartoon? Read the workflow comparison.</Link></p></div>
+    <div id="questions" className="mx-auto max-w-6xl px-6"><AnswerSection answers={homeFaqs} /><nav aria-label="Video creation guides" className="mt-6 grid gap-4 text-sm sm:grid-cols-2"><Link href="/guides/how-to-make-ai-videos" className="text-primary underline underline-offset-4">Learn how to make AI videos, from a brief to a reviewed export.</Link><Link href="/guides/faceless-videos-vs-ai-cartoons" className="text-primary underline underline-offset-4">Faceless video or AI cartoon? Read the workflow comparison.</Link><Link href="/guides/how-to-write-a-faceless-video-script" className="text-primary underline underline-offset-4">Write a faceless video script with a scene-by-scene example.</Link><Link href="/guides/ai-ugc-ad-script-and-hooks" className="text-primary underline underline-offset-4">Plan an AI UGC ad with three hooks and a review checklist.</Link></nav></div>
     <section className="mx-auto max-w-6xl px-6 py-20 text-center"><Clapperboard className="mx-auto size-7 text-primary" /><h2 className="editorial mt-5 text-4xl sm:text-5xl">Your next story starts here.</h2><p className="mt-4 text-muted-foreground">A small idea is a perfectly good place to begin.</p><Button asChild size="lg" className="mt-7 rounded-full"><Link href="/studio">Find your creative tool <ArrowRight /></Link></Button></section>
     <SiteFooter />
   </main>;

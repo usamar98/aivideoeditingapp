@@ -26,6 +26,17 @@ export function pageSchema(path: string, name: string, description: string, type
   return { "@context": "https://schema.org", "@type": type, "@id": absoluteUrl(`${path}#webpage`), url: absoluteUrl(path), name, description, inLanguage: "en", isPartOf: { "@id": websiteId }, publisher: { "@id": organizationId } };
 }
 
+/** Describe the visible FAQ only; Google no longer offers FAQ rich results. */
+export function faqSchema(answers: readonly { question: string; answer: string }[]) {
+  return {
+    "@context": "https://schema.org", "@type": "FAQPage", "@id": absoluteUrl("/#faq"),
+    url: absoluteUrl("/#questions"), name: "Questions, answered", isPartOf: { "@id": absoluteUrl("/#webpage") },
+    mainEntity: answers.map(({ question, answer }) => ({
+      "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer },
+    })),
+  };
+}
+
 export function pricingOffers() {
   return pricingTiers.flatMap((tier) => (["month", "year"] as const).map((interval) => {
     const terms = planTerms(tier, interval);

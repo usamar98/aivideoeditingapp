@@ -1,8 +1,8 @@
 # Create AI Videos search-engine setup and owner handoff
 
-Updated: 2026-10-16. Production website: `https://createaivideos.app`.
+Updated: 2026-10-22. Production website: `https://createaivideos.app`.
 
-This is a setup guide, not confirmation that ownership is verified or any sitemap has been submitted. No authenticated Search Console or Bing account was inspected. Publish and verify the SEO changes before submitting their new URLs.
+This is a setup guide, not confirmation that ownership is verified or any sitemap has been submitted. Owner-account Search Console access is still required; the currently available Google session did not show the website properties. No Bing property was inspected. Publish and verify the SEO changes before submitting their new URLs.
 
 ## Start with these Google links
 
@@ -63,7 +63,7 @@ After changing build-time public environment values, deploy again. Inspect the l
 
 The retired-domain audit found malformed discovery links. Current release checks validate fresh new-domain responses rather than relying on that historical result.
 
-Expected after this SEO update: **18 public sitemap URLs**, including eight feature pages, two guides, pricing, support and policy pages. No studio/account/API/private-media/preview URLs should appear. Every entry should resolve to a genuine public page with an intended production canonical. Publication changes can legitimately alter the count.
+Expected after this SEO update: **20 public sitemap URLs**, including eight feature pages, four guides, pricing, support and policy pages. No studio/account/API/private-media/preview URLs should appear. Every entry should resolve to a genuine public page with an intended production canonical. Publication changes can legitimately alter the count.
 
 ## Complete the old domain migration
 
@@ -103,6 +103,8 @@ https://createaivideos.app/pricing
 https://createaivideos.app/guides
 https://createaivideos.app/guides/how-to-make-ai-videos
 https://createaivideos.app/guides/faceless-videos-vs-ai-cartoons
+https://createaivideos.app/guides/how-to-write-a-faceless-video-script
+https://createaivideos.app/guides/ai-ugc-ad-script-and-hooks
 https://createaivideos.app/about
 https://createaivideos.app/contact
 https://createaivideos.app/privacy
@@ -141,7 +143,7 @@ Robots access does not prove indexing, actual AI citations, or firewall access f
 
 ## 9. Remaining owner actions and measurement
 
-- Confirm the account really has access to the correct Google/Bing property. No verification token or authenticated property data was supplied to this audit.
+- Sign in with the account that owns both old and new Google properties, and confirm verified ownership before migration. Do not share passwords or tokens. The available session did not expose the owner properties.
 - Finish deployment, then inspect production—not only localhost.
 - Supply genuine business/operator details, approved legal policies, real public profiles, and authorized product examples. Do not fabricate testimonials, review stars, or legal claims.
 - Retry PageSpeed Insights after the HTTP 429 rate limit clears; review Search Console Core Web Vitals when field data is available. No measured performance score is claimed here.
@@ -155,10 +157,13 @@ For the observed baseline and technical limitations, read [GEO analysis](./GEO-A
 The project includes a read-only smoke checker. After deploying, run:
 
 ```powershell
+node scripts/check-domain-redirects.mjs
 node scripts/check-seo.mjs https://createaivideos.app --production
 npm run seo:export
 ```
 
-The checker validates 18 intended pages, public metadata, JSON-LD parsing, social images, internal links, discovery files, private noindex headers and hidden-page 404s. Update its expected routes when adding genuinely published pages. It does not authenticate to Google, submit URLs, measure real-user performance or prove rich-result eligibility.
+The redirect preflight checks HTTP-to-HTTPS, www and old-domain variants, including path/query preservation and loop detection. The SEO checker validates 20 intended pages, the exact homepage title/H1, twelve descriptive hero image alts, visible-content parity for FAQ JSON-LD, social images, internal links, discovery files, private noindex headers and hidden-page 404s. Update its expected routes when adding genuinely published pages. These checks do not authenticate to Google, submit URLs, measure real-user performance or prove rich-result eligibility.
+
+The homepage FAQPage markup describes the same questions and answers shown in “Questions, answered.” It is not a Google FAQ rich-result feature: Google retired that display in May 2026. No ranking or AI-citation benefit is promised. [Google's documentation changelog](https://developers.google.com/search/updates)
 
 The export command fetches the live canonical sitemap and writes `output/seo/GOOGLE-CONSOLE-SETUP.txt`, `output/seo/search-console-urls.txt` and a reference `output/seo/sitemap.xml`. Submit the **live sitemap URL** in Google, not a Windows path or local file upload. The URL list is for inspecting public pages; no bulk Indexing API request is made. No new Supabase tables, Trigger variables or provider credentials are needed for this SEO release.
