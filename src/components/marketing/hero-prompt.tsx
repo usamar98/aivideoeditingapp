@@ -1,13 +1,13 @@
 import { ArrowUp, Clapperboard, Compass, Megaphone, Sparkles, Video } from "lucide-react";
 
 const shortcuts = [
-  { label: "Create a faceless video", icon: Video, slug: "faceless-video-generator" },
-  { label: "Create an AI cartoon", icon: Clapperboard, slug: "ai-cartoon-series" },
-  { label: "Create UGC ads", icon: Megaphone, slug: "ai-ugc-product-ads" },
-  { label: "Explore all tools", icon: Compass, slug: null },
+  { label: "Create a faceless video", icon: Video, slug: "faceless-video-generator", href: "/studio/faceless" },
+  { label: "Create an AI cartoon", icon: Clapperboard, slug: "ai-cartoon-series", href: "/studio/cartoons" },
+  { label: "Create UGC ads", icon: Megaphone, slug: "ai-ugc-product-ads", href: "/studio/ugc" },
+  { label: "Explore all tools", icon: Compass, slug: null, href: "/features" },
 ];
 
-/** Visual prompt preview only; creation still starts from a feature page. */
+/** Visual prompt preview only; shortcuts open the published tools in Studio. */
 export function HeroPrompt({ published = [] }: { published?: readonly string[] }) {
   return <div className="mx-auto mt-8 w-full max-w-[820px]" data-testid="hero-prompt">
     <div className="flex h-44 flex-col rounded-[28px] border border-slate-200 bg-white p-5 text-left shadow-[0_12px_50px_-18px_rgba(24,45,78,0.3)] sm:rounded-[32px] sm:p-6">
@@ -25,7 +25,7 @@ export function HeroPrompt({ published = [] }: { published?: readonly string[] }
       </div>
     </div>
     <nav aria-label="Explore creation tools" className="mt-4 flex flex-wrap justify-center gap-2.5">
-      {shortcuts.filter(({ slug }) => !slug || published.includes(slug)).map(({ label, icon: Icon, slug }) => <a key={label} href={slug ? `/features/${slug}` : "/features"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:text-sm">
+      {shortcuts.filter(({ slug }) => !slug || published.includes(slug)).map(({ label, icon: Icon, href }) => <a key={label} href={href} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:border-primary/40 hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:text-sm">
         <Icon aria-hidden className="size-4 shrink-0 text-primary" />{label}
       </a>)}
     </nav>

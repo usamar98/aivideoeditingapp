@@ -37,7 +37,7 @@ export default async function Home() {
       <HeroPrompt published={[...published]} />
     </HeroShowcase>
     <section id="tools" className="mx-auto max-w-7xl scroll-mt-6 px-6 py-20 lg:px-10"><div className="flex flex-wrap items-end justify-between gap-5"><div><p className="eyebrow text-primary">One studio. More ways to create.</p><h2 className="editorial mt-4 text-4xl tracking-tight sm:text-5xl">What will you make today?</h2></div><p className="max-w-md text-sm leading-6 text-muted-foreground">Turn prompts into AI short films and cartoons, listing photos into property tours, or product images into ads. You can also repurpose a recording into captioned Shorts.</p></div>
-      <FeatureGrid published={[...published]} desktopColumns={4}><PlannedFeatureCards published={[...published]} /></FeatureGrid>
+      <FeatureGrid published={[...published]} linkTarget="studio" desktopColumns={4}><PlannedFeatureCards published={[...published]} /></FeatureGrid>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-dashed border-primary/25 p-6"><div className="flex items-center gap-4"><Film className="size-6 text-primary" /><div><h3 className="font-semibold">One account. A growing creative toolkit.</h3><p className="mt-1 text-sm text-muted-foreground">Use the same workspace and credits across the available tools. Planned features are not available yet.</p></div></div><Link href="/features" className="text-sm text-primary underline underline-offset-4">Compare all tools →</Link></div>
     </section>
     <ChannelShowcase />
