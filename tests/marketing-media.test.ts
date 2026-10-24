@@ -181,7 +181,8 @@ describe("AI marketing media", () => {
     expect(cards.find("h2")).toHaveLength(0);
     expect(home("#tools [data-testid='feature-grid']").attr("class")).toContain("lg:grid-cols-4");
     expect(home("#tools a[href^='/features/']")).toHaveLength(0);
-    expect(home("header nav a[href='/features']")).toHaveLength(1);
+    expect(home("header nav[aria-label='Main navigation'] a[href='/features']")).toHaveLength(1);
+    expect(home("header nav[aria-label='Mobile navigation'] a[href='/features']")).toHaveLength(1);
     expect(home("footer nav a[href='/features']")).toHaveLength(1);
     expect(home("#tools a[href='/features']")).toHaveLength(1);
 

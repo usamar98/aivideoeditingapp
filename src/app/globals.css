@@ -57,6 +57,7 @@
 * { border-color: var(--border); }
 
 html { background: var(--background); color-scheme: light; }
+html:has([data-site-header]) { scroll-padding-top: 112px; }
 
 body {
   min-height: 100vh;
