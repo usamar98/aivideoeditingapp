@@ -56,10 +56,20 @@ describe("Facebook OAuth diagnostics privacy and notices", () => {
     expect(facebookOAuthNotice("pages_not_returned", reference)).toContain("Facebook returned no Pages to the app's API");
     expect(facebookOAuthNotice("page_content_access_missing", reference)).toContain("publishing task recognized by this app");
     expect(facebookOAuthNotice("permissions_missing", reference)).toContain("did not grant all required Page permissions");
+    expect(facebookOAuthNotice("page_token_access_unverified", reference)).toContain("could not verify its publishing permissions and identity");
     expect(facebookOAuthNotice("pages_not_returned", reference)).toContain(`Support reference: ${reference}`);
     for (const outcome of ["choose_page", "denied"]) expect(facebookOAuthNotice(outcome, reference)).not.toContain(reference);
     for (const untrusted of ["private-token", `${reference}<script>`, "a".repeat(10000)]) expect(facebookOAuthNotice("connection_failed", untrusted)).not.toContain(untrusted);
     for (const outcome of [undefined, "unknown", "__proto__", "constructor", "toString"]) expect(facebookOAuthNotice(outcome, reference)).toBeNull();
     expect(facebookOAuthNotice("no_pages")).toContain("detailed connection result");
+  });
+  it("logs only fixed direct-lookup counts, never credentials or provider objects", () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    const diagnostics = facebookGrantDiagnostics([]);
+    diagnostics.directPageLookup = { attemptedPages: 1, verifiedPages: 1, rejectedPages: -1, unavailablePages: Infinity };
+    Object.assign(diagnostics.directPageLookup, { access_token: "private-token", id: "private-page-id", error: "private-error" });
+    logFacebookOAuthResult(randomUUID(), "choose_page", "complete", diagnostics);
+    expect(JSON.parse(info.mock.calls[0][0]).diagnostics.directPageLookup).toEqual({ attemptedPages: 1, verifiedPages: 1, rejectedPages: 0, unavailablePages: 0 });
+    expect(info.mock.calls[0][0]).not.toContain("private-");
   });
 });

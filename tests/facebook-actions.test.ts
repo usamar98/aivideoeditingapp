@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { seal } from "@/lib/social/crypto";
+import { FacebookError } from "@/lib/social/facebook";
 const mocks = vi.hoisted(() => ({ account: vi.fn(), trigger: vi.fn(), resolve: vi.fn(), post: vi.fn(), connection: vi.fn(), revoke: vi.fn(), grant: vi.fn(), verify: vi.fn() }));
 vi.mock("@/lib/account", () => ({ requireAccount: mocks.account }));
 vi.mock("@trigger.dev/sdk", () => ({ tasks: { trigger: mocks.trigger } }));
@@ -47,6 +48,18 @@ describe("Facebook server actions", () => {
     expect(await selectFacebookPage("222")).toEqual({ success: true }); expect(mocks.verify).toHaveBeenCalledWith("page-token", "222");
     expect(rpc).toHaveBeenCalledWith("complete_facebook_oauth", expect.objectContaining({ owner_id: user, remote_user: "111", page: "222", encrypted_page_token: expect.stringMatching(/^v1\./) }));
     expect(JSON.stringify(rpc.mock.calls)).not.toContain("page-token");
+  });
+  it("revalidates direct Page credentials against the original person before saving, with no publication", async () => {
+    mocks.grant.mockResolvedValue({ state: "state", userId: "111", token: "user-token", pages: [
+      { id: "222", name: "Selected Page", access_token: "page-token", tasks: [], authorization: "direct_page_token" },
+    ] });
+    expect(await selectFacebookPage("222")).toEqual({ success: true });
+    expect(mocks.verify).toHaveBeenCalledWith("page-token", "222", "111");
+    expect(rpc).toHaveBeenCalledWith("complete_facebook_oauth", expect.objectContaining({ owner_id: user, remote_user: "111", page: "222" }));
+    expect(mocks.trigger).not.toHaveBeenCalled();
+    rpc.mockClear(); mocks.verify.mockRejectedValue(new FacebookError("rejected", "Page access was removed. Reconnect."));
+    expect((await selectFacebookPage("222")).error).toContain("Reconnect");
+    expect(rpc).not.toHaveBeenCalled(); expect(mocks.trigger).not.toHaveBeenCalled();
   });
   it("binds cancellation/rechecks to the user and respects the no-cancel finish boundary", async () => {
     expect(await cancelFacebookPost(postId)).toEqual({ success: true }); expect(rpc).toHaveBeenCalledWith("cancel_facebook_post", { owner_id: user, post_id: postId });

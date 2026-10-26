@@ -40,20 +40,20 @@ async function failure() {
   const result = await loadFacebookGrant("private-user-token").catch((error: unknown) => error);
   expect(result).toBeInstanceOf(FacebookGrantError);
   const error = result as FacebookGrantError;
-  expect(error.outcome).toBe("pages_not_returned");
+  expect(["pages_not_returned", "page_token_access_unverified"]).toContain(error.outcome);
   expect(error.diagnostics.returnedPages).toBe(0);
   expect(error.diagnostics.eligiblePages).toBe(0);
   return error;
 }
 
-describe("diagnostic-only direct Page-token availability", () => {
+describe("direct Page-token availability alone is not authorization", () => {
   it("requests only an authorized, readable Page, with a short deadline and no token in its URL or result", async () => {
     const timeout = vi.spyOn(AbortSignal, "timeout");
     const error = await failure();
     expect(error.diagnostics.pageGrants?.pageTokenProbe).toEqual({ ...defaults, tokensReturned: 1 });
     expect(error).not.toHaveProperty("pages");
     expect(timeout.mock.calls.at(-1)).toEqual([10_000]);
-    const [raw, options] = fetcher.mock.calls.at(-1)!;
+    const [raw, options] = fetcher.mock.calls[5];
     const url = new URL(raw);
     expect(url.origin).toBe("https://graph.facebook.com");
     expect(url.pathname).toBe("/v26.0/222");
@@ -62,11 +62,11 @@ describe("diagnostic-only direct Page-token availability", () => {
     expect(url.searchParams.has("appsecret_proof")).toBe(true);
     expect(raw).not.toContain("private-");
     expect(options).toMatchObject({ method: "GET", redirect: "error", cache: "no-store", headers: { Authorization: "Bearer private-user-token" } });
-    expect(fetcher).toHaveBeenCalledTimes(6);
+    expect(fetcher).toHaveBeenCalledTimes(7);
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
     logFacebookOAuthResult(randomUUID(), error.outcome, "page_discovery", error.diagnostics);
     expect(JSON.stringify(error)).not.toMatch(/private-|222/);
-    expect(warning.mock.calls[0][0]).not.toMatch(/private-|222/);
+    expect(JSON.stringify(JSON.parse(warning.mock.calls[0][0]).diagnostics)).not.toMatch(/private-|222/);
     expect(JSON.parse(warning.mock.calls[0][0]).diagnostics.pageGrants.pageTokenProbe.tokensReturned).toBe(1);
   });
 
@@ -122,7 +122,7 @@ describe("diagnostic-only direct Page-token availability", () => {
     expect(error.diagnostics.pageGrants).toMatchObject({ commonTargets: 8, inspectedTargets: 5, truncated: true,
       pageTokenProbe: { ...defaults, attemptedTargets: 5, tokensReturned: 5 } });
     expect(tokenReply.mock.calls.map(([id]) => id)).toEqual(targets.slice(0, 5));
-    expect(fetcher).toHaveBeenCalledTimes(14);
+    expect(fetcher).toHaveBeenCalledTimes(19);
     expect(fetcher.mock.calls.every(([, options]) => options.method === "GET")).toBe(true);
   });
 

@@ -93,7 +93,7 @@ describe("Facebook provider and request validation", () => {
     const malformed = await loadFacebookGrant("token").catch((failure: unknown) => failure);
     expect(malformed).not.toBeInstanceOf(FacebookGrantError);
   });
-  it("inspects only intersected Page-specific grants when the accounts edge is empty, without authorizing them", async () => {
+  it("inspects only intersected Page-specific grants and does not authorize a returned token without valid PAGE metadata", async () => {
     fetcher.mockResolvedValueOnce(json({ id: "111" }))
       .mockResolvedValueOnce(json({ data: FACEBOOK_SCOPES.map((permission) => ({ permission, status: "granted" })) }))
       .mockResolvedValueOnce(json({ data: [] }))
@@ -107,7 +107,7 @@ describe("Facebook provider and request validation", () => {
       } })).mockResolvedValueOnce(json({ id: "222", name: "private-page-name", access_token: "must-not-be-used" }))
       .mockResolvedValueOnce(json({ id: "222", access_token: "diagnostic-only-page-token" }));
     const failure = await loadFacebookGrant("private-user-token").catch((error: unknown) => error) as FacebookGrantError;
-    expect(failure.outcome).toBe("pages_not_returned");
+    expect(failure.outcome).toBe("page_token_access_unverified");
     expect(failure.diagnostics.pageGrants).toMatchObject({ status: "verified", commonTargets: 1, inspectedTargets: 1, readableTargets: 1,
       pageTokenProbe: { attemptedTargets: 1, tokensReturned: 1, missingTokens: 0, rejectedTargets: 0, unavailableTargets: 0, invalidResponses: 0 } });
     expect(JSON.stringify(failure)).not.toMatch(/private-user-token|private-page-name|must-not-be-used|diagnostic-only-page-token|222|333/);
@@ -126,7 +126,7 @@ describe("Facebook provider and request validation", () => {
     for (const [, options] of fetcher.mock.calls) {
       expect(options.method).toBe("GET"); expect(options.cache).toBe("no-store"); expect(options.redirect).toBe("error");
     }
-    expect(fetcher).toHaveBeenCalledTimes(6);
+    expect(fetcher).toHaveBeenCalledTimes(7);
   });
   it("limits empty-list Page probes to five and reports read rejections and identity mismatches honestly", async () => {
     const targets = Array.from({ length: 6 }, (_, i) => String(i + 222));
@@ -142,11 +142,11 @@ describe("Facebook provider and request validation", () => {
       .mockResolvedValueOnce(json({ id: "226" }))
       .mockResolvedValueOnce(json({ id: "222", access_token: "diagnostic-page-token" }))
       .mockResolvedValueOnce(json({ id: "226" }));
-    await expect(loadFacebookGrant("token")).rejects.toMatchObject({ outcome: "pages_not_returned", diagnostics: { pageGrants: {
+    await expect(loadFacebookGrant("token")).rejects.toMatchObject({ outcome: "page_token_access_unverified", diagnostics: { pageGrants: {
       status: "verified", commonTargets: 6, inspectedTargets: 5, readableTargets: 2, rejectedTargets: 1, unavailableTargets: 2, truncated: true,
       pageTokenProbe: { attemptedTargets: 2, tokensReturned: 1, missingTokens: 1 },
     } } });
-    expect(fetcher).toHaveBeenCalledTimes(11);
+    expect(fetcher).toHaveBeenCalledTimes(12);
   });
   it("never probes targets from an invalid token or makes empty-list inspection mandatory for working connections", async () => {
     fetcher.mockResolvedValueOnce(json({ id: "111" }))

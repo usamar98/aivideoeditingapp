@@ -1,7 +1,8 @@
 import { createHmac, randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { unseal } from "@/lib/social/crypto";
-import { FacebookGrantError } from "@/lib/social/facebook";
+import { FacebookGrantError, facebookGrantSchema } from "@/lib/social/facebook";
+import { FACEBOOK_SCOPES } from "@/lib/social/facebook-config";
 import { facebookGrantDiagnostics, recordFacebookPageTasks } from "@/lib/social/facebook-oauth-diagnostics";
 const mocks = vi.hoisted(() => ({ account: vi.fn(), cookies: vi.fn(), exchange: vi.fn(), grant: vi.fn(), admin: vi.fn() }));
 vi.mock("server-only", () => ({}));
@@ -30,7 +31,7 @@ beforeEach(() => {
   recordFacebookPageTasks(diagnostics, ["CREATE_CONTENT"], true);
   mocks.grant.mockResolvedValue({ userId: "111", token: "user-token", pages: [{ id: "222", name: "Page", access_token: "page-token", tasks: ["CREATE_CONTENT"] }], diagnostics });
 });
-afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
+afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const start = (from = origin, policy = "agree") => new Request(`${origin}/api/social/facebook/connect`, { method: "POST", headers: { origin: from }, body: new URLSearchParams({ policy }) });
 const back = (params = "state=state&code=authorization-code") => new Request(`${origin}/api/social/facebook/callback?${params}`);
 describe("Facebook OAuth and deletion routes", () => {
@@ -74,7 +75,35 @@ describe("Facebook OAuth and deletion routes", () => {
     expect(response.headers.get("location")).not.toContain("facebook_ref");
     expect(JSON.parse(vi.mocked(console.info).mock.calls[0][0])).toMatchObject({ event: "facebook.oauth", outcome: "choose_page", stage: "complete", diagnostics: { returnedPages: 1, eligiblePages: 1 } });
   });
-  it.each(["permissions_missing", "pages_not_returned", "page_content_access_missing"] as const)("returns %s and a matching opaque support reference without saving a connection", async (outcome) => {
+  it("walks empty accounts through real direct-token validation to an encrypted pending Page selection, without posting", async () => {
+    const provider = await vi.importActual<typeof import("@/lib/social/facebook")>("@/lib/social/facebook");
+    mocks.grant.mockImplementation(provider.loadFacebookGrant);
+    const scopes = FACEBOOK_SCOPES.map((scope) => ({ scope, target_ids: ["222"] }));
+    const meta = { app_id: "123", user_id: "111", is_valid: true, expires_at: 0, scopes: [...FACEBOOK_SCOPES], granular_scopes: scopes };
+    const fetcher = vi.fn(async (raw: string, options: RequestInit) => {
+      const url = new URL(raw), endpoint = url.pathname.split("/").at(-1);
+      if (endpoint === "me") return Response.json(new Headers(options.headers).get("Authorization") === "Bearer page-token" ? { id: "222", name: "Verified Page" } : { id: "111" });
+      if (endpoint === "permissions") return Response.json({ data: FACEBOOK_SCOPES.map((permission) => ({ permission, status: "granted" })) });
+      if (endpoint === "accounts") return Response.json({ data: [] });
+      if (endpoint === "debug_token") return Response.json({ data: { ...meta, ...(url.searchParams.get("input_token") === "page-token" ? { type: "PAGE", profile_id: "222" } : { type: "USER" }) } });
+      return Response.json({ id: "222", ...(url.searchParams.get("fields") === "id,access_token" ? { access_token: "page-token" } : {}) });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    const response = await callback(back());
+    expect(response.headers.get("location")).toBe(`${origin}/studio/social/facebook?facebook=choose_page`);
+    expect(rpc).toHaveBeenCalledTimes(1); expect(rpc.mock.calls[0][0]).toBe("prepare_facebook_grant");
+    const saved = rpc.mock.calls[0][1];
+    const grant = facebookGrantSchema.parse(JSON.parse(unseal(saved.encrypted_grant, `facebook-grant:${user}`)));
+    expect(grant.pages).toEqual([{ id: "222", name: "Verified Page", access_token: "page-token", tasks: [], authorization: "direct_page_token" }]);
+    expect(JSON.parse(vi.mocked(console.info).mock.calls[0][0])).toMatchObject({ outcome: "choose_page", stage: "complete", diagnostics: {
+      returnedPages: 0, eligiblePages: 1, directPageLookup: { verifiedPages: 1 },
+    } });
+    const exposed = JSON.stringify([...response.headers]) + JSON.stringify(vi.mocked(console.info).mock.calls) + JSON.stringify(rpc.mock.calls);
+    expect(exposed).not.toMatch(/page-token|user-token|test-secret|authorization-code/);
+    expect(fetcher.mock.calls.every(([, options]) => options.method === "GET")).toBe(true);
+    expect(fetcher).toHaveBeenCalledTimes(8);
+  });
+  it.each(["permissions_missing", "pages_not_returned", "page_content_access_missing", "page_token_access_unverified"] as const)("returns %s and a matching opaque support reference without saving a connection", async (outcome) => {
     const diagnostics = facebookGrantDiagnostics([]);
     if (outcome === "page_content_access_missing") recordFacebookPageTasks(diagnostics, ["ANALYZE", "private-task-token\nsecret"], false);
     mocks.grant.mockRejectedValue(new FacebookGrantError(outcome, diagnostics));

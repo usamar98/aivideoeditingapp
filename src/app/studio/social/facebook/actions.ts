@@ -21,7 +21,8 @@ export async function selectFacebookPage(raw: unknown) {
     const { admin, user } = await requireAccount(), grant = await pendingFacebookGrant(admin, user.id);
     const page = grant?.pages.find((item) => item.id === parsed.data);
     if (!grant || !page) throw new Error("Page selection expired. Connect Facebook again.");
-    await verifyFacebookPage(page.access_token, page.id);
+    if (page.authorization === "direct_page_token") await verifyFacebookPage(page.access_token, page.id, grant.userId);
+    else await verifyFacebookPage(page.access_token, page.id);
     const result = await admin.rpc("complete_facebook_oauth", { owner_id: user.id, state_digest: grant.state, remote_user: grant.userId, page: page.id, title: page.name,
       encrypted_user_token: seal(grant.token, `facebook-user:${user.id}:${grant.userId}`), encrypted_page_token: seal(page.access_token, `facebook-page:${user.id}:${page.id}`) });
     if (result.error) throw new Error("Could not select this Page. Reconnect the original Page, or disconnect first to change accounts. Wait for any active worker to stop.");

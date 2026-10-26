@@ -16,8 +16,9 @@ export type FacebookGrantDiagnostics = {
   unrecognizedTasks: number;
   taskCounts: Partial<Record<DiagnosticTask, number>>;
   pageGrants?: FacebookPageGrantInspection;
+  directPageLookup?: { attemptedPages: number; verifiedPages: number; rejectedPages: number; unavailablePages: number };
 };
-export type FacebookGrantFailure = "permissions_missing" | "pages_not_returned" | "page_content_access_missing";
+export type FacebookGrantFailure = "permissions_missing" | "pages_not_returned" | "page_content_access_missing" | "page_token_access_unverified";
 export type FacebookOAuthStage = "configuration" | "validate_state" | "authenticate" | "consume_state" | "authorization" | "exchange_code" | "page_discovery" | "save_grant" | "complete";
 
 export const FACEBOOK_OAUTH_NOTICES = {
@@ -25,6 +26,7 @@ export const FACEBOOK_OAUTH_NOTICES = {
   denied: "Facebook connection cancelled. Nothing was posted.",
   permissions_missing: "Facebook did not grant all required Page permissions. Review Page listing, Page read access and Page publishing permissions, then reconnect.",
   pages_not_returned: "Facebook returned no Pages to the app's API. If you selected a Page during login, contact support with the reference below so we can investigate Page discovery.",
+  page_token_access_unverified: "Facebook returned a Page credential, but the app could not verify its publishing permissions and identity. Check Page content access and reconnect, or contact support with the reference below.",
   page_content_access_missing: "Facebook returned Pages, but none included a publishing task recognized by this app. Check your Page content access. If you can already publish to the Page, contact support with the reference below.",
   // Retain old bookmarked callback URLs without presenting the old, ambiguous explanation.
   no_pages: "No publishable Page was found. Reconnect to get a detailed connection result, or contact support.",
@@ -75,6 +77,12 @@ export function logFacebookOAuthResult(reference: string, outcome: FacebookOAuth
     unrecognizedTasks: safeCount(diagnostics.unrecognizedTasks),
     taskCounts: Object.fromEntries(DIAGNOSTIC_TASKS.filter((task) => diagnostics.taskCounts[task] !== undefined)
       .map((task) => [task, safeCount(diagnostics.taskCounts[task]!)])),
+    ...(diagnostics.directPageLookup ? { directPageLookup: {
+      attemptedPages: safeCount(diagnostics.directPageLookup.attemptedPages),
+      verifiedPages: safeCount(diagnostics.directPageLookup.verifiedPages),
+      rejectedPages: safeCount(diagnostics.directPageLookup.rejectedPages),
+      unavailablePages: safeCount(diagnostics.directPageLookup.unavailablePages),
+    } } : {}),
     ...(diagnostics.pageGrants ? { pageGrants: {
       status: ["verified", "invalid", "unavailable", "malformed"].includes(diagnostics.pageGrants.status) ? diagnostics.pageGrants.status : "malformed",
       scopeTargets: Object.fromEntries(FACEBOOK_SCOPES.map((scope) => {

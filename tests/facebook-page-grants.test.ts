@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FACEBOOK_SCOPES } from "@/lib/social/facebook-config";
-import { inspectFacebookPageGrants } from "@/lib/social/facebook-page-grants";
+import { inspectFacebookPageGrants, isFacebookPageTokenAuthorized } from "@/lib/social/facebook-page-grants";
 
 const now = 1_800_000_000;
 const data = {
@@ -10,7 +10,7 @@ const data = {
 };
 const inspect = (patch: Record<string, unknown> = {}) => inspectFacebookPageGrants({ data: { ...data, ...patch } }, "123", "111", now);
 
-describe("Facebook Page-specific authorization inspection (diagnostic only)", () => {
+describe("Facebook Page-specific authorization inspection", () => {
   it("intersects targets of all three Page permissions and deduplicates IDs", () => {
     const result = inspect({ granular_scopes: [
       { scope: "pages_show_list", target_ids: ["222", "333", "222"] },
@@ -62,6 +62,35 @@ describe("Facebook Page-specific authorization inspection (diagnostic only)", ()
       const result = inspectFacebookPageGrants(payload, "123", "111", now);
       expect(result.summary.status).toBe("malformed");
       expect(JSON.stringify(result)).not.toContain("private-token");
+    }
+  });
+});
+
+describe("direct Page publishing credential validation", () => {
+  const pageData = { ...data, type: "PAGE", profile_id: "222" };
+  const authorized = (patch: Record<string, unknown> = {}) => isFacebookPageTokenAuthorized({ data: { ...pageData, ...patch } }, "123", "111", "222", now);
+  it("requires a PAGE credential bound to the app, person and selected Page with all three scopes", () => {
+    expect(authorized()).toBe(true);
+    expect(authorized({ profile_id: 222 })).toBe(true);
+    expect(authorized({ expires_at: 0, data_access_expires_at: 0 })).toBe(true);
+    expect(authorized({ granular_scopes: FACEBOOK_SCOPES.map((scope) => ({ scope })) })).toBe(true);
+  });
+  it.each([
+    { type: "USER" }, { type: "APP" }, { type: undefined }, { profile_id: undefined }, { profile_id: "333" },
+    { app_id: "999" }, { user_id: "999" }, { user_id: undefined }, { is_valid: false },
+    { expires_at: now }, { expires_at: -1 }, { expires_at: undefined }, { data_access_expires_at: now - 1 },
+    { scopes: ["pages_show_list", "pages_read_engagement"] }, { scopes: undefined },
+    { granular_scopes: undefined }, { granular_scopes: [] },
+    { granular_scopes: [...pageData.granular_scopes, pageData.granular_scopes[0]] },
+    { granular_scopes: FACEBOOK_SCOPES.map((scope) => ({ scope, target_ids: scope === "pages_manage_posts" ? ["333"] : ["222"] })) },
+    { granular_scopes: FACEBOOK_SCOPES.map((scope) => ({ scope, target_ids: [] })) },
+    { profile_id: Number.MAX_SAFE_INTEGER + 1 }, { profile_id: "../me" },
+  ])("fails closed for missing, invalid, ambiguous or contradictory metadata %#", (patch) => {
+    expect(authorized(patch)).toBe(false);
+  });
+  it("does not accept an unreadable or provider-error payload", () => {
+    for (const payload of [null, {}, { error: { message: "private-token" } }, { data: [] }]) {
+      expect(isFacebookPageTokenAuthorized(payload, "123", "111", "222", now)).toBe(false);
     }
   });
 });

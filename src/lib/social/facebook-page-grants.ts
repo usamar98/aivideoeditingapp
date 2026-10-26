@@ -8,6 +8,7 @@ const targetId = z.union([
 ]);
 const debugSchema = z.object({ data: z.object({
   app_id: z.string(), user_id: z.string(), is_valid: z.boolean(),
+  type: z.string().optional(), profile_id: targetId.optional(),
   expires_at: z.number().int().nonnegative(), data_access_expires_at: z.number().int().nonnegative().optional(),
   scopes: z.array(z.string()).max(500),
   granular_scopes: z.array(z.object({
@@ -46,8 +47,8 @@ export function emptyFacebookPageGrantInspection(status: FacebookPageGrantInspec
   };
 }
 
-// Diagnostic only: granular targets are not proof of a content task or a Page token.
-// The IDs stay in request memory; only the fixed-label summary may be logged.
+// Granular targets alone are not proof of a content task or a Page token.
+// IDs stay server-side; only the fixed-label summary may be logged.
 export function inspectFacebookPageGrants(payload: unknown, appId: string, userId: string, now = Date.now() / 1000) {
   const parsed = debugSchema.safeParse(payload);
   if (!parsed.success) return { summary: emptyFacebookPageGrantInspection("malformed"), targets: [] as string[] };
@@ -77,4 +78,18 @@ export function inspectFacebookPageGrants(payload: unknown, appId: string, userI
     [...restricted[0]].filter((id) => restricted.every((selection) => selection.has(id)));
   summary.commonTargets = targets.length;
   return { summary, targets };
+}
+
+// An alternative to accounts-edge tasks, not a fabricated task: Meta must have
+// issued this specific Page a valid publishing-scoped PAGE credential for the
+// same app and authorizing person. Unknown/contradictory scope metadata fails closed.
+export function isFacebookPageTokenAuthorized(payload: unknown, appId: string, userId: string, pageId: string, now = Date.now() / 1000) {
+  const parsed = debugSchema.safeParse(payload);
+  if (!parsed.success || parsed.data.data.type !== "PAGE" || parsed.data.data.profile_id !== pageId) return false;
+  const { summary } = inspectFacebookPageGrants(payload, appId, userId, now);
+  if (summary.status !== "verified") return false;
+  return FACEBOOK_SCOPES.every((scope) => {
+    const rows = parsed.data.data.granular_scopes?.filter((entry) => entry.scope === scope) ?? [];
+    return rows.length === 1 && (rows[0].target_ids == null || rows[0].target_ids.includes(pageId));
+  });
 }

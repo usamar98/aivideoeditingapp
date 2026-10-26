@@ -2,10 +2,11 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { FACEBOOK_SCOPES, facebookConfig } from "./facebook-config";
 import { FACEBOOK_CONTENT_TASKS, FACEBOOK_OAUTH_NOTICES, facebookGrantDiagnostics, recordFacebookPageTasks, type FacebookGrantDiagnostics, type FacebookGrantFailure } from "./facebook-oauth-diagnostics";
-import { emptyFacebookPageGrantInspection, inspectFacebookPageGrants, type FacebookPageTokenProbe } from "./facebook-page-grants";
+import { emptyFacebookPageGrantInspection, inspectFacebookPageGrants, isFacebookPageTokenAuthorized, type FacebookPageTokenProbe } from "./facebook-page-grants";
 
 const idSchema = z.string().regex(/^\d{1,40}$/);
-const pageSchema = z.object({ id: idSchema, name: z.string().max(500), access_token: z.string().min(1), tasks: z.array(z.string()) });
+const accountPageSchema = z.object({ id: idSchema, name: z.string().max(500), access_token: z.string().min(1), tasks: z.array(z.string()) });
+const pageSchema = accountPageSchema.extend({ authorization: z.literal("direct_page_token").optional() });
 export type FacebookPage = z.infer<typeof pageSchema>;
 export const facebookGrantSchema = z.object({ userId: idSchema, token: z.string().min(1), pages: z.array(pageSchema).max(500) });
 export class FacebookError extends Error {
@@ -59,51 +60,71 @@ export async function exchangeFacebookCode(code: string) {
   const short = await exchange({ redirect_uri: config.redirectUri, code });
   return exchange({ grant_type: "fb_exchange_token", fb_exchange_token: short });
 }
-async function diagnoseFacebookPageToken(token: string, id: string, probe: FacebookPageTokenProbe) {
+async function inspectFacebookToken(token: string) {
+  const config = facebookConfig();
+  // App authentication and input_token stay server-side. Never log the URL/payload.
+  return graph("debug_token", `${config.appId}|${config.appSecret}`, { input_token: token }, "GET", 10_000);
+}
+async function requestFacebookPageToken(token: string, id: string, probe: FacebookPageTokenProbe) {
   probe.attemptedTargets++;
   try {
-    // Only the already-verified, explicitly authorized target is queried. This
-    // credential stays in request memory: never return, log, persist or use it.
+    // Only an already-verified, explicitly authorized target is queried. Token
+    // availability alone is insufficient: the caller must validate it before use.
     const page = z.object({ id: idSchema, access_token: z.string().trim().min(1).max(16_384).nullish() })
       .safeParse(await graph(id, token, { fields: "id,access_token" }, "GET", 10_000));
     if (!page.success || page.data.id !== id) probe.invalidResponses++;
-    else if (page.data.access_token) probe.tokensReturned++;
+    else if (page.data.access_token) { probe.tokensReturned++; return page.data.access_token; }
     else probe.missingTokens++;
   } catch (error) {
     if (error instanceof FacebookError && error.code === "rejected") probe.rejectedTargets++;
     else probe.unavailableTargets++;
   }
-  // Token availability is not proof of a publishing task. Do not make a grant.
+  return null;
 }
-async function diagnoseEmptyFacebookPages(token: string, userId: string, diagnostics: FacebookGrantDiagnostics) {
+async function recoverEmptyFacebookPages(token: string, userId: string, diagnostics: FacebookGrantDiagnostics): Promise<FacebookPage[]> {
   try {
     const config = facebookConfig();
-    // /debug_token requires app authentication. Both credentials remain server-side;
-    // this URL and its input_token must never be logged, persisted or sent to the UI.
-    const payload = await graph("debug_token", `${config.appId}|${config.appSecret}`, { input_token: token }, "GET", 10_000);
+    const payload = await inspectFacebookToken(token);
     const { summary, targets } = inspectFacebookPageGrants(payload, config.appId, userId);
     diagnostics.pageGrants = summary;
+    const lookup = diagnostics.directPageLookup = { attemptedPages: 0, verifiedPages: 0, rejectedPages: 0, unavailablePages: 0 };
     // Only intersected, provider-authorized IDs are probed, never user input or a
     // public Page search. Identity must match before the optional token probe.
     const selected = targets.slice(0, 5);
     summary.truncated = targets.length > selected.length;
-    await Promise.all(selected.map(async (id) => {
+    const pages = await Promise.all(selected.map(async (id): Promise<FacebookPage | null> => {
       summary.inspectedTargets++;
       try {
         const page = z.object({ id: idSchema }).safeParse(await graph(id, token, { fields: "id" }, "GET", 10_000));
         if (page.success && page.data.id === id) {
           summary.readableTargets++;
-          await diagnoseFacebookPageToken(token, id, summary.pageTokenProbe);
+          const pageToken = await requestFacebookPageToken(token, id, summary.pageTokenProbe);
+          if (pageToken) {
+            lookup.attemptedPages++;
+            try {
+              const verified = await verifyFacebookPage(pageToken, id, userId);
+              lookup.verifiedPages++;
+              // No CREATE_CONTENT task is invented. Provenance is retained in the
+              // encrypted pending grant so selection revalidates this credential.
+              return { ...verified, access_token: pageToken, tasks: [], authorization: "direct_page_token" };
+            } catch (error) {
+              if (error instanceof FacebookError && error.code === "rejected") lookup.rejectedPages++;
+              else lookup.unavailablePages++;
+            }
+          }
         }
         else summary.unavailableTargets++;
       } catch (error) {
         if (error instanceof FacebookError && error.code === "rejected") summary.rejectedTargets++;
         else summary.unavailableTargets++;
       }
+      return null;
     }));
+    return pages.filter((page): page is FacebookPage => page !== null);
   } catch {
-    // Optional inspection cannot replace the original result or expose errors.
+    // A failed fallback cannot fabricate a grant or expose provider errors.
     diagnostics.pageGrants = emptyFacebookPageGrantInspection("unavailable");
+    return [];
   }
 }
 export async function loadFacebookGrant(token: string) {
@@ -115,7 +136,7 @@ export async function loadFacebookGrant(token: string) {
   }
   const pages: FacebookPage[] = []; let after: string | undefined;
   for (let batch = 0; batch < 5; batch++) {
-    const result = z.object({ data: z.array(pageSchema), paging: z.object({ next: z.string().optional(), cursors: z.object({ after: z.string() }).optional() }).optional() })
+    const result = z.object({ data: z.array(accountPageSchema), paging: z.object({ next: z.string().optional(), cursors: z.object({ after: z.string() }).optional() }).optional() })
       .parse(await graph("me/accounts", token, { fields: "id,name,access_token,tasks", limit: "100", ...(after ? { after } : {}) }));
     for (const page of result.data) {
       const eligible = page.tasks.some((task) => FACEBOOK_CONTENT_TASKS.includes(task as typeof FACEBOOK_CONTENT_TASKS[number]));
@@ -126,14 +147,23 @@ export async function loadFacebookGrant(token: string) {
     after = result.paging.cursors?.after;
     if (!after || batch === 4) throw new FacebookError("rejected", "Too many Pages were returned. Reconnect and grant Create AI Videos access to fewer Pages.");
   }
-  if (!diagnostics.returnedPages) await diagnoseEmptyFacebookPages(token, me.id, diagnostics);
-  if (!pages.length) throw new FacebookGrantError(diagnostics.returnedPages ? "page_content_access_missing" : "pages_not_returned", diagnostics);
+  if (!diagnostics.returnedPages) {
+    pages.push(...await recoverEmptyFacebookPages(token, me.id, diagnostics));
+    diagnostics.eligiblePages = pages.length;
+  }
+  if (!pages.length) throw new FacebookGrantError(diagnostics.returnedPages ? "page_content_access_missing" : diagnostics.directPageLookup?.attemptedPages ? "page_token_access_unverified" : "pages_not_returned", diagnostics);
   return { userId: me.id, token, pages, diagnostics };
 }
-export async function verifyFacebookPage(token: string, id: string) {
-  const page = z.object({ id: idSchema, name: z.string() }).parse(await graph("me", token, { fields: "id,name" }));
-  if (page.id !== id) throw new FacebookError("reconnect", "Reconnect the original Facebook Page.");
-  return page;
+export async function verifyFacebookPage(token: string, id: string, authorizingUserId?: string) {
+  if (authorizingUserId !== undefined) {
+    idSchema.parse(id); idSchema.parse(authorizingUserId);
+    if (!isFacebookPageTokenAuthorized(await inspectFacebookToken(token), facebookConfig().appId, authorizingUserId, id)) {
+      throw new FacebookError("rejected", "Facebook did not confirm publishing permission for this Page. Check Page content access and reconnect.");
+    }
+  }
+  const page = z.object({ id: idSchema, name: z.string().trim().min(1).max(500) }).safeParse(await graph("me", token, { fields: "id,name" }, "GET", authorizingUserId === undefined ? 60_000 : 10_000));
+  if (!page.success || page.data.id !== id) throw new FacebookError(authorizingUserId === undefined ? "reconnect" : "rejected", "Reconnect the original Facebook Page.");
+  return page.data;
 }
 export async function revokeFacebookGrant(token: string) {
   try { const data = await graph("me/permissions", token, {}, "DELETE"); if (data.success !== true) throw new Error("Not confirmed"); }
