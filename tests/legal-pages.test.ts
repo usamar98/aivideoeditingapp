@@ -24,7 +24,7 @@ describe("public legal pages", () => {
     expect($("main h1").length).toBe(1);
     expect($("main h1").text()).toBe(title);
     expect($("main section").length).toBeGreaterThanOrEqual(10);
-    expect($("time").attr("datetime")).toBe("2026-10-15");
+    expect($("time").attr("datetime")).toBe("2026-10-27");
     expect($("main a[href='mailto:support@createaivideos.app']").length).toBeGreaterThan(0);
     expect(metadata.alternates?.canonical).toBe(`https://createaivideos.app${path}`);
     expect(metadata.title).toEqual({ absolute: `${title} | Create AI Videos` });
@@ -61,6 +61,16 @@ describe("public legal pages", () => {
     expect($("#credits").text()).toContain("not a refund of a subscription payment");
     expect($("#cancellation").text()).toContain("Cancelling a generation job does not cancel your subscription");
     expect($("#responsibility").text()).toContain("cannot legally be excluded");
+  });
+
+  it("explains TikTok consent, private testing, media-link expiry and disconnect limits", () => {
+    const privacy = load(renderToStaticMarkup(createElement(PrivacyPage)));
+    const terms = load(renderToStaticMarkup(createElement(TermsPage)));
+    expect(privacy("#tiktok").text()).toContain("encrypted access and refresh tokens");
+    expect(privacy("#tiktok").text()).toContain("expires after two hours");
+    expect(privacy("#tiktok").text()).toContain("cannot recall");
+    expect(terms("#tiktok").text()).toContain("private TikTok accounts and Only me");
+    expect(terms("#tiktok a").map((_, el) => terms(el).attr("href")).get()).toContain("https://www.tiktok.com/legal/page/global/music-usage-confirmation/en");
   });
 
   it("links both policies from the shared homepage footer", () => {
