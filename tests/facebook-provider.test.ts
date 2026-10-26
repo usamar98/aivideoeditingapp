@@ -104,11 +104,13 @@ describe("Facebook provider and request validation", () => {
           { scope: "pages_read_engagement", target_ids: ["222", "333"] },
           { scope: "pages_manage_posts", target_ids: ["222"] },
         ],
-      } })).mockResolvedValueOnce(json({ id: "222", name: "private-page-name", access_token: "must-not-be-used" }));
+      } })).mockResolvedValueOnce(json({ id: "222", name: "private-page-name", access_token: "must-not-be-used" }))
+      .mockResolvedValueOnce(json({ id: "222", access_token: "diagnostic-only-page-token" }));
     const failure = await loadFacebookGrant("private-user-token").catch((error: unknown) => error) as FacebookGrantError;
     expect(failure.outcome).toBe("pages_not_returned");
-    expect(failure.diagnostics.pageGrants).toMatchObject({ status: "verified", commonTargets: 1, inspectedTargets: 1, readableTargets: 1 });
-    expect(JSON.stringify(failure)).not.toMatch(/private-user-token|private-page-name|must-not-be-used|222|333/);
+    expect(failure.diagnostics.pageGrants).toMatchObject({ status: "verified", commonTargets: 1, inspectedTargets: 1, readableTargets: 1,
+      pageTokenProbe: { attemptedTargets: 1, tokensReturned: 1, missingTokens: 0, rejectedTargets: 0, unavailableTargets: 0, invalidResponses: 0 } });
+    expect(JSON.stringify(failure)).not.toMatch(/private-user-token|private-page-name|must-not-be-used|diagnostic-only-page-token|222|333/);
     const [debugUrl, debugRequest] = fetcher.mock.calls[3];
     expect(new URL(debugUrl).pathname).toBe("/v25.0/debug_token");
     expect(new URL(debugUrl).searchParams.get("input_token")).toBe("private-user-token");
@@ -118,10 +120,13 @@ describe("Facebook provider and request validation", () => {
     expect(new URL(pageUrl).pathname).toBe("/v25.0/222");
     expect(new URL(pageUrl).searchParams.get("fields")).toBe("id");
     expect(pageRequest.headers.Authorization).toBe("Bearer private-user-token");
+    const [tokenUrl] = fetcher.mock.calls[5];
+    expect(new URL(tokenUrl).pathname).toBe("/v25.0/222");
+    expect(new URL(tokenUrl).searchParams.get("fields")).toBe("id,access_token");
     for (const [, options] of fetcher.mock.calls) {
       expect(options.method).toBe("GET"); expect(options.cache).toBe("no-store"); expect(options.redirect).toBe("error");
     }
-    expect(fetcher).toHaveBeenCalledTimes(5);
+    expect(fetcher).toHaveBeenCalledTimes(6);
   });
   it("limits empty-list Page probes to five and reports read rejections and identity mismatches honestly", async () => {
     const targets = Array.from({ length: 6 }, (_, i) => String(i + 222));
@@ -134,11 +139,14 @@ describe("Facebook provider and request validation", () => {
       .mockResolvedValueOnce(json({ error: { code: 10, message: "private-provider-error" } }, 403))
       .mockResolvedValueOnce(json({ id: "999" }))
       .mockResolvedValueOnce(json({ error: { is_transient: true } }, 503))
+      .mockResolvedValueOnce(json({ id: "226" }))
+      .mockResolvedValueOnce(json({ id: "222", access_token: "diagnostic-page-token" }))
       .mockResolvedValueOnce(json({ id: "226" }));
     await expect(loadFacebookGrant("token")).rejects.toMatchObject({ outcome: "pages_not_returned", diagnostics: { pageGrants: {
       status: "verified", commonTargets: 6, inspectedTargets: 5, readableTargets: 2, rejectedTargets: 1, unavailableTargets: 2, truncated: true,
+      pageTokenProbe: { attemptedTargets: 2, tokensReturned: 1, missingTokens: 1 },
     } } });
-    expect(fetcher).toHaveBeenCalledTimes(9);
+    expect(fetcher).toHaveBeenCalledTimes(11);
   });
   it("never probes targets from an invalid token or makes empty-list inspection mandatory for working connections", async () => {
     fetcher.mockResolvedValueOnce(json({ id: "111" }))

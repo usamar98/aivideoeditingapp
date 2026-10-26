@@ -89,6 +89,14 @@ export function logFacebookOAuthResult(reference: string, outcome: FacebookOAuth
       readableTargets: safeCount(diagnostics.pageGrants.readableTargets),
       rejectedTargets: safeCount(diagnostics.pageGrants.rejectedTargets),
       unavailableTargets: safeCount(diagnostics.pageGrants.unavailableTargets),
+      pageTokenProbe: {
+        attemptedTargets: safeCount(diagnostics.pageGrants.pageTokenProbe?.attemptedTargets ?? 0),
+        tokensReturned: safeCount(diagnostics.pageGrants.pageTokenProbe?.tokensReturned ?? 0),
+        missingTokens: safeCount(diagnostics.pageGrants.pageTokenProbe?.missingTokens ?? 0),
+        rejectedTargets: safeCount(diagnostics.pageGrants.pageTokenProbe?.rejectedTargets ?? 0),
+        unavailableTargets: safeCount(diagnostics.pageGrants.pageTokenProbe?.unavailableTargets ?? 0),
+        invalidResponses: safeCount(diagnostics.pageGrants.pageTokenProbe?.invalidResponses ?? 0),
+      },
       truncated: diagnostics.pageGrants.truncated === true,
     } } : {}),
   } : undefined;

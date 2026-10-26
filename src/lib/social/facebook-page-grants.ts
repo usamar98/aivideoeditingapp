@@ -15,6 +15,15 @@ const debugSchema = z.object({ data: z.object({
   })).max(500).optional(),
 }) });
 
+export type FacebookPageTokenProbe = {
+  attemptedTargets: number;
+  tokensReturned: number;
+  missingTokens: number;
+  rejectedTargets: number;
+  unavailableTargets: number;
+  invalidResponses: number;
+};
+
 export type FacebookPageGrantInspection = {
   status: "verified" | "invalid" | "unavailable" | "malformed";
   scopeTargets: Record<typeof FACEBOOK_SCOPES[number], { selection: "all" | "selected" | "unknown"; count: number }>;
@@ -23,6 +32,7 @@ export type FacebookPageGrantInspection = {
   readableTargets: number;
   rejectedTargets: number;
   unavailableTargets: number;
+  pageTokenProbe: FacebookPageTokenProbe;
   truncated: boolean;
 };
 
@@ -30,7 +40,9 @@ export function emptyFacebookPageGrantInspection(status: FacebookPageGrantInspec
   return {
     status,
     scopeTargets: Object.fromEntries(FACEBOOK_SCOPES.map((scope) => [scope, { selection: "unknown", count: 0 }])) as FacebookPageGrantInspection["scopeTargets"],
-    commonTargets: 0, inspectedTargets: 0, readableTargets: 0, rejectedTargets: 0, unavailableTargets: 0, truncated: false,
+    commonTargets: 0, inspectedTargets: 0, readableTargets: 0, rejectedTargets: 0, unavailableTargets: 0,
+    pageTokenProbe: { attemptedTargets: 0, tokensReturned: 0, missingTokens: 0, rejectedTargets: 0, unavailableTargets: 0, invalidResponses: 0 },
+    truncated: false,
   };
 }
 

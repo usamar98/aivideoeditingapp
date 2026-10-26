@@ -107,18 +107,32 @@ When `/me/accounts` completes successfully with zero Pages, the server additiona
 
 The `pageGrants` summary checks token validity, app/user identity, expiry and the three scopes, then records each scope's target selection as `selected`, `all` or `unknown` plus a count. A present granular scope without `target_ids` means all; an absent or duplicate scope is treated as unknown, and an explicit empty array remains empty. `commonTargets` counts the intersection of explicit targets permitted by all three scopes. An all-Pages grant does not provide IDs to enumerate.
 
-At most five common target IDs receive parallel, read-only `GET /{page-id}?fields=id` probes. A matching identity increments `readableTargets`; an API denial increments `rejectedTargets`; transport failures, malformed responses and identity mismatches increment `unavailableTargets`. `truncated` means more targets existed than the bounded probe inspected. The token inspection and each probe have a ten-second timeout. No Page tokens are fetched by these probes, no provider IDs are logged or persisted, and no posts are created.
+At most five common target IDs receive parallel, read-only `GET /{page-id}?fields=id` probes. A matching identity increments `readableTargets`; an API denial increments `rejectedTargets`; transport failures, malformed responses and identity mismatches increment `unavailableTargets`. `truncated` means more targets existed than the bounded probe inspected.
+
+For each matching identity only, the server makes one additional read-only `GET /{page-id}?fields=id,access_token` request to check direct Page-token availability. The Page ID must come from the verified intersection above, never user input, public search, or an invented all-Pages target. A credential returned by this optional check stays only in request memory: it is not logged, persisted, saved with a pending grant, exposed to the browser, used for another API call, or treated as permission to publish. The original `pages_not_returned` outcome and existing publishing-task checks are unchanged, even when Meta returns a token.
+
+`pageGrants.pageTokenProbe` reports only fixed counters:
+
+- `attemptedTargets`: direct token requests attempted after a matching identity read; at most five.
+- `tokensReturned`: responses with the expected Page ID and a nonempty token string within the token-length validation limit. This is availability only, **not** verification that the token can publish.
+- `missingTokens`: matching Page responses with an omitted or null token.
+- `invalidResponses`: malformed responses, invalid token values, or a different/missing Page ID. A token for the wrong Page never counts as returned.
+- `rejectedTargets`: non-transient Meta denials of the optional request.
+- `unavailableTargets`: expired authentication, rate limiting, transient failures, timeouts, or transport/unreadable-response failures.
+
+The token inspection, each identity probe, and each optional token probe have separate ten-second deadlines, with no automatic retry. Identity probes run in parallel; each readable target can add one sequential token probe, so the bounded optional inspection can take roughly thirty seconds including the initial token inspection. A failed optional token probe cannot erase a successful identity read or replace the original Page-list outcome. No provider IDs, names, credentials, raw errors, or request URLs are logged, and no posts are created. This change needs no new environment variables, database migration, or Trigger.dev deployment; it takes effect in the website deployment.
 
 Interpret results carefully:
 
 - A verified explicit empty/disjoint selection suggests the permissions did not authorize the same Page. Review the user's Page selection and business asset assignment.
 - Common targets with readable identities but an empty accounts edge isolate a Page-listing/discovery discrepancy. A readable Page ID is **not** evidence of a publishing task; publishing remains blocked.
+- A positive `pageTokenProbe.tokensReturned` narrows that discrepancy further: Meta provided a token via a direct, already-authorized Page lookup despite the empty list. It does not make a connection or establish publishing eligibility. A denial or missing token distinguishes identity readability from credential availability; counters alone do not prove the underlying cause.
 - Rejected probes indicate that Meta did not permit that identity read. Review Page restrictions, Page/business access and business-required two-factor authentication; do not assume one cause from a count alone.
 - `invalid`, `malformed`, `unavailable` or unknown selection is inconclusive. Optional inspection never replaces the original empty-list outcome with a fabricated success or a different provider error.
 
 The current implementation deliberately does not query business inventories or blindly substitute `/me/assigned_pages`: Meta documents that edge for a business-scoped user, whereas this app uses an ordinary user-token login. Do not add `business_management`, change token type, invent a business/user ID, loosen content-task checks or ask customers to paste tokens as a workaround. A separate business integration would require a supported design and explicit approval for any expanded permissions.
 
-Reference checked against Meta's v26.0 documentation on 2026-10-16: [token inspection](https://developers.facebook.com/docs/graph-api/reference/debug_token/), [user accounts](https://developers.facebook.com/docs/graph-api/reference/user/accounts/), [business-scoped assigned Pages](https://developers.facebook.com/docs/graph-api/reference/user/assigned_pages/) and [Page identity fields](https://developers.facebook.com/docs/graph-api/reference/page/). The runtime still uses the operator-configured supported API version, not a new hard-coded version.
+Reference checked against Meta's v26.0 documentation on 2026-10-16: [token inspection](https://developers.facebook.com/docs/graph-api/reference/debug_token/), [user accounts](https://developers.facebook.com/docs/graph-api/reference/user/accounts/), [business-scoped assigned Pages](https://developers.facebook.com/docs/graph-api/reference/user/assigned_pages/) and [Page identity fields](https://developers.facebook.com/docs/graph-api/reference/page/). Direct Page-token lookup was additionally checked on 2026-10-26 against [Meta's official API collection](https://www.postman.com/meta/facebook/request/tass6hw/get-specific-page-access-token). The runtime still uses the operator-configured supported API version, not a new hard-coded version.
 
 ## References
 

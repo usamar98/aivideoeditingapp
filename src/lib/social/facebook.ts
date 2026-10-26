@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { FACEBOOK_SCOPES, facebookConfig } from "./facebook-config";
 import { FACEBOOK_CONTENT_TASKS, FACEBOOK_OAUTH_NOTICES, facebookGrantDiagnostics, recordFacebookPageTasks, type FacebookGrantDiagnostics, type FacebookGrantFailure } from "./facebook-oauth-diagnostics";
-import { emptyFacebookPageGrantInspection, inspectFacebookPageGrants } from "./facebook-page-grants";
+import { emptyFacebookPageGrantInspection, inspectFacebookPageGrants, type FacebookPageTokenProbe } from "./facebook-page-grants";
 
 const idSchema = z.string().regex(/^\d{1,40}$/);
 const pageSchema = z.object({ id: idSchema, name: z.string().max(500), access_token: z.string().min(1), tasks: z.array(z.string()) });
@@ -59,6 +59,22 @@ export async function exchangeFacebookCode(code: string) {
   const short = await exchange({ redirect_uri: config.redirectUri, code });
   return exchange({ grant_type: "fb_exchange_token", fb_exchange_token: short });
 }
+async function diagnoseFacebookPageToken(token: string, id: string, probe: FacebookPageTokenProbe) {
+  probe.attemptedTargets++;
+  try {
+    // Only the already-verified, explicitly authorized target is queried. This
+    // credential stays in request memory: never return, log, persist or use it.
+    const page = z.object({ id: idSchema, access_token: z.string().trim().min(1).max(16_384).nullish() })
+      .safeParse(await graph(id, token, { fields: "id,access_token" }, "GET", 10_000));
+    if (!page.success || page.data.id !== id) probe.invalidResponses++;
+    else if (page.data.access_token) probe.tokensReturned++;
+    else probe.missingTokens++;
+  } catch (error) {
+    if (error instanceof FacebookError && error.code === "rejected") probe.rejectedTargets++;
+    else probe.unavailableTargets++;
+  }
+  // Token availability is not proof of a publishing task. Do not make a grant.
+}
 async function diagnoseEmptyFacebookPages(token: string, userId: string, diagnostics: FacebookGrantDiagnostics) {
   try {
     const config = facebookConfig();
@@ -68,14 +84,17 @@ async function diagnoseEmptyFacebookPages(token: string, userId: string, diagnos
     const { summary, targets } = inspectFacebookPageGrants(payload, config.appId, userId);
     diagnostics.pageGrants = summary;
     // Only intersected, provider-authorized IDs are probed, never user input or a
-    // public Page search. Read identity only; do not retrieve extra Page credentials.
+    // public Page search. Identity must match before the optional token probe.
     const selected = targets.slice(0, 5);
     summary.truncated = targets.length > selected.length;
     await Promise.all(selected.map(async (id) => {
       summary.inspectedTargets++;
       try {
         const page = z.object({ id: idSchema }).safeParse(await graph(id, token, { fields: "id" }, "GET", 10_000));
-        if (page.success && page.data.id === id) summary.readableTargets++;
+        if (page.success && page.data.id === id) {
+          summary.readableTargets++;
+          await diagnoseFacebookPageToken(token, id, summary.pageTokenProbe);
+        }
         else summary.unavailableTargets++;
       } catch (error) {
         if (error instanceof FacebookError && error.code === "rejected") summary.rejectedTargets++;

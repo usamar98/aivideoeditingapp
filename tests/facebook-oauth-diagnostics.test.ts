@@ -41,10 +41,14 @@ describe("Facebook OAuth diagnostics privacy and notices", () => {
     Object.assign(diagnostics.pageGrants.scopeTargets, { "private-scope": { count: 1 } });
     Object.assign(diagnostics.pageGrants.scopeTargets.pages_show_list, { target_ids: ["private-page-id"] });
     Object.assign(diagnostics.pageGrants.scopeTargets.pages_manage_posts, { selection: "private-selection", count: -1 });
+    Object.assign(diagnostics.pageGrants.pageTokenProbe, { attemptedTargets: 1, tokensReturned: 1, missingTokens: -1,
+      rejectedTargets: Infinity, unavailableTargets: NaN, invalidResponses: "private-count", access_token: "private-page-token", pageId: "private-page-id" });
     logFacebookOAuthResult(randomUUID(), "pages_not_returned", "page_discovery", diagnostics);
     const logged = JSON.parse(warning.mock.calls[0][0]).diagnostics.pageGrants;
     expect(logged.scopeTargets.pages_show_list).toEqual({ selection: "selected", count: 2 });
     expect(logged.scopeTargets.pages_manage_posts).toEqual({ selection: "unknown", count: 0 });
+    expect(logged.pageTokenProbe).toEqual({ attemptedTargets: 1, tokensReturned: 1, missingTokens: 0,
+      rejectedTargets: 0, unavailableTargets: 0, invalidResponses: 0 });
     expect(warning.mock.calls[0][0]).not.toContain("private-");
   });
   it("shows distinct instructions and a validated support reference only for failures", () => {
