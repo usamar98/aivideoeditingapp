@@ -96,13 +96,19 @@ export function artifactStore(bucket: Bucket, prefix: string, signal: AbortSigna
   };
 }
 
+export function isFalMediaUrl(raw: string) {
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" && !url.username && !url.password && (!url.port || url.port === "443") &&
+      (url.hostname === "fal.media" || url.hostname.endsWith(".fal.media") ||
+        (url.hostname === "storage.googleapis.com" && url.pathname.startsWith("/falserverless/")));
+  } catch { return false; }
+}
+
 export async function downloadProviderImage(raw: string, destination: string, signal: AbortSignal) {
-  const url = new URL(raw);
-  if (url.protocol !== "https:" || !(url.hostname === "fal.media" || url.hostname.endsWith(".fal.media"))) {
-    throw new Error("Unexpected image download host");
-  }
+  if (!isFalMediaUrl(raw)) throw new Error("Unexpected image download host");
   const transferSignal = AbortSignal.any([signal, AbortSignal.timeout(60_000)]);
-  const response = await fetch(url, { redirect: "error", signal: transferSignal });
+  const response = await fetch(new URL(raw), { redirect: "error", signal: transferSignal });
   if (!response.ok || !response.headers.get("content-type")?.startsWith("image/")) {
     await response.body?.cancel();
     throw new Error("Image download failed");

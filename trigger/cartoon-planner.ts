@@ -1,8 +1,7 @@
 import { z } from "zod";
-import type { FalClient } from "@fal-ai/client";
 import { cartoonStorySchema, cartoonSceneSchema, filmStorySchema } from "../src/lib/cartoons/schema";
 import { MEDIA_LIMITS } from "./media-io";
-import { CARTOON_PLANNER_ENDPOINT, CARTOON_PLANNER_MODEL, runFalStage } from "./cartoon-fal";
+import { CARTOON_PLANNER_ENDPOINT, CARTOON_PLANNER_MODEL, runFalStage, type FalStageClient } from "./cartoon-fal";
 
 export { CARTOON_PLANNER_MODEL, CARTOON_PLANNER_ENDPOINT } from "./cartoon-fal";
 export type PlannerInput = ({ type: "text"; text: string } | { type: "image"; data: string; mime_type: string })[];
@@ -85,7 +84,7 @@ function legacyPlannerOutputText(raw: unknown) {
 }
 
 export async function runCartoonPlanner(options: {
-  input: PlannerInput; client: FalClient; signal: AbortSignal; store: Store;
+  input: PlannerInput; client: FalStageClient; signal: AbortSignal; store: Store;
   checkpoint: () => Promise<void>; pause: () => Promise<unknown>;
   film?: boolean; repair?: boolean;
 }) {

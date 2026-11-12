@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowRight, Captions, House, Film, Mic, Scissors, Repeat2 } from "lucide-react";
 import { ExampleVisual } from "./example-visual";
+import { PreviewVideo } from "./preview-video";
 import { UpcomingFeatures } from "./upcoming-features";
 
 const liveCards = [
@@ -30,11 +31,18 @@ export function FeatureGrid({ published, mode = "marketing", linkTarget = mode =
   return <div className={gridClassName} data-testid="feature-grid">
     {published.includes("ai-ad-remake") ? <article data-feature="ai-ad-remake" className="overflow-hidden rounded-2xl border border-border bg-card"><Link href={studioLinks ? "/studio/ad-remake" : "/features/ai-ad-remake"} aria-label="Ad Remake" className="group flex h-full flex-col hover:bg-accent/40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"><div className="relative flex aspect-video items-center justify-center gap-5 bg-[#183f3e] p-6 text-[#f4eedf]"><div className="rounded-xl border border-white/20 p-5 text-xs">REFERENCE</div><Repeat2 className="size-7"/><div className="rounded-xl border border-white/20 p-5 text-xs">YOUR PRODUCT</div><span className="absolute bottom-2 text-[9px] uppercase tracking-wider text-white/60">Workflow illustration · Not generated footage</span></div><Heading className="p-6 text-xl font-semibold group-hover:text-primary">Ad Remake</Heading></Link></article> : null}
     {published.includes("ai-real-estate-video-generator") && <article data-feature="ai-real-estate-video-generator" className="overflow-hidden rounded-2xl border border-border bg-card"><Link href={studioLinks ? "/studio/real-estate" : "/features/ai-real-estate-video-generator"} aria-label="Real estate video studio" className="group flex h-full flex-col hover:bg-accent/40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"><div className="relative flex aspect-video items-center justify-center gap-3 bg-[#183f3e] px-6 text-[#f4eedf]" aria-label="Illustration of a room-by-room listing tour">{["EXTERIOR", "LIVING", "DETAILS"].map((label, i) => <div key={label} className="flex h-24 flex-1 flex-col justify-end rounded-lg border border-white/20 bg-white/5 p-3"><House className="mb-auto size-5 opacity-70"/><span className="text-[8px] tracking-wider">0{i + 1} / {label}</span></div>)}<span className="absolute bottom-2 text-[9px] uppercase tracking-wider text-white/60">Workflow illustration · Not generated footage</span></div><Heading className="p-6 text-xl font-semibold group-hover:text-primary">Real estate video studio</Heading></Link></article>}
-    {liveCards.filter((card) => published.includes(card.slug)).map((card) => <article data-feature={card.slug} key={card.slug} className="overflow-hidden rounded-2xl border border-border bg-card">
+    {liveCards.filter((card) => published.includes(card.slug)).map((card) => <article data-feature={card.slug} key={card.slug} className="relative overflow-hidden rounded-2xl border border-border bg-card">
       <Link href={studioLinks ? card.studioHref : `/features/${card.slug}`} aria-label={card.title} className="group flex h-full flex-col transition-colors hover:bg-accent/40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary">
-        <ExampleVisual variant={card.variant} sizes={imageSizes} loading={studio && card.variant === "faceless" ? "eager" : "lazy"} className="shrink-0" />
+        {card.variant === "faceless" ? <span aria-hidden className="aspect-video shrink-0 bg-[#162a49]" /> : <ExampleVisual variant={card.variant} sizes={imageSizes} className="shrink-0" />}
         <Heading className="p-6 text-xl font-semibold transition-colors group-hover:text-primary">{card.title}</Heading>
       </Link>
+      {card.variant === "faceless" && <PreviewVideo
+        src="/examples/faceless-story.mp4"
+        poster="/examples/faceless-story-poster.jpg"
+        label="Captioned faceless story sample. The stars went quiet. One light answered. It was home."
+        width={960} height={540}
+        className="pointer-events-none absolute inset-x-0 top-0 aspect-video overflow-hidden bg-[#162a49] [&_button]:pointer-events-auto [&_button]:opacity-100"
+      />}
     </article>)}
     {published.includes("ai-short-film-generator") && <article data-feature="ai-short-film-generator" className="overflow-hidden rounded-2xl border border-border bg-card"><Link href={studioLinks ? "/studio/films" : "/features/ai-short-film-generator"} aria-label="AI Short Film" className="group flex h-full flex-col hover:bg-accent/40 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"><div className="relative flex aspect-video items-center justify-center gap-3 bg-[#12202b] px-6 text-[#f4dfb8]" aria-label="Illustration of a three-shot film plan">{["SETUP","TURN","RESOLVE"].map((label,i)=><div key={label} className="flex h-24 flex-1 flex-col justify-end rounded-lg border border-white/20 bg-white/5 p-3"><Film className="mb-auto size-5 opacity-70"/><span className="text-[9px] tracking-widest">0{i+1} / {label}</span></div>)}<span className="absolute bottom-2 text-[9px] uppercase tracking-wider text-white/60">Workflow illustration · Not generated footage</span></div><Heading className="p-6 text-xl font-semibold group-hover:text-primary">AI Short Film</Heading></Link></article>}
     {published.includes("podcast-to-shorts") && <article data-feature="podcast-to-shorts" className="overflow-hidden rounded-2xl border border-border bg-card">

@@ -1,4 +1,4 @@
-import { createFalClient, type FalClient } from "@fal-ai/client";
+import { createFalClient } from "@fal-ai/client";
 import { z } from "zod";
 import { CHARACTER_IMAGE_MODEL, cartoonModels } from "../src/lib/cartoons/schema";
 import { MEDIA_LIMITS, readBoundedBody } from "./media-io";
@@ -8,6 +8,7 @@ import { SHORTS_TRANSCRIPTION_MODEL } from "../src/lib/shorts/schema";
 import { PRESENTER_MODEL } from "../src/lib/presenter/schema";
 import { ESTATE_TTS } from "../src/lib/real-estate/schema";
 import { adRemakeModels } from "../src/lib/ad-remake/schema";
+import { LEGACY_FACELESS_ENDPOINT, facelessImageEndpoints } from "../src/lib/faceless/models";
 import { AbortTaskRunError } from "@trigger.dev/sdk";
 
 // Verified against fal's OpenRouter catalog on 2026-09-24. Server-owned, never user supplied.
@@ -29,22 +30,25 @@ export function cartoonFalClient() {
   const client = createFalClient({ credentials: key, retry: { maxRetries: 0 } });
   // SDK 1.10.1 queue.submit overrides config.retry with three retries. Use a
   // single native POST for this non-idempotent operation; retain SDK read/cancel.
-  const allowed = new Set([ESTATE_TTS, PRESENTER_MODEL, SHORTS_TRANSCRIPTION_MODEL, CARTOON_PLANNER_ENDPOINT, UGC_AVATAR_MODEL, `${CHARACTER_IMAGE_MODEL}/text-to-image`, `${CHARACTER_IMAGE_MODEL}/edit`, ...Object.values(cartoonModels).map((model) => model.endpoint), ...Object.values(adRemakeModels).map(model => model.endpoint)]);
-  client.queue.submit = async (endpoint, options) => {
+  const allowed = new Set([ESTATE_TTS, PRESENTER_MODEL, SHORTS_TRANSCRIPTION_MODEL, CARTOON_PLANNER_ENDPOINT, UGC_AVATAR_MODEL, `${CHARACTER_IMAGE_MODEL}/text-to-image`, `${CHARACTER_IMAGE_MODEL}/edit`, ...Object.values(cartoonModels).map((model) => model.endpoint), ...Object.values(adRemakeModels).map(model => model.endpoint), ...Object.values(facelessImageEndpoints), LEGACY_FACELESS_ENDPOINT]);
+  async function submit(endpoint: string, options: { input: Record<string, unknown>; abortSignal?: AbortSignal }) {
     if (!allowed.has(endpoint)) throw new Error("Cartoon model is not allowlisted");
-    if (endpoint === CARTOON_PLANNER_ENDPOINT && (options.input as { model?: unknown } | undefined)?.model !== CARTOON_PLANNER_MODEL) throw new Error("Cartoon planner model is not allowlisted");
+    if (endpoint === CARTOON_PLANNER_ENDPOINT && options.input.model !== CARTOON_PLANNER_MODEL) throw new Error("Cartoon planner model is not allowlisted");
     const signal = options.abortSignal || AbortSignal.timeout(60_000);
     const response = await fetch(`https://queue.fal.run/${endpoint}`, { method: "POST", redirect: "error", signal,
       headers: { Authorization: `Key ${key}`, "Content-Type": "application/json", "X-Fal-Request-Timeout": "300" }, body: JSON.stringify(options.input) });
     if (!response.ok) { await response.body?.cancel(); throw Object.assign(new Error("fal submission rejected"), { status: response.status }); }
     if (!response.body) throw new Error("fal submission returned no body");
-    return z.object({ status: z.literal("IN_QUEUE"), request_id: z.string().min(1), response_url: z.string(), status_url: z.string(), cancel_url: z.string(), queue_position: z.number() })
+    // This ID is sufficient to resume even when the receipt omits tracking fields.
+    return z.object({ request_id: z.string().min(1) })
       .parse(JSON.parse((await readBoundedBody(response.body, MEDIA_LIMITS.json, signal)).toString()));
-  };
-  return client;
+  }
+  const { status, result, cancel } = client.queue;
+  return { queue: { submit, status, result, cancel } };
 }
+export type FalStageClient = ReturnType<typeof cartoonFalClient>;
 export async function runFalStage(options: {
-  client: FalClient; store: Store; name: string; endpoint: string; input: Record<string, unknown>;
+  client: FalStageClient; store: Store; name: string; endpoint: string; input: Record<string, unknown>;
   model?: string;
   signal: AbortSignal; checkpoint: () => Promise<void>; pause: () => Promise<unknown>;
 }) {
@@ -58,7 +62,9 @@ export async function runFalStage(options: {
   let timedOut = false;
   try {
     if (saved) {
-      const record = requestRecordSchema.parse(JSON.parse(saved.toString()));
+      // The original faceless worker recorded only the request ID for Schnell.
+      const raw = JSON.parse(saved.toString());
+      const record = requestRecordSchema.parse(endpoint === LEGACY_FACELESS_ENDPOINT ? { endpoint, ...raw } : raw);
       if (record.endpoint !== endpoint) throw new Error("Saved provider model does not match");
       if (model && record.model !== model) throw new Error("Saved planner model does not match");
       requestId = record.requestId;
@@ -67,7 +73,7 @@ export async function runFalStage(options: {
       if (await store.load(`${name}-intent.json`)) throw new Error("Provider submission was uncertain. Contact support; it will not be submitted again automatically.");
       await store.save(`${name}-intent.json`, { endpoint, ...(model ? { model } : {}), submittedAt: new Date().toISOString() });
       await checkpoint();
-      const submitted = await withRequestDeadline(signal, 60_000, (submitSignal) => client.queue.submit(endpoint, { input, startTimeout: 300, abortSignal: submitSignal }));
+      const submitted = await withRequestDeadline(signal, 60_000, (submitSignal) => client.queue.submit(endpoint, { input, abortSignal: submitSignal }));
       requestId = submitted.request_id;
       await store.save(`${name}-request.json`, { endpoint, requestId, ...(model ? { model } : {}) });
       requestSaved = true;

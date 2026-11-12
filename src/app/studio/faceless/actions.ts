@@ -6,12 +6,14 @@ import { tasks } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { requireAccount, publicError } from "@/lib/account";
 import { briefSchema, storyboardSchema, scriptToStoryboard, validateNarration } from "@/lib/faceless/schema";
+import { DEFAULT_FACELESS_IMAGE_MODEL } from "@/lib/faceless/models";
 import { recordDispatchFailure, type JobStage } from "@/lib/jobs/diagnostics";
 import type { facelessPipeline } from "../../../../trigger/faceless-pipeline";
 
 export async function createFacelessProject(input: unknown) {
   try {
-    const brief = briefSchema.parse(input);
+    const parsed = briefSchema.parse(input);
+    const brief = { ...parsed, imageModel: parsed.imageModel ?? DEFAULT_FACELESS_IMAGE_MODEL };
     const account = await requireAccount();
     const storyboard = brief.mode === "script" ? scriptToStoryboard(brief) : null;
     const {count,error:countError} = await account.db.from("faceless_projects").select("id",{count:"exact",head:true}).gte("created_at",new Date(Date.now()-86400000).toISOString());

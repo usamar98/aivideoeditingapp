@@ -14,9 +14,9 @@ Reviewed September 22, 2026 using official product descriptions (not signed-in p
 - Gemini-generated storyboard, or user-written narration, persisted to a private project.
 - Review title, narration, visual prompts, scene order; add/remove scenes; save before render.
 - Landscape/vertical, approximately 30/60 seconds, cinematic/illustration/watercolor prompts, English/Spanish/French.
-- fal FLUX Schnell still images, ElevenLabs narration/timing, FFmpeg MP4 assembly and optional burned captions.
+- FLUX.3 Klein or Nano Banana 2.1 scene images on fal, ElevenLabs narration and timing, FFmpeg MP4 assembly and optional burned captions.
 - Checkpointed intermediate artifacts, saved job IDs, atomic credit reservation/refund, private signed downloads.
 
 This is narrated AI still-image video, not generated moving footage. It does not include stock-footage search, background music, voice cloning, arbitrary voice selection, social publishing, URL ingestion, or automatic fact verification. Review factual claims and media rights before publishing. Illustrations and the demo storyboard are explicitly labelled and do not pretend to be provider-generated videos.
 
-Provider references: [fal API](https://fal.ai/models/fal-ai/flux/schnell/api), [Gemini structured output](https://ai.google.dev/gemini-api/docs/structured-output), [Stripe portal](https://docs.stripe.com/customer-management).
+Provider references include [FLUX.3 Klein](https://fal.ai/models/blackforestlabs/flux-3/klein/text-to-image/api), [Nano Banana 2.1](https://fal.ai/models/google/nano-banana-2.1/api), [Gemini structured output](https://ai.google.dev/gemini-api/docs/structured-output) and the [Stripe portal](https://docs.stripe.com/customer-management).

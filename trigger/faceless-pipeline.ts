@@ -6,13 +6,14 @@ import { promisify } from "node:util";
 import { schemaTask, metadata, wait } from "@trigger.dev/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenAI } from "@google/genai";
-import { fal } from "@fal-ai/client";
 import { z } from "zod";
 import { briefSchema, storyboardSchema, validateNarration } from "../src/lib/faceless/schema";
 import { alignmentSchema, alignmentToSrt } from "../src/lib/faceless/captions";
 import { assertJobActive, claimJob, finishCancelledJob } from "./job-control";
 import { artifactStore, downloadProviderImage, MEDIA_LIMITS, readBoundedBody } from "./media-io";
 import { FACELESS_MACHINE, concatRenderArgs, sceneFilter, sceneRenderArgs } from "./faceless-render";
+import { cartoonFalClient, runFalStage } from "./cartoon-fal";
+import { facelessImageRequest, facelessImageEndpoints, LEGACY_FACELESS_ENDPOINT } from "../src/lib/faceless/models";
 
 const exec = promisify(execFile);
 function database() {
@@ -67,7 +68,11 @@ export const facelessPipeline = schemaTask({
     }
     const storyboard = storyboardSchema.parse(settings.storyboard); validateNarration(storyboard,brief.duration);
     if(!process.env.FAL_KEY || !process.env.ELEVENLABS_API_KEY || !process.env.ELEVENLABS_DEFAULT_VOICE_ID) throw new Error("Worker image/voice credentials are missing");
-    fal.config({credentials:process.env.FAL_KEY});
+    const client = cartoonFalClient();
+    const imageEndpoint = brief.imageModel ? facelessImageEndpoints[brief.imageModel] : LEGACY_FACELESS_ENDPOINT;
+    const { error: modelError } = await db.from("generations").update({ model: `${imageEndpoint}+elevenlabs+ffmpeg` }).eq("id", generationId);
+    if (modelError) throw modelError;
+    const store = { load, save: (name: string, data: unknown) => save(name, JSON.stringify(data), "application/json") };
     const work = await mkdtemp(path.join(tmpdir(),"faceless-"));
     const ffmpeg = process.env.FFMPEG_PATH || "ffmpeg", ffprobe = process.env.FFPROBE_PATH || "ffprobe";
     const [width,height] = brief.aspectRatio === "9:16" ? [720,1280] : [1280,720];
@@ -78,29 +83,14 @@ export const facelessPipeline = schemaTask({
         metadata.set("phase",`Creating scene ${index+1} of ${storyboard.scenes.length}`).set("progress",Math.round(index/storyboard.scenes.length*85));
         const imagePath = path.join(work,`image-${index}.jpg`);
         if(!await loadFile(`image-${index}.jpg`,imagePath,MEDIA_LIMITS.image)) {
-          const requestRecord = await load(`image-${index}-request.json`);
-          let requestId:string;
-          if(requestRecord) requestId=JSON.parse(requestRecord.toString()).requestId;
-          else {
-            const result=await fal.queue.submit("fal-ai/flux/schnell",{input:{prompt:`${brief.style} style. ${scene.visualPrompt}. No text, no watermark.`,image_size:brief.aspectRatio === "9:16" ? "portrait_16_9":"landscape_16_9",num_images:1,enable_safety_checker:true}});
-            requestId=result.request_id;
-          }
-          try {
-            signal.throwIfAborted();
-            if (!requestRecord) await save(`image-${index}-request.json`,JSON.stringify({requestId}),"application/json");
-            let complete=false;
-            for(let poll=0;poll<120;poll++) { await checkpoint(); const status=await fal.queue.status("fal-ai/flux/schnell",{requestId,logs:false}); if(status.status === "COMPLETED") {complete=true;break;} await wait.for({seconds:3}); }
-            if(!complete) throw new Error("Image generation timed out");
-            await checkpoint();
-            const result=imageSchema.parse((await fal.queue.result("fal-ai/flux/schnell",{requestId})).data);
-            if(result.has_nsfw_concepts?.some(Boolean)) throw new Error("Image was rejected by the safety filter");
-            await downloadProviderImage(result.images[0].url,imagePath,signal);
-            await saveFile(`image-${index}.jpg`,imagePath,"image/jpeg",MEDIA_LIMITS.image);
-          } catch (error) {
-            // fal may already have started inference; cancellation is best-effort.
-            await fal.queue.cancel("fal-ai/flux/schnell",{requestId}).catch(() => undefined);
-            throw error;
-          }
+          const prompt = `${brief.style} style. ${scene.visualPrompt}. Compose for a ${brief.aspectRatio} frame. No text, no watermark.`;
+          const request = facelessImageRequest(brief.imageModel, brief.aspectRatio, prompt);
+          const result = imageSchema.parse(await runFalStage({
+            client, store, name: `image-${index}`, ...request, signal, checkpoint, pause: () => wait.for({ seconds: 3 }),
+          }));
+          if (result.has_nsfw_concepts?.some(Boolean)) throw new Error("Image was rejected by the safety filter");
+          await downloadProviderImage(result.images[0].url, imagePath, signal);
+          await saveFile(`image-${index}.jpg`, imagePath, "image/jpeg", MEDIA_LIMITS.image);
         }
         // Scope base64 and JSON buffers to preparation, before starting FFmpeg.
         {

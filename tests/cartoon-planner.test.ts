@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { FalClient } from "@fal-ai/client";
 import { cartoonDemo } from "@/lib/cartoons/demo";
 import { CARTOON_PLANNER_ENDPOINT, CARTOON_PLANNER_MODEL, cartoonPlannerRequest, plannerOutputText, runCartoonPlanner, type PlannerInput } from "../trigger/cartoon-planner";
-import { cartoonFalClient } from "../trigger/cartoon-fal";
+import { cartoonFalClient, type FalStageClient } from "../trigger/cartoon-fal";
 import { MEDIA_LIMITS } from "../trigger/media-io";
 
 const output = JSON.stringify(cartoonDemo.storyboard);
@@ -21,7 +20,7 @@ function harness() {
   const client = { queue: { submit: vi.fn().mockResolvedValue({ request_id: "fal-request-1" }), status: vi.fn().mockResolvedValue({ status: "COMPLETED" }),
     result: vi.fn().mockResolvedValue({ data: wireResponse() }), cancel: vi.fn().mockResolvedValue({}) } };
   return { files, fetchMock, client, store, controller, options: { input, store, signal: controller.signal, checkpoint,
-    pause: vi.fn().mockResolvedValue(undefined), client: client as unknown as FalClient } };
+    pause: vi.fn().mockResolvedValue(undefined), client: client as unknown as FalStageClient } };
 }
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.useRealTimers(); });
 

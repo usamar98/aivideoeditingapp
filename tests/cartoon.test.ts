@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import type { FalClient } from "@fal-ai/client";
 import { cartoonDemo } from "@/lib/cartoons/demo";
 import { cartoonBriefSchema, cartoonStorySchema, cartoonRenderCredits, cartoonPlanCredits, validateCartoonStory, type CartoonModel, type CartoonResolution } from "@/lib/cartoons/schema";
 import { cartoonVideoInput, characterImagePrompt } from "@/lib/cartoons/prompts";
-import { cartoonFalClient, runFalStage } from "../trigger/cartoon-fal";
+import { cartoonFalClient, runFalStage, type FalStageClient } from "../trigger/cartoon-fal";
 import { cartoonClipArgs, isCartoonMediaUrl } from "../trigger/cartoon-media";
 
 const story = cartoonDemo.storyboard!;
@@ -89,6 +88,19 @@ describe("cartoon contracts", () => {
 });
 
 describe("durable fal submission", () => {
+  it("accepts the fal REST submission receipt for both faceless image models", async () => {
+    vi.stubEnv("FAL_KEY", "test-key");
+    const receipt = { request_id: "scene-id", response_url: "https://queue.fal.run/result", status_url: "https://queue.fal.run/status", cancel_url: "https://queue.fal.run/cancel", queue_position: 0 };
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(Response.json(receipt))
+      .mockResolvedValueOnce(Response.json({ status: "IN_PROGRESS", request_id: "scene-id", status_url: null })));
+    try {
+      const client = cartoonFalClient();
+      for (const endpoint of ["blackforestlabs/flux-3/klein/text-to-image", "google/nano-banana-2.1"]) {
+        expect(await client.queue.submit(endpoint, { input: { prompt: "A starscape" } })).toEqual({ request_id: "scene-id" });
+      }
+    } finally { vi.unstubAllGlobals(); vi.unstubAllEnvs(); }
+  });
   it("does not let the SDK retry non-idempotent POST requests", async () => {
     vi.stubEnv("FAL_KEY", "test-not-a-secret");
     const fetchMock = vi.fn().mockResolvedValue(new Response("unavailable", {status:503})); vi.stubGlobal("fetch", fetchMock);
@@ -100,7 +112,7 @@ describe("durable fal submission", () => {
   function harness() {
     const files = new Map<string, Buffer>();
     const client = { queue: { submit: vi.fn().mockResolvedValue({ request_id: "request-1" }), status: vi.fn().mockResolvedValue({ status: "COMPLETED" }), result: vi.fn().mockResolvedValue({ data: { video: { url: "https://fal.media/video.mp4" } } }), cancel: vi.fn().mockResolvedValue({}) } };
-    const options = { client: client as unknown as FalClient, store: { load: async (name: string) => files.get(name) || null, save: async (name: string, value: unknown) => { files.set(name, Buffer.from(JSON.stringify(value))); } }, name: "scene", endpoint: "fal/model", input: { prompt: "hi" }, signal: new AbortController().signal, checkpoint: vi.fn().mockResolvedValue(undefined), pause: vi.fn().mockResolvedValue(undefined) };
+    const options = { client: client as unknown as FalStageClient, store: { load: async (name: string) => files.get(name) || null, save: async (name: string, value: unknown) => { files.set(name, Buffer.from(JSON.stringify(value))); } }, name: "scene", endpoint: "fal/model", input: { prompt: "hi" }, signal: new AbortController().signal, checkpoint: vi.fn().mockResolvedValue(undefined), pause: vi.fn().mockResolvedValue(undefined) };
     return { files, client, options };
   }
   it("persists and reuses results without paying twice", async () => {
@@ -112,6 +124,14 @@ describe("durable fal submission", () => {
   it("recovers a saved provider request without resubmitting", async () => {
     const { client, options, files } = harness(); files.set("scene-request.json", Buffer.from(JSON.stringify({ endpoint: "fal/model", requestId: "existing" })));
     await runFalStage(options); expect(client.queue.submit).not.toHaveBeenCalled(); expect(client.queue.status.mock.calls[0][1].requestId).toBe("existing");
+  });
+  it("resumes an original faceless scene request only on its Schnell endpoint", async () => {
+    const { client, options, files } = harness();
+    files.set("scene-request.json", Buffer.from(JSON.stringify({ requestId: "legacy-scene" })));
+    await expect(runFalStage({ ...options, endpoint: "google/nano-banana-2.1" })).rejects.toThrow();
+    await runFalStage({ ...options, endpoint: "fal-ai/flux/schnell" });
+    expect(client.queue.submit).not.toHaveBeenCalled();
+    expect(client.queue.status).toHaveBeenCalledWith("fal-ai/flux/schnell", expect.objectContaining({ requestId: "legacy-scene" }));
   });
   it("fails closed after an ambiguous submission", async () => {
     const { client, options, files } = harness(); files.set("scene-intent.json", Buffer.from("{}"));

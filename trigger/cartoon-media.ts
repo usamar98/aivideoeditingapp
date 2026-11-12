@@ -1,18 +1,11 @@
-import { MEDIA_LIMITS, streamToFile } from "./media-io";
+import { MEDIA_LIMITS, isFalMediaUrl, streamToFile } from "./media-io";
 // Scoped to assembled long films; individual downloads retain the 100 MB limit.
 // Fits the existing private-media bucket's 500 MB per-object limit.
 export const FILM_EXPORT_LIMIT = 400 * 1024 * 1024;
 
-export function isCartoonMediaUrl(raw: string) {
-  try {
-    const url = new URL(raw);
-    return url.protocol === "https:" && !url.username && !url.password && (!url.port || url.port === "443") &&
-      (url.hostname === "fal.media" || url.hostname.endsWith(".fal.media") ||
-        (url.hostname === "storage.googleapis.com" && url.pathname.startsWith("/falserverless/")));
-  } catch { return false; }
-}
+export { isFalMediaUrl as isCartoonMediaUrl };
 export async function downloadCartoonVideo(raw: string, destination: string, signal: AbortSignal) {
-  if (!isCartoonMediaUrl(raw)) throw new Error("Unexpected provider video host");
+  if (!isFalMediaUrl(raw)) throw new Error("Unexpected provider video host");
   const transferSignal = AbortSignal.any([signal, AbortSignal.timeout(120_000)]);
   const response = await fetch(raw, { redirect: "error", signal: transferSignal });
   if (!response.ok || !response.body || !/^(video\/|application\/octet-stream)/.test(response.headers.get("content-type") || "")) {
