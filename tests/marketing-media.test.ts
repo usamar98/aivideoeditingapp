@@ -156,13 +156,13 @@ describe("AI marketing media", () => {
   it("opens published homepage tools in Studio alongside their previews", async () => {
     const $ = load(renderToStaticMarkup(await Home()));
     expect($("h1").length).toBe(1);
-    expect($("video").length).toBe(16);
+    expect($("video").length).toBe(17);
     for (const [index, slug] of slugs.entries()) {
       const card = $(`#tools [data-feature='${slug}'] > a`);
       expect(card.length).toBe(1);
       expect(card.attr("href")).toBe(["/studio/faceless", "/studio/cartoons", "/studio/ugc"][index]);
-      if (slug === "faceless-video-generator") {
-        expect(card.parent().find("video").attr("aria-label")).toContain("faceless story sample");
+      if (slug !== "ai-ugc-product-ads") {
+        expect(card.parent().find("video").attr("aria-label")).toContain("story sample");
       } else {
         expect(card.find("img").attr("alt")).toContain("AI-generated");
         expect(card.text()).toContain("AI-generated concept");
@@ -245,9 +245,9 @@ describe("AI marketing media", () => {
     expect(grid.attr("class")).toContain("lg:grid-cols-3");
     expect(grid.children("article").map((_, el) => $(el).attr("data-feature")).get()).toEqual([...slugs, "podcast-to-shorts", "digital-clone"]);
     expect(grid.find("h2").length).toBe(5);
-    expect(grid.find("img").length).toBe(3);
+    expect(grid.find("img").length).toBe(2);
     expect(grid.find("video[controls]").length).toBe(0);
-    expect(grid.find("video").length).toBe(1);
+    expect(grid.find("video").length).toBe(2);
     expect(grid.find('[class*="col-span"]').length).toBe(0);
     expect(grid.find("a[href^='/studio']").length).toBe(0);
     for (const slug of published) expect(grid.find(`a[href='/features/${slug}']`).length).toBe(1);
@@ -272,14 +272,14 @@ describe("AI marketing media", () => {
 
   it("updates the actual studio cards without changing generation entry points", async () => {
     const $ = load(renderToStaticMarkup(await StudioLibraryPage()));
-    expect($("main img").length).toBe(3);
-    expect($("main video[preload='none']").length).toBe(1);
+    expect($("main img").length).toBe(2);
+    expect($("main video[preload='none']").length).toBe(2);
     for (const path of ["/studio/faceless", "/studio/cartoons", "/studio/ugc", "/studio/shorts", "/studio/films", "/studio/ad-remake"]) {
       expect($(`main a[href='${path}']`).length).toBe(1);
     }
     expect($.text()).toContain("Demo workspace");
     expect($.text()).toContain("Recent projects");
-    expect($.text().match(/AI-generated concept/g)?.length).toBe(2);
+    expect($.text().match(/AI-generated concept/g)?.length).toBe(1);
   });
 
   it("preserves the live card order and three-column layout in the studio", async () => {
@@ -303,27 +303,22 @@ describe("AI marketing media", () => {
     }
   });
 
-  it.each([Home, FeaturesPage, StudioLibraryPage])("shows a playable faceless story and the cartoon artwork in each shared grid", async (Page) => {
+  it.each([Home, FeaturesPage, StudioLibraryPage])("shows playable cartoon and faceless stories in each shared grid", async (Page) => {
     const $ = load(renderToStaticMarkup(await Page()));
-    for (const [slug, title] of [["faceless-video-generator", "Viral faceless Video"], ["ai-cartoon-series", "Viral Cartoon videos"]]) {
+    for (const [slug, title, asset] of [["faceless-video-generator", "Viral faceless Video", "faceless-story"], ["ai-cartoon-series", "Viral Cartoon videos", "cartoon-story"]]) {
       const card = $(`[data-feature='${slug}']`);
       expect(card.find("h2, h3").text()).toBe(title);
-      if (slug === "faceless-video-generator") {
-        const video = card.find("video");
-        expect(video.attr("src")).toBe("/examples/faceless-story.mp4");
-        expect(video.attr("preload")).toBe("none");
-        expect(video.attr("muted")).toBeDefined();
-        expect(video.attr("playsinline")).toBeDefined();
-        expect(video.attr("autoplay")).toBeUndefined();
-        expect(statSync(assetPath(video.attr("poster")!)).size).toBeGreaterThan(1000);
-        const clip = readFileSync(assetPath(video.attr("src")!));
-        expect(clip.subarray(4, 8).toString()).toBe("ftyp");
-        expect(clip.length).toBeLessThan(1_500_000);
-        expect(card.find("button[aria-label^='Play preview:']").length).toBe(1);
-      } else {
-        expect(card.find("img").length).toBe(1);
-        expect(card.find("video").length).toBe(0);
-      }
+      const video = card.find("video");
+      expect(video.attr("src")).toBe(`/examples/${asset}.mp4`);
+      expect(video.attr("preload")).toBe("none");
+      expect(video.attr("muted")).toBeDefined();
+      expect(video.attr("playsinline")).toBeDefined();
+      expect(video.attr("autoplay")).toBeUndefined();
+      expect(statSync(assetPath(video.attr("poster")!)).size).toBeGreaterThan(1000);
+      const clip = readFileSync(assetPath(video.attr("src")!));
+      expect(clip.subarray(4, 8).toString()).toBe("ftyp");
+      expect(clip.length).toBeLessThan(1_500_000);
+      expect(card.find("button[aria-label^='Play preview:']").length).toBe(1);
     }
     expect($("[data-feature='social-publishing']").length).toBe(0);
   });

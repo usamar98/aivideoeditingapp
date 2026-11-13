@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cartoonDemo } from "@/lib/cartoons/demo";
+import { cartoonPlannerPrompt } from "@/lib/cartoons/prompts";
 import { CARTOON_PLANNER_ENDPOINT, CARTOON_PLANNER_MODEL, cartoonPlannerRequest, plannerOutputText, runCartoonPlanner, type PlannerInput } from "../trigger/cartoon-planner";
 import { cartoonFalClient, type FalStageClient } from "../trigger/cartoon-fal";
 import { MEDIA_LIMITS } from "../trigger/media-io";
@@ -25,6 +26,16 @@ function harness() {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.useRealTimers(); });
 
 describe("cartoon Gemini through fal", () => {
+  it("passes the creator's script intact to the planner and requests visual action for silent cartoons", () => {
+    const script = 'Nova: "We landed!"\n[Bolt points to the marshmallow moon.]';
+    for (const audio of [true, false]) {
+      const brief = { ...cartoonDemo.brief, model: "kling-v3" as const, audio, prompt: script };
+      const text = cartoonPlannerPrompt(brief);
+      const request = cartoonPlannerRequest([{ type: "text", text }]);
+      expect(request.messages[0].content[0]).toMatchObject({ text: expect.stringContaining(JSON.stringify(script)) });
+      expect(text).toContain(audio ? "Each speaker must appear in characterIds" : "Leave the dialogue array empty");
+    }
+  });
   it("uses the verified model, image inputs, strict JSON schema and bounded output", () => {
     const h = harness(); const body = cartoonPlannerRequest(h.options.input);
     expect(CARTOON_PLANNER_MODEL).toBe("google/gemini-3.8-flash");

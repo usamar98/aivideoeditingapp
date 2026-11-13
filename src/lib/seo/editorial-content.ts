@@ -142,16 +142,16 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
     ],
   },
   "ai-cartoon-series": {
-    updatedAt: "2026-09-26",
-    summary: "Create AI Videos’ AI cartoon studio creates a short animated film from a story prompt or your own character artwork. AI prepares up to three characters and an editable scene plan with actions, camera directions and dialogue. Choose character-reference animation to review portraits first, or a direct-prompt model that skips image generation. Review the text storyboard and approve animation separately. Exact appearance, spoken words and cross-scene voice consistency are not guaranteed.",
+    updatedAt: "2026-11-13",
+    summary: "Turn an idea or a script into a short cartoon. Review up to three characters, edit the dialogue and action in each scene, then approve animation. You can supply character artwork when using a reference-guided model.",
     steps: [
       {
-        title: "Describe a small, clear story",
-        text: "Name the characters, setting, problem and ending. Choose 15, 30 or 60 seconds and a vertical or landscape canvas. Pick Cinematic 3D, Hand-drawn 2D, Anime or Clay animation as art direction. A focused adventure with a few actions is easier to review than a crowded list of events.",
+        title: "Start with an idea or paste your script",
+        text: "For an idea, describe the characters, setting and what happens. For a script, include the speakers, their lines and any stage directions. Choose an art style, a duration of 15, 30 or 60 seconds, and portrait or landscape framing.",
       },
       {
         title: "Choose your model and review the estimate",
-        text: "Choose a model, its supported resolution and, for Kling V3 Pro, sound on or off. Reference models let you upload up to three authorized character images and generate cast portraits. Direct-prompt models skip images and create a text story for review. Each shows its story and animation credit costs before confirmation.",
+        text: "Open Animation settings to choose a model and resolution. Wan 3.0 and Kling V3 Pro also let you switch sound off. With a reference model you can upload up to three character images. Check the storyboard and animation prices before confirming each stage.",
       },
       {
         title: "Refine the actions and spoken lines",
@@ -187,7 +187,7 @@ export const featureEditorial: Record<string, FeatureEditorial> = {
       },
       {
         question: "Does the finished cartoon include speech and captions?",
-        answer: "Audio-enabled cartoon scenes use generated English dialogue and sound. Kling V3 Pro also offers silent output. Exact words, pronunciation, lip sync and voice continuity can vary. Automatic subtitles are not included in this workflow. Watch and listen to the result before sharing it.",
+        answer: "Audio-enabled cartoons can include generated English dialogue and sound. Choose Wan 3.0 or Kling V3 Pro for silent output. Wording, pronunciation and lip sync can vary. The example clip has captions added for the preview. Automatic subtitles are unavailable in cartoon exports.",
       },
       {
         question: "Can I export a 3D character or regenerate one scene?",

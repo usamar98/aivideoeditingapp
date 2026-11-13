@@ -76,7 +76,7 @@ Studio → **Publish** opens `/studio/social` for channel connection, completed-
 ## Provider choices
 
 - Gemini uses `gemini-3.8-flash` through structured output and validates the result with the appropriate episode or faceless-storyboard Zod schema.
-- New faceless projects use FLUX.3 Klein or Nano Banana 2.1 on fal for scene illustrations. Earlier projects use FLUX Schnell. Cartoon adapters target `fal-ai/nano-banana-pro/edit` for reference-guided image revisions and `fal-ai/kling-video/v3/pro/image-to-video` for 3–15 second approved scene animation.
+- New faceless projects use FLUX.3 Klein or Nano Banana 2.1 on fal for scene illustrations. Earlier projects use FLUX Schnell. The cartoon studio adapts an idea or script into an editable storyboard. Reference-guided models use GPT Image 2.5 Sunburst for cast portraits and opening frames. The selected animation model renders each approved scene. See [cartoon studio setup and models](docs/CARTOON-STUDIO.md).
 - ElevenLabs uses the timestamped text-to-speech endpoint so returned word timing can drive captions and scene duration validation.
 
 These adapters are intentionally small and replaceable. Character consistency remains a reviewable quality target, never a guarantee. Lip-sync is not enabled in this release.

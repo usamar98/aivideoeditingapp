@@ -1,6 +1,10 @@
 # Marketing media
 
-Updated: 2026-09-28.
+Updated: 2026-11-13.
+
+## Cartoon card and studio sample (November 13)
+
+“Five more minutes” adapts [Zeprexa’s animated sloth](https://pixabay.com/videos/ai-generated-sloth-lazy-funny-cute-230932/) from the hero source credited below. We added original dialogue, timed captions and local speech synthesis. The shared card uses the 960 × 540 close-up. The studio also offers the 540 × 960 composition with the full character. Both versions run for seven seconds. Files are under `public/examples/cartoon-story*`. The sample illustrates cartoon framing and dialogue independently of the selected generation model.
 
 ## Silent looping previews (September 28)
 

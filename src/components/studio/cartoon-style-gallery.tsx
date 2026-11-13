@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Check, Palette } from "lucide-react";
+import { Check } from "lucide-react";
 import { cartoonStyles, type CartoonBrief } from "@/lib/cartoons/schema";
 
 const examples = [
@@ -16,24 +16,23 @@ export function CartoonStyleGallery({ value, onChange, disabled = false }: {
   onChange: (style: CartoonBrief["style"]) => void;
   disabled?: boolean;
 }) {
-  return <aside aria-label="Cartoon style examples" className="min-w-0 self-start xl:sticky xl:top-6 xl:col-start-1 xl:row-start-1 xl:row-span-3" data-testid="cartoon-style-gallery">
+  return <div className="min-w-0" data-testid="cartoon-style-gallery">
     <fieldset disabled={disabled} className="min-w-0">
-      <legend className="flex items-center gap-2 text-sm font-semibold"><Palette aria-hidden className="size-4 text-primary" /> Pick your look</legend>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">Same idea. Four different worlds.</p>
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-1">
+      <legend className="text-sm font-semibold">Animation style</legend>
+      <div className="mt-3 grid grid-cols-2 gap-2 min-[480px]:grid-cols-4">
         {examples.map((example) => {
           const selected = value === example.style;
           const label = cartoonStyles[example.style];
-          return <button key={example.style} type="button" title={example.detail} aria-label={`Use ${label} style`} aria-pressed={selected} onClick={() => onChange(example.style)} data-style={example.style} className={`group min-w-0 overflow-hidden rounded-2xl border bg-card text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary disabled:cursor-wait disabled:opacity-60 ${selected ? "border-primary ring-2 ring-primary/15" : "border-border hover:border-primary/50"}`}>
-            <span className="relative block aspect-[3/2] overflow-hidden bg-accent">
-              <Image src={example.image} alt={`AI-generated ${label} style example of a fox astronaut and a robot on the moon`} fill sizes="(min-width: 1536px) 216px, (min-width: 1280px) 184px, (min-width: 640px) 25vw, 50vw" className="object-cover" />
+          return <button key={example.style} type="button" title={example.detail} aria-label={`Use ${label} style`} aria-pressed={selected} onClick={() => onChange(example.style)} data-style={example.style} className={`group min-w-0 overflow-hidden rounded-xl border bg-card text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-wait disabled:opacity-60 ${selected ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50"}`}>
+            <span className="relative block aspect-[1.85] overflow-hidden bg-accent">
+              <Image src={example.image} alt={`AI-generated ${label} style example of a fox astronaut and a robot on the moon`} fill sizes="(min-width: 1024px) 160px, (min-width: 480px) 24vw, 45vw" className="object-cover" />
               {selected && <span aria-hidden className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm"><Check className="size-3.5" /></span>}
             </span>
-            <span className={`block px-3 py-2.5 text-sm font-semibold ${selected ? "text-primary" : "text-foreground"}`}>{label}</span>
+            <span className={`block px-2 py-2 text-xs font-semibold ${selected ? "text-primary" : "text-foreground"}`}>{label}</span>
           </button>;
         })}
       </div>
-      <p className="mt-3 text-[11px] leading-5 text-muted-foreground">AI-generated style references. Your characters and final results will vary.</p>
+      <p className="sr-only">AI-generated style references. Your characters and final results will vary.</p>
     </fieldset>
-  </aside>;
+  </div>;
 }

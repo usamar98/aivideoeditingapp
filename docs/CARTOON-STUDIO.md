@@ -6,11 +6,31 @@ The older Pip and Moss editor remains a separate sample; it is no longer the mai
 
 ## Release steps
 
-1. Apply `supabase/migrations/20260924135448_cartoon_studio.sql` after the three existing migrations. It adds private projects and service-only job transactions, and extends cancellation without changing balances or old jobs.
+1. Apply the project's pending Supabase migrations in timestamp order. The original cartoon migration adds private projects and job transactions. Later migrations add the model-specific credit rates used when a creator approves a render.
 2. Deploy Trigger (`npx trigger.dev@4.6.4 deploy`) and verify `cartoon-pipeline` exists in Production. It uses Node 22, a 4 GB machine, capped FFmpeg threads and streamed media. Cartoons need `FAL_KEY`, `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SECRET_KEY` in Trigger Production. Keep `GEMINI_API_KEY` for the separate faceless/legacy script features; cartoons no longer use it.
 3. Deploy the Next.js changes. Vercel needs the existing Supabase keys and Production `TRIGGER_SECRET_KEY`. No new OpenAI or ElevenLabs key is needed for cartoons.
 4. Optional: set `CARTOON_SEEDANCE_ENABLED=true` on Vercel only after verifying your fal account's Seedance 2.5 access, then redeploy. Otherwise the selector explains why that model is disabled. There is no silent model fallback or unexpected extra charge.
 5. Sign in, upload a PNG/JPG/WebP (up to 8 MB; up to three named characters), save a prompt, approve cast generation, review/edit scenes, then approve animation. Test cancellation and downloads with your own account before launch.
+
+## Cartoon model choices reviewed November 13, 2026
+
+The creator uses one field for either a story idea or a script. The planner can invent dialogue for an idea or adapt the supplied dialogue to fit the chosen runtime. Creators can edit the storyboard before purchasing animation.
+
+Kling O3 Pro is the default reference-guided model. Two additional options support both portrait and landscape animation from character artwork.
+
+- MiniMax H3 Max uses the scene's opening frame and separate numbered cast portraits. Its prompt expansion is disabled to keep the approved scene directions intact. [MiniMax H3 Max API](https://fal.ai/models/minimax/h3-max/reference-to-video/api)
+- Wan 3.0 takes the scene composition and cast portraits as image references. The request includes the chosen aspect ratio and resolution. [Wan 3.0 API](https://fal.ai/models/alibaba/wan-3.0/reference-to-video/api)
+
+Both options reserve 40 app credits for cast and storyboard. Animation is charged separately, per second of approved storyboard duration:
+
+| Model | 480p | 720p | 768p | 1080p |
+| --- | ---: | ---: | ---: | ---: |
+| MiniMax H3 Max reference | 5 | — | 8 | 16 |
+| Wan 3.0 reference | 6 | 10 | — | 18 |
+
+MiniMax defaults to 768p. Wan defaults to 720p and can render with or without sound at the same credit rate. These are app credits, not fal prices.
+
+Creators can also use direct text-to-video models when their project needs no character portraits. The studio shows separate storyboard and animation credit estimates for the selected configuration. The sloth animation on the feature card is a prepared example. Switching formats in the studio shows a separately framed version of that clip.
 
 ## Models researched September 24, 2026
 
@@ -23,7 +43,7 @@ These are quality-oriented selections from fal's current catalog, not a claim th
 
 One character portrait per cast member is saved privately and reused for scene-frame edits and video references. Films use 3 scenes for 15/30s and 6 scenes for 60s. Scene dialogue is capped at two words per second. Frames are generated at animation time; the review step shows character portraits and a text storyboard, not pre-rendered scene previews. Animation audio is preserved when clips are normalized and concatenated.
 
-## Credits and limitations
+## Original reference-model credits and limitations
 
 Cast + story: 40 credits. Animation: Kling 8 credits/second (120/240/480); Seedance 24 credits/second (360/720/1440). These application prices are visible before each stage and mirrored in SQL, with parity tests. They are not dollar quotes from fal. Review margins as provider pricing changes. A successful plan stays charged if animation is later cancelled; failed/cancelled stages refund their reservations exactly once. Re-rendering a completed film is a new paid job.
 

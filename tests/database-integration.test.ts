@@ -51,6 +51,7 @@ beforeAll(async()=>{
   await db.exec(readFileSync("supabase/migrations/20261003162233_long_film_continuity.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20261004140532_real_estate_video_studio.sql","utf8"));
   await db.exec(readFileSync("supabase/migrations/20261009102609_ad_remake_studio.sql","utf8"));
+  await db.exec(readFileSync("supabase/migrations/20261113100852_cartoon_reference_models.sql","utf8"));
   await db.exec("grant usage on schema storage to authenticated; grant select,insert,update,delete on storage.objects to authenticated;");
   await db.exec(`insert into auth.users values ('${userA}'),('${userB}'); insert into public.profiles(id) values ('${userA}'),('${userB}'); insert into public.workspaces(id,name,owner_id) values('${workspace}','Test studio','${userA}'); insert into public.workspace_members(workspace_id,user_id,role) values('${workspace}','${userA}','owner'); insert into public.credit_accounts(workspace_id,cached_balance) values('${workspace}',100); insert into public.faceless_projects(id,user_id,workspace_id,title,brief) values('${project}','${userA}','${workspace}','Test project','{}');`);
 },30000);
@@ -441,6 +442,56 @@ describe("cartoon database ownership, pricing and settlement", () => {
         await db.query("select public.confirm_generation_cancellation($1)",[render]);
         expect(Number((await db.query<{ n: string }>("select cached_balance as n from public.credit_accounts where workspace_id=$1",[workspaceId])).rows[0].n)).toBe(9998);
       }
+    }
+  });
+  it("reserves cast preparation and requires a completed cast for both new reference models", async () => {
+    for (const model of ["minimax-h3-reference", "wan-3-reference"] as const) {
+      const brief = { ...cartoonDemo.brief, model };
+      const { projectId, workspaceId } = await fixture(brief);
+      const plan = randomUUID();
+      await db.query("select public.start_cartoon_job($1,$2,$3,'plan')", [projectId, userA, plan]);
+      const generation = await db.query<{cost: string}>("select estimated_credits as cost from public.generations where id=$1", [plan]);
+      expect(Number(generation.rows[0].cost)).toBe(cartoonPlanCredits(brief));
+      expect(Number(generation.rows[0].cost)).toBe(40);
+      await expect(db.query("select public.finish_cartoon_job($1,true,$2,'{}')", [plan, JSON.stringify(cartoonDemo.storyboard)])).rejects.toThrow(/Missing cast/);
+      const cast = { c1: `${workspaceId}/${userA}/cartoons/${plan}/portrait.png` };
+      await db.query("select public.finish_cartoon_job($1,true,$2,$3)", [plan, JSON.stringify(cartoonDemo.storyboard), JSON.stringify(cast)]);
+      expect((await db.query("select status,cast_paths from public.cartoon_projects where id=$1", [projectId])).rows[0]).toMatchObject({status: "ready", cast_paths: cast});
+    }
+  });
+  it("charges the displayed render price for every new reference-model resolution and audio option", async () => {
+    for (const model of ["minimax-h3-reference", "wan-3-reference"] as const) {
+      for (const resolution of [undefined, ...cartoonModels[model].resolutions]) {
+        for (const audio of (model === "wan-3-reference" ? [true, false] : [true])) {
+          const brief = { ...cartoonDemo.brief, model, resolution, audio };
+          const { projectId, workspaceId } = await fixture(brief, true);
+          const render = randomUUID();
+          await db.query("select public.start_cartoon_job($1,$2,$3,'render')", [projectId, userA, render]);
+          const reservation = await db.query<{model: string, estimated_credits: string, amount: string}>(
+            "select g.model,g.estimated_credits,l.amount from public.generations g join public.credit_ledger l on l.generation_id=g.id where g.id=$1 and l.kind='reservation'",
+            [render],
+          );
+          const credits = cartoonRenderCredits(brief);
+          expect(reservation.rows[0].model).toBe(model);
+          expect(Number(reservation.rows[0].estimated_credits)).toBe(credits);
+          expect(Number(reservation.rows[0].amount)).toBe(-credits);
+          await db.query("select public.finish_cartoon_job($1,false)", [render]);
+          const balance = await db.query<{cached_balance: string}>("select cached_balance from public.credit_accounts where workspace_id=$1", [workspaceId]);
+          expect(Number(balance.rows[0].cached_balance)).toBe(10000);
+        }
+      }
+    }
+  });
+  it("rejects incompatible resolution or audio settings for the reference models before reserving credits", async () => {
+    for (const changes of [
+      { model: "minimax-h3-reference", resolution: "720p" },
+      { model: "minimax-h3-reference", audio: false },
+      { model: "wan-3-reference", resolution: "768p" },
+    ] as const) {
+      const { projectId, workspaceId } = await fixture({ ...cartoonDemo.brief, ...changes });
+      await expect(db.query("select public.start_cartoon_job($1,$2,gen_random_uuid(),'plan')", [projectId, userA])).rejects.toThrow(/Unsupported resolution|Invalid audio/);
+      const balance = await db.query<{cached_balance: string}>("select cached_balance from public.credit_accounts where workspace_id=$1", [workspaceId]);
+      expect(Number(balance.rows[0].cached_balance)).toBe(10000);
     }
   });
   it("rejects forged or unsupported model settings without taking credits", async () => {
